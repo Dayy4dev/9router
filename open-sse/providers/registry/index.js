@@ -115,6 +115,7 @@ import p114 from "./together.js";
 import p115 from "./tokenharbor.js";
 import p116 from "./tokenrouter.js";
 
+
 import p117 from "./topaz.js";
 import p118 from "./tortoise.js";
 import p119 from "./trae.js";
@@ -146,7 +147,8 @@ import p144 from "./tinyfish.js";
 import p145 from "./muse.js";
 import p146 from "./minimax-code.js";
 import p147 from "./minimax-code-global.js";
-
+import p148 from "./bedrock.js";
+import p149 from "./bedrock-xai.js";
 export default [
   p0,
   p1,
@@ -294,4 +296,6 @@ export default [
   p145,
   p146,
   p147,
+  p148,
+  p149,
 ];

@@ -1378,7 +1378,7 @@ const scopedModelPatterns =
             {keys.map((key) => (
               <div
                 key={key.id}
-                className={`group flex flex-wrap items-center justify-between gap-3 py-3 border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
+                className={`group flex flex-wrap items-start justify-between gap-3 py-3 border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
               >
                 {!isApiKeyUser && (
                   <input
@@ -1392,7 +1392,7 @@ const scopedModelPatterns =
                         return next;
                       });
                     }}
-                    className="size-4 accent-brand-500 shrink-0"
+                    className="size-4 accent-brand-500 shrink-0 mt-0.5"
                     aria-label={`Select ${key.name}`}
                   />
                 )}
@@ -1402,7 +1402,7 @@ const scopedModelPatterns =
                     <p className="text-xs text-text-muted truncate min-w-0">{creatorLabelFor(key)}</p>
                   )}
                   <div className="flex flex-wrap items-center gap-1.5 mt-1 min-w-0">
-                    <code className="text-xs text-text-muted font-mono truncate max-w-[200px] sm:max-w-xs min-w-0">
+                    <code className="text-xs text-text-muted font-mono break-all max-w-[200px] sm:max-w-xs min-w-0">
                       {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
                     </code>
                     <button
@@ -1422,6 +1422,34 @@ const scopedModelPatterns =
                         {copied === key.id ? "check" : "content_copy"}
                       </span>
                     </button>
+=======
+                className={`group flex items-start justify-between gap-3 py-3 border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{key.name}</p>
+                  <div className="flex items-center gap-2 mt-1 min-w-0 flex-wrap">
+                    <code className="text-xs text-text-muted font-mono break-all min-w-0">
+                      {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
+                    </code>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <button
+                        onClick={() => toggleKeyVisibility(key.id)}
+                        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
+                        title={visibleKeys.has(key.id) ? "Hide key" : "Show key"}
+                      >
+                        <span className="material-symbols-outlined text-[14px]">
+                          {visibleKeys.has(key.id) ? "visibility_off" : "visibility"}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => copy(key.key, key.id)}
+                        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">
+                          {copied === key.id ? "check" : "content_copy"}
+                        </span>
+                      </button>
+                    </div>
                   </div>
                   <p className="text-xs text-text-muted mt-1">
                     Created {new Date(key.createdAt).toLocaleDateString()}
@@ -1458,11 +1486,13 @@ const scopedModelPatterns =
                     )}
                   </div>
                 </div>
-                <div className="flex flex-shrink-0 items-center gap-1.5">
+                <div className="flex items-center gap-2 shrink-0 pt-0.5">
                   <div
                     className="inline-flex items-center px-1"
                     title={key.isActive === false ? "Switch this key back on" : "Switch this key off"}
                   >
+=======
+                <div className="flex items-center gap-2 shrink-0 pt-0.5">
                   <Toggle
                     size="sm"
                     checked={key.isActive !== false}

@@ -190,7 +190,7 @@ function Panel({ title, message, percent, canCancel, canBackground, onCancel, on
               {canBackground ? (
                 <IconButton
                   label="Run in background"
-                  glyph="download"
+                  glyph="layers"
                   onClick={onBackground}
                 />
               ) : null}

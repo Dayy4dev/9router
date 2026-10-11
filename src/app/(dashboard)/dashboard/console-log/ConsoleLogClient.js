@@ -98,7 +98,7 @@ export default function ConsoleLogClient() {
         </div>
         <div
           ref={logRef}
-          className="bg-black rounded-b-lg p-4 text-xs font-mono h-[calc(100vh-220px)] overflow-y-auto"
+          className="rounded-b-lg p-4 text-xs font-mono h-[calc(100vh-220px)] overflow-y-auto bg-bg"
         >
           {logs.length === 0 ? (
             <span className="text-text-muted">No console logs yet.</span>

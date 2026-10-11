@@ -1,4 +1,4 @@
-# v0.5.165 (2026-10-11) · 12 commits
+# v0.5.165 (2026-10-11) · 13 commits
 
 ## Features
 - **Proxy Pools**: Delete All button, plus Select all now spans the whole filtered list instead of the 20 visible rows
@@ -18,6 +18,7 @@
 - **Proxy Pools**: batch import runs as a server-side job, so closing the browser no longer kills the run halfway; /api/proxy-pools/import-jobs accepts the parsed list, runs it in-process, and the page polls for progress (reloads reattach to the same job instead of starting over)
 - **Dashboard**: the notification bell lists running server-side imports with live progress, and opening one takes you back to the run so the collapsed banner reopens
 - **Loader**: the long-task banner carries no helper copy and its cancel/background controls are small borderless glyph buttons instead of boxed clusters
+- **Theme**: glass and dark draw every surface from the theme tokens; leftover solid slabs (white OpenAI button, opaque black log viewport, zinc-bordered usage cards, gray tooltip, gray badge dot) now follow the active theme, verified by screenshot in both themes
 # v0.5.164 (2026-10-10) · 11 commits
 
 ## Features

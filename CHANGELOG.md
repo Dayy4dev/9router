@@ -1,3 +1,14 @@
+# v0.5.165 (2026-10-11) · 3 commits
+
+## Features
+- **Proxy Pools**: Delete All button, plus Select all now spans the whole filtered list instead of the 20 visible rows
+- **Proxy Pools**: bulk delete runs as one transaction on `/api/proxy-pools/bulk` instead of one request per pool
+
+## Fixes
+- **Models**: hide orphan compatible groups from the model picker, so a deleted OpenAI/Anthropic Compatible node no longer opens a raw `OpenAI Compatible (xxxxxxxx)` heading full of dead rows
+- **Theme**: modal, drawer and long-task scrim follow the active theme; glass gets a lighter veil instead of a flat black overlay that buried the aurora
+- **Proxy Pools**: bulk delete ignores a non-array id payload instead of throwing
+
 # v0.5.164 (2026-10-10) · 11 commits
 
 ## Features

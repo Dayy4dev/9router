@@ -1,4 +1,4 @@
-# v0.5.165 (2026-10-11) · 8 commits
+# v0.5.165 (2026-10-11) · 9 commits
 
 ## Features
 - **Proxy Pools**: Delete All button, plus Select all now spans the whole filtered list instead of the 20 visible rows
@@ -13,6 +13,7 @@
 - **Proxy Pools**: bulk delete ignores a non-array id payload instead of throwing
 - **Update**: fix the doubled v in the update banner (vv0.5.165 to v0.5.165)
 - **Models**: an API-key session no longer lists models outside its allowedModels; the filter matched a key scope against a model's display name, so a row labelled `DeepSeek-V4-Pro` but addressed as `qd/dmodel` appeared under a key scoped to `deepseek-v4-pro` and 403'd when called
+- **Models**: the available-models card lists one row per model a key may call instead of one row per provider connection, so a key scoped to twelve models shows twelve rows rather than 43 (deepseek-v4-pro alone was reached through 21 connections)
 - **Dashboard**: the welcome dialog no longer shows the traffic-light close dots; Get started is the only way out
 
 # v0.5.164 (2026-10-10) · 11 commits

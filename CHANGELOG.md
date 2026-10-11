@@ -1,4 +1,4 @@
-# v0.5.165 (2026-10-11) · 3 commits
+# v0.5.165 (2026-10-11) · 6 commits
 
 ## Features
 - **Proxy Pools**: Delete All button, plus Select all now spans the whole filtered list instead of the 20 visible rows
@@ -7,8 +7,7 @@
 ## Fixes
 - **Models**: hide orphan compatible groups from the model picker, so a deleted OpenAI/Anthropic Compatible node no longer opens a raw `OpenAI Compatible (xxxxxxxx)` heading full of dead rows
 - **Theme**: modal, drawer and long-task scrim follow the active theme; glass gets a lighter veil instead of a flat black overlay that buried the aurora
-- **Proxy Pools**: bulk delete ignores a non-array id payload instead of throwing
-
+- **Models**: import progress card stays inside its own section instead of dimming the whole dashboard\n- **Proxy Pools**: backgrounded dock chip no longer leaves an invisible overlay that swallows every click; import and relay deploy dialogs close on start so the page stays clickable\n- **Proxy Pools**: relay deploy dialogs no longer refuse to close after a successful deploy\n- **Proxy Pools**: bulk delete ignores a non-array id payload instead of throwing\n- **Update**: fix the doubled v in the update banner (vv0.5.165 to v0.5.165)\n
 # v0.5.164 (2026-10-10) · 11 commits
 
 ## Features

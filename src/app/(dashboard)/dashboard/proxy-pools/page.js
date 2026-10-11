@@ -479,6 +479,10 @@ export default function ProxyPoolsPage() {
     if (!vercelForm.vercelToken.trim()) return;
     setDeployLabel("Deploying Vercel Relay");
     setDeploying(true);
+    // Same reason as the import modal: the dialog's own overlay would keep
+    // swallowing clicks for the whole minute-long deploy. The page's
+    // ProgressCard reports progress and can background into the TaskDock.
+    setShowVercelModal(false);
     try {
       const res = await fetch("/api/proxy-pools/vercel-deploy", {
         method: "POST",
@@ -506,6 +510,7 @@ export default function ProxyPoolsPage() {
     if (!cloudflareForm.accountId.trim() || !cloudflareForm.apiToken.trim()) return;
     setDeployLabel("Deploying Cloudflare Worker");
     setDeploying(true);
+    setShowCloudflareModal(false);
     try {
       const res = await fetch("/api/proxy-pools/cloudflare-deploy", {
         method: "POST",
@@ -533,6 +538,7 @@ export default function ProxyPoolsPage() {
     if (!denoForm.denoToken.trim()) return;
     setDeployLabel("Deploying Deno Relay");
     setDeploying(true);
+    setShowDenoModal(false);
     try {
       const res = await fetch("/api/proxy-pools/deno-deploy", {
         method: "POST",

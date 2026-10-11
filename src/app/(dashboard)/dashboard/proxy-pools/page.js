@@ -251,13 +251,16 @@ export default function ProxyPoolsPage() {
     setPage(1);
   }, [search, statusFilter, pageSize]);
 
+  // Select-all spans the whole filtered list, not just the visible page window.
+  // The old code selected the 20 visible rows only, so with hundreds of pools
+  // "Select all" silently left the rest behind.
   const allSelected =
-    visiblePools.length > 0 && visiblePools.every((p) => selectedIds.includes(p.id));
+    filteredPools.length > 0 && filteredPools.every((p) => selectedIds.includes(p.id));
   // Bulk actions still act on the whole selection across pages; the checkbox
   // only ever refers to the visible window.
   const someVisibleSelected = visiblePools.some((p) => selectedIds.includes(p.id));
 
-  const toggleSelectAll = () => setSelectedIds(allSelected ? [] : visiblePools.map((p) => p.id));
+  const toggleSelectAll = () => setSelectedIds(allSelected ? [] : filteredPools.map((p) => p.id));
   const clearSelection = () => setSelectedIds([]);
 
   const bulkSetActive = async (isActive) => {
@@ -283,31 +286,80 @@ export default function ProxyPoolsPage() {
     }
   };
 
-  const bulkDelete = async () => {
+  // Shared by "Delete selected" and "Delete all": one request to
+  // /api/proxy-pools/bulk, which deletes in a single transaction. The old loop
+  // asked the server once per id, so clearing hundreds of pools meant hundreds
+  // of round trips and a half-finished delete if the tab closed midway.
+  const runBulkDelete = async ({ ids = null, all = false, boundLabel }) => {
+    // Close the confirm dialog before the request: bulkDelete used to do this
+    // inline, and ConfirmModal stays mounted until confirmState is cleared.
+    setConfirmState(null);
+    setBulkBusy(true);
+    try {
+      const res = await fetch("/api/proxy-pools/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(all ? { all: true } : { ids }),
+      });
+
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        notify.error(
+          `${data.boundConnectionCount ?? "Some"} connection(s) still use a selected proxy pool. Unbind them first.`
+        );
+        return;
+      }
+      if (!res.ok) {
+        notify.error("Failed to delete proxy pools");
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+      const deletedCount = data.deletedCount ?? (data.deleted?.length ?? 0);
+      await fetchProxyPools();
+      clearSelection();
+
+      if (deletedCount === 0) {
+        notify.error("Nothing deleted: every selected pool is still bound to a connection");
+        return;
+      }
+      notify.success(
+        `Deleted ${deletedCount}${boundLabel}`
+      );
+    } catch (error) {
+      console.error("Error deleting proxy pools:", error);
+      notify.error("Failed to delete proxy pools");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const bulkDelete = () => {
     if (selectedIds.length === 0) return;
     setConfirmState({
       title: "Delete Proxy Pools",
-      message: `Delete ${selectedIds.length} proxy pool(s)?`,
-      onConfirm: async () => {
-        setConfirmState(null);
-        setBulkBusy(true);
-        try {
-          let ok = 0; let blocked = 0; let failed = 0;
-          for (const id of selectedIds) {
-            try {
-              const res = await fetch(`/api/proxy-pools/${id}`, { method: "DELETE" });
-              if (res.ok) ok += 1;
-              else if (res.status === 409) blocked += 1;
-              else failed += 1;
-            } catch { failed += 1; }
-          }
-          await fetchProxyPools();
-          clearSelection();
-          notify.success(`Deleted ${ok}${blocked ? `, ${blocked} bound` : ""}${failed ? `, ${failed} failed` : ""}`);
-        } finally {
-          setBulkBusy(false);
-        }
-      }
+      message: `Delete ${selectedIds.length} proxy pool(s)? This cannot be undone.`,
+      onConfirm: () => runBulkDelete({
+        ids: selectedIds,
+        boundLabel: selectedIds.length === 1 ? " proxy pool" : " proxy pools",
+      }),
+    });
+  };
+
+  // Deletes everything on the server, not just the current page or filter, so
+  // it is unaffected by how much of the list the browser happens to have loaded.
+  const deleteAllPools = () => {
+    if (proxyPools.length === 0) return;
+    const boundCount = proxyPools.reduce((sum, p) => sum + (p.boundConnectionCount || 0), 0);
+    setConfirmState({
+      title: "Delete All Proxy Pools",
+      message: boundCount > 0
+        ? `This deletes all ${proxyPools.length} proxy pool(s). ${boundCount} connection(s) are still bound to a pool and will be left untouched. This cannot be undone.`
+        : `This deletes all ${proxyPools.length} proxy pool(s). This cannot be undone.`,
+      onConfirm: () => runBulkDelete({
+        all: true,
+        boundLabel: " proxy pools",
+      }),
     });
   };
 
@@ -738,6 +790,19 @@ export default function ProxyPoolsPage() {
           )}
           <Badge variant="default">Total: {proxyPools.length}</Badge>
           <Badge variant="success">Active: {activeCount}</Badge>
+          {proxyPools.length > 0 && (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="delete"
+              onClick={deleteAllPools}
+              disabled={bulkBusy || healthChecking}
+              className="ml-auto"
+              title="Delete every proxy pool at once"
+            >
+              Delete All
+            </Button>
+          )}
         </div>
 
         {(selectedIds.length > 0 || healthChecking) && (

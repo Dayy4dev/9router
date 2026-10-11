@@ -336,11 +336,12 @@ export default function LongTaskBanner({
       role="status"
       aria-live="polite"
       className={cn(
-        "flex items-center justify-center bg-black/55 backdrop-blur-[3px]",
+        "flex items-center justify-center backdrop-blur-[3px]",
         exiting ? "opacity-0 transition-opacity duration-150" : "fade-in",
         fixed ? "fixed inset-0 z-[70]" : "absolute inset-0 z-10 rounded-[10px]",
         className
       )}
+      style={{ backgroundColor: "var(--color-scrim)" }}
     >
       <div className="flex w-full max-w-sm flex-col items-center">
         <Panel

@@ -10,6 +10,12 @@ import { parseAllowedModels, matchesAllowedModels } from "../db/repos/allowedMod
  * the /v1/models listing both match the key's patterns against the model id
  * the client actually sends, which is usually `provider/model` or a bare combo
  * or studio name, so an entry is shown when ANY of its spellings matches.
+ *
+ * `entry.name` is deliberately NOT a candidate: it is a display label, never a
+ * call path. A provider row named "DeepSeek-V4-Pro" but addressed as
+ * `qd/dmodel` was showing up under a key scoped to `deepseek-v4-pro` - the
+ * label matched, the id never did, and the request gate would have refused the
+ * call. Only ids the client can actually send are admitted.
  */
 export function modelMatchCandidates(entry) {
   const out = [];
@@ -20,7 +26,6 @@ export function modelMatchCandidates(entry) {
   push(entry.routedModel);
   push(entry.fullModel);
   push(entry.model);
-  push(entry.name);
   // A `provider/*` pattern admits every model served under that provider, the
   // same way the key-creation clamp reads it.
   if (entry.provider) push(`${entry.provider}/*`);

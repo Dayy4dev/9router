@@ -26,6 +26,9 @@ import { GITHUB_CONFIG } from "@/shared/constants/config";
 // the dialog only appears right after a login. Modal renders its X on mobile
 // only and this dialog sets
 // closeOnOverlay={false}, so Get started is the desktop exit - it must stay.
+// The header traffic lights are hidden too (showTrafficLights={false}): three
+// dots whose first one closes a tour the user has not finished reading is a
+// worse exit than the button that actually says what it does.
 export default function WelcomeModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [changelogOpen, setChangelogOpen] = useState(false);
@@ -80,6 +83,7 @@ export default function WelcomeModal() {
         isOpen={isOpen}
         onClose={handleClose}
         closeOnOverlay={false}
+        showTrafficLights={false}
         size="md"
         footer={null}
       >

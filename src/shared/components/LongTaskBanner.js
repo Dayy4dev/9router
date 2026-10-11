@@ -120,7 +120,7 @@ function BackgroundChip({ title, message, percent, onExpand, onCancel, canCancel
           ) : null}
           <div className="flex shrink-0 items-center gap-1">
             {onExpand ? (
-              <IconButton label="Show full banner" glyph="expand_less" onClick={onExpand} />
+              <IconButton label="Show full banner" glyph="expand_more" onClick={onExpand} />
             ) : null}
             {canCancel ? (
               <button
@@ -184,7 +184,7 @@ function Panel({ title, message, section, percent, canCancel, canBackground, onC
               {canBackground ? (
                 <IconButton
                   label="Run in background"
-                  glyph="vertical_align_bottom"
+                  glyph="download"
                   onClick={onBackground}
                   className="size-7 border border-border-subtle bg-surface"
                 />

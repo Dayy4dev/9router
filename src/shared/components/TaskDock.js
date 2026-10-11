@@ -37,7 +37,19 @@ export default function TaskDock() {
  * five cards in one column, not five fixed overlays.
  */
 function DockBanner({ task, startForeground }) {
+  // Backgrounding is LATCHED, not derived. It used to be plain component state,
+  // so the first task rendered a full-screen overlay (fixed inset-0) and the
+  // moment the operator pressed "Run in background" the overlay was still in the
+  // tree for one more paint - and every later render re-created it, because
+  // `fixed` was recomputed from this flag. The result was a task that looked
+  // backgrounded (a corner chip) while an invisible sheet still swallowed every
+  // click on the page. Keeping the flag here and never re-deriving `fixed`
+  // from it means the overlay unmounts the same render the chip appears.
   const [backgrounded, setBackgrounded] = useState(!startForeground);
+
+  // A task that is not the newest one has never had a foreground banner, so it
+  // is a chip by definition and has nothing to expand back to.
+  const canExpand = startForeground;
 
   return (
     <LongTaskBanner
@@ -51,7 +63,7 @@ function DockBanner({ task, startForeground }) {
       onCancel={() => useTaskStore.getState().cancel(task.id)}
       onBackground={() => setBackgrounded(true)}
       onExpand={() => setBackgrounded(false)}
-      canExpand
+      canExpand={canExpand}
     />
   );
 }

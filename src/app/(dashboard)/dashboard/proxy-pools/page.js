@@ -436,8 +436,10 @@ export default function ProxyPoolsPage() {
     setShowBatchImportModal(true);
   };
 
+  // No `importing` guard: the modal is already closed once a run starts, and
+  // the docked banner owns Cancel. Re-opening the dialog mid-run to paste a
+  // different list is harmless - handleBatchImport refuses a second run itself.
   const closeBatchImportModal = () => {
-    if (importing) return;
     setShowBatchImportModal(false);
   };
 
@@ -446,8 +448,12 @@ export default function ProxyPoolsPage() {
     setShowVercelModal(true);
   };
 
+  // No `deploying` guard. Both guards below were wrong twice over: the modal
+  // kept its own `fixed inset-0` overlay on screen for the whole deploy, and the
+  // success path called these closers *while* `deploying` was still true, so
+  // `if (deploying) return` turned the close into a no-op and the dialog never
+  // went away. Progress lives in the page's ProgressCard / layout TaskDock.
   const closeVercelModal = () => {
-    if (deploying) return;
     setShowVercelModal(false);
   };
 
@@ -457,7 +463,6 @@ export default function ProxyPoolsPage() {
   };
 
   const closeCloudflareModal = () => {
-    if (deploying) return;
     setShowCloudflareModal(false);
   };
 
@@ -467,7 +472,6 @@ export default function ProxyPoolsPage() {
   };
 
   const closeDenoModal = () => {
-    if (deploying) return;
     setShowDenoModal(false);
   };
 
@@ -617,6 +621,12 @@ export default function ProxyPoolsPage() {
     }
 
     setImporting(true);
+    // Close the modal as soon as the run starts. It used to stay open with both
+    // buttons disabled, and its `fixed inset-0` overlay swallowed every click on
+    // the page - so backgrounding the banner left the operator staring at a
+    // dashboard they could not touch. Progress already reports through the
+    // layout's TaskDock, which survives navigation.
+    setShowBatchImportModal(false);
     const abort = new AbortController();
     importAbortRef.current = abort;
     const total = parsedEntries.length;
@@ -1025,10 +1035,10 @@ export default function ProxyPoolsPage() {
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <Button fullWidth onClick={handleBatchImport} disabled={!batchImportText.trim() || importing}>
-              Import
+              {importing ? "Importing..." : "Import"}
             </Button>
-            <Button fullWidth variant="ghost" onClick={closeBatchImportModal} disabled={importing}>
-              Cancel
+            <Button fullWidth variant="ghost" onClick={closeBatchImportModal}>
+              {importing ? "Run in background" : "Cancel"}
             </Button>
           </div>
         </div>

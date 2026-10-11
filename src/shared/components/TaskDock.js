@@ -57,7 +57,6 @@ function DockBanner({ task, startForeground }) {
       inlineChip={!startForeground}
       title={task.title}
       message={task.message}
-      section={task.section}
       progress={task.progress ?? null}
       chipOnly={startForeground ? backgrounded : true}
       onCancel={() => useTaskStore.getState().cancel(task.id)}

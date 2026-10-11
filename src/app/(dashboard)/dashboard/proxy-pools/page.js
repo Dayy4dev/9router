@@ -4,6 +4,13 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { Badge, Button, Card, CardSkeleton, Input, Modal, Pagination, ProgressCard, Toggle, ConfirmModal } from "@/shared/components";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useTaskStore } from "@/store/taskStore";
+import {
+  startProxyImportJob,
+  pollProxyImportJob,
+  cancelProxyImportJob,
+  readStoredJob,
+  writeStoredJob,
+} from "@/shared/utils/proxyImportClient";
 
 // One task id for the batch import, shared by the loop, the seed of `importing`
 // after a navigation, and the banner in the layout dock.
@@ -431,6 +438,57 @@ export default function ProxyPoolsPage() {
     setSelectedIds((prev) => prev.filter((id) => proxyPools.some((p) => p.id === id)));
   }, [proxyPools]);
 
+  // Reattach after a navigation or reload: the server keeps the run going, so a
+  // stored job id only needs its progress banner back, not a new run.
+  useEffect(() => {
+    const stored = readStoredJob();
+    if (!stored) return;
+    let alive = true;
+    (async () => {
+      const total = stored.total || 0;
+      setImporting(true);
+      importAbortRef.current = stored.jobId;
+      useTaskStore.getState().start({
+        id: PROXY_IMPORT_TASK,
+        title: "Importing proxies",
+        message: `0/${total} proxies`,
+        progress: 0,
+        onCancel: () => cancelProxyImportJob(stored.jobId),
+      });
+      const final = await pollProxyImportJob(
+        stored.jobId,
+        (job) => {
+          if (!alive) return;
+          useTaskStore.getState().update(PROXY_IMPORT_TASK, {
+            message: job.message || `${job.counts?.processed ?? 0}/${total} proxies`,
+            progress: Number(job.progress) || 0,
+          });
+        },
+        { pollMs: 1000 }
+      );
+      if (!alive) return;
+      if (final?.status === "done") {
+        await fetchProxyPools();
+        notify.success(final.message || "Batch import completed");
+      } else if (final?.status === "cancelled") {
+        await fetchProxyPools();
+        notify.info(final.message || "Batch import stopped");
+      } else if (final?.status === "error") {
+        notify.error(final.error || final.message || "Batch import failed");
+      }
+      useTaskStore.getState().finish(PROXY_IMPORT_TASK);
+      importAbortRef.current = null;
+      setImporting(false);
+    })();
+    return () => {
+      alive = false;
+    };
+    // One shot on mount: this reconnects to a run that outlived the page, and
+    // polling keeps going through `pollProxyImportJob` even across later
+    // navigations while the task store keeps the banner.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const openBatchImportModal = () => {
     setBatchImportText("");
     setShowBatchImportModal(true);
@@ -627,85 +685,56 @@ export default function ProxyPoolsPage() {
     }
 
     setImporting(true);
-    // Close the modal as soon as the run starts. It used to stay open with both
-    // buttons disabled, and its `fixed inset-0` overlay swallowed every click on
-    // the page - so backgrounding the banner left the operator staring at a
-    // dashboard they could not touch. Progress already reports through the
-    // layout's TaskDock, which survives navigation.
+    // Close the modal as soon as the run starts. Its `fixed inset-0` overlay
+    // used to stay mounted with both buttons disabled and swallowed every click
+    // on the page. Progress reports through the layout's TaskDock, which
+    // survives navigation.
     setShowBatchImportModal(false);
-    const abort = new AbortController();
-    importAbortRef.current = abort;
+
     const total = parsedEntries.length;
-    useTaskStore.getState().start({
-      id: PROXY_IMPORT_TASK,
-      title: "Importing proxies",
-      message: `0/${total} proxies`,
-      section: "Runs in the background - you can keep working while it finishes",
-      progress: 0,
-      onCancel: () => abort.abort(),
-    });
-    // Declared before the try so the catch can report how far a cancelled run got.
-    let created = 0;
-    let skipped = 0;
-    let failed = 0;
-    let processed = 0;
     try {
-      const existingKeys = new Set(
-        proxyPools.map((pool) => `${(pool.proxyUrl || "").trim()}|||${(pool.noProxy || "").trim()}`)
+      // The insert loop now runs on the server: posting a thousand entries one
+      // round trip at a time from the page meant the run died with the tab, so
+      // closing the browser or refreshing halfway left the list half-imported
+      // with no resume. The server keeps going and this page only reads
+      // progress, which is also what lets the operator navigate elsewhere.
+      const { jobId, pollMs } = await startProxyImportJob(parsedEntries);
+      writeStoredJob(jobId, total);
+      importAbortRef.current = jobId;
+      useTaskStore.getState().start({
+        id: PROXY_IMPORT_TASK,
+        title: "Importing proxies",
+        message: `0/${total} proxies`,
+        progress: 0,
+        onCancel: () => cancelProxyImportJob(jobId),
+      });
+
+      const final = await pollProxyImportJob(
+        jobId,
+        (job) => {
+          useTaskStore.getState().update(PROXY_IMPORT_TASK, {
+            message: job.message || `${job.counts?.processed ?? 0}/${total} proxies`,
+            progress: Number(job.progress) || 0,
+          });
+        },
+        { pollMs }
       );
 
-      for (const entry of parsedEntries) {
-        const dedupeKey = `${entry.proxyUrl}|||`;
-        if (existingKeys.has(dedupeKey)) {
-          skipped += 1;
-          processed += 1;
-          useTaskStore.getState().update(PROXY_IMPORT_TASK, {
-            message: `${processed}/${total} proxies`,
-            progress: Math.round((processed / total) * 100),
-          });
-          continue;
-        }
-
-        const res = await fetch("/api/proxy-pools", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: entry.name,
-            proxyUrl: entry.proxyUrl,
-            noProxy: "",
-            isActive: true,
-          }),
-          // Cancel from the banner aborts this request; the loop stops before
-          // starting the next one.
-          signal: abort.signal,
-        });
-
-        if (res.ok) {
-          created += 1;
-          existingKeys.add(dedupeKey);
-        } else {
-          failed += 1;
-        }
-
-        processed += 1;
-        useTaskStore.getState().update(PROXY_IMPORT_TASK, {
-          message: `${processed}/${total} proxies`,
-          progress: Math.round((processed / total) * 100),
-        });
+      if (final?.status === "done") {
+        await fetchProxyPools();
+        notify.success(final.message || "Batch import completed");
+      } else if (final?.status === "cancelled") {
+        await fetchProxyPools();
+        notify.info(final.message || "Batch import stopped");
+      } else if (final?.status === "error") {
+        notify.error(final.error || final.message || "Batch import failed");
       }
-
-      await fetchProxyPools();
-      setShowBatchImportModal(false);
-      notify.success(`Batch import completed: Created ${created}, Skipped ${skipped}, Failed ${failed}`);
+      // A null final means the record expired (server restarted, or the run
+      // outlived its TTL). No toast either way: nothing is known to have gone
+      // wrong, and claiming otherwise would be the worse lie.
     } catch (error) {
-      if (error?.name === "AbortError") {
-        notify.info(
-          `Batch import cancelled: Created ${created ?? 0}, Skipped ${skipped ?? 0}`
-        );
-      } else {
-        console.log("Error batch importing proxies:", error);
-        notify.error("Batch import failed");
-      }
+      console.log("Error starting proxy import:", error);
+      notify.error(error?.message || "Batch import failed");
     } finally {
       useTaskStore.getState().finish(PROXY_IMPORT_TASK);
       importAbortRef.current = null;
@@ -1016,7 +1045,6 @@ export default function ProxyPoolsPage() {
         <ProgressCard
           title={deployLabel || "Deploying relay"}
           message="Pushing worker build to the edge, this can take about a minute"
-          section="Do not close this tab"
         />
       )}
 

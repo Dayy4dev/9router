@@ -58,7 +58,7 @@ export function CenterLoading({ message, progress = null, fixed = true, classNam
 export const BusyOverlay = CenterLoading;
 
 // Blocking progress card for long operations (backup export/import, bulk
-// imports, bulk adds). Callers keep passing { title, message, section, progress };
+// imports, bulk adds). Callers keep passing { title, message, progress };
 // the presentation lives in LongTaskBanner so every banner shares the same
 // framed, theme-aware look.
 //
@@ -67,7 +67,7 @@ export const BusyOverlay = CenterLoading;
 // both are advisory: the card hides itself at once and the caller decides what
 // actually stops. Callers without onCancel see the same informational card they
 // always had, so no existing flow changed behaviour by upgrading.
-export function ProgressCard({ title, message, section, progress = null, fixed = true, className, onCancel, onBackground }) {
+export function ProgressCard({ title, message, progress = null, fixed = true, className, onCancel, onBackground }) {
   // Keyed by title: a second operation remounts the banner instead of
   // inheriting the previous one's collapsed state.
   return (
@@ -75,7 +75,6 @@ export function ProgressCard({ title, message, section, progress = null, fixed =
       key={title}
       title={title}
       message={message}
-      section={section}
       progress={progress ?? null}
       fixed={fixed}
       className={className}

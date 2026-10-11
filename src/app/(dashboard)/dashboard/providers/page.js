@@ -707,7 +707,6 @@ export default function ProvidersPage() {
               ? "Testing every connection on this provider"
               : `Testing all ${testingMode === "oauth" ? "OAuth" : testingMode === "free" ? "Free tier" : "API key"} connections`
           }
-          section="Results appear below when the run finishes"
         />
       )}
 

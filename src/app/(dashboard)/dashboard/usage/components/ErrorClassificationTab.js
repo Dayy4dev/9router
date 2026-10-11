@@ -25,7 +25,7 @@ export default function ErrorClassificationTab({ period }) {
  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
  <div className="rounded-xl border border-border bg-zinc-900/50 p-4">
  <div className="text-xs text-text-muted uppercase tracking-wider">Total Requests</div>
- <div className="text-2xl font-semibold text-zinc-100 mt-1">{data.total.toLocaleString()}</div>
+ <div className="text-2xl font-semibold text-text-main mt-1">{data.total.toLocaleString()}</div>
  </div>
  <div className="rounded-xl border border-border bg-zinc-900/50 p-4">
  <div className="text-xs text-text-muted uppercase tracking-wider">Errors</div>

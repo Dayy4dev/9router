@@ -1,12 +1,12 @@
-# v0.5.165 (2026-10-11) · 13 commits
+# v0.5.165 (2026-10-11) · 14 commits
 
 ## Features
 - **Proxy Pools**: Delete All button, plus Select all now spans the whole filtered list instead of the 20 visible rows
 - **Proxy Pools**: bulk delete runs as one transaction on `/api/proxy-pools/bulk` instead of one request per pool
 
 ## Fixes
+- **Theme**: glass and dark draw every surface from the theme tokens; leftover solid slabs (white OpenAI button, opaque black log viewport, zinc-bordered usage cards, gray tooltip, gray badge dot, chat bubble hex, console-log line numbers, unknown-tool badge, native checkbox borders, manual-update dialog, footer icons) now follow the active theme, verified by screenshot in both themes
 - **Models**: hide orphan compatible groups from the model picker, so a deleted OpenAI/Anthropic Compatible node no longer opens a raw `OpenAI Compatible (xxxxxxxx)` heading full of dead rows
-- **Theme**: modal, drawer and long-task scrim follow the active theme; glass gets a lighter veil instead of a flat black overlay that buried the aurora
 - **Models**: import progress card stays inside its own section instead of dimming the whole dashboard
 - **Proxy Pools**: backgrounded dock chip no longer leaves an invisible overlay that swallows every click; import and relay deploy dialogs close on start so the page stays clickable
 - **Proxy Pools**: relay deploy dialogs no longer refuse to close after a successful deploy
@@ -18,7 +18,6 @@
 - **Proxy Pools**: batch import runs as a server-side job, so closing the browser no longer kills the run halfway; /api/proxy-pools/import-jobs accepts the parsed list, runs it in-process, and the page polls for progress (reloads reattach to the same job instead of starting over)
 - **Dashboard**: the notification bell lists running server-side imports with live progress, and opening one takes you back to the run so the collapsed banner reopens
 - **Loader**: the long-task banner carries no helper copy and its cancel/background controls are small borderless glyph buttons instead of boxed clusters
-- **Theme**: glass and dark draw every surface from the theme tokens; leftover solid slabs (white OpenAI button, opaque black log viewport, zinc-bordered usage cards, gray tooltip, gray badge dot) now follow the active theme, verified by screenshot in both themes
 # v0.5.164 (2026-10-10) · 11 commits
 
 ## Features
@@ -208,11 +207,6 @@
 
 ## Features
 - **Dashboard**: add PRD Builder to FEATURE+
-- **Theme**: add a glassmorphism mode alongside dark
-- **Theme**: dedicated theme button next to the grid menu
-- **Theme**: glass becomes the default theme, listed above dark
-- **Theme**: theme picker lives under Change Log in the grid menu
-- **Theme**: theme picker opens as a modal, matching Change Log
 - **Token saver**: level presets for pruning and a measurable response cache
 - **Usage**: add activity heatmap, card sparklines, and smart empty states
 - **Usage**: remove the live request inspector tab

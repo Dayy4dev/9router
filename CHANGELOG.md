@@ -1,4 +1,4 @@
-# v0.5.165 (2026-10-11) · 14 commits
+# v0.5.165 (2026-10-11) · 15 commits
 
 ## Features
 - **Proxy Pools**: Delete All button, plus Select all now spans the whole filtered list instead of the 20 visible rows
@@ -15,6 +15,7 @@
 - **Models**: an API-key session no longer lists models outside its allowedModels; the filter matched a key scope against a model's display name, so a row labelled `DeepSeek-V4-Pro` but addressed as `qd/dmodel` appeared under a key scoped to `deepseek-v4-pro` and 403'd when called
 - **Models**: the available-models card lists one row per model a key may call instead of one row per provider connection, so a key scoped to twelve models shows twelve rows rather than 43 (deepseek-v4-pro alone was reached through 21 connections)
 - **Dashboard**: the welcome dialog no longer shows the traffic-light close dots; Get started is the only way out
+- **Dashboard**: health check and relay deploys run as server-side jobs too, so they survive a closed browser or a different menu like the batch import; the bell lists every operation still running, and opening one from there brings back its banner
 - **Proxy Pools**: batch import runs as a server-side job, so closing the browser no longer kills the run halfway; /api/proxy-pools/import-jobs accepts the parsed list, runs it in-process, and the page polls for progress (reloads reattach to the same job instead of starting over)
 - **Dashboard**: the notification bell lists running server-side imports with live progress, and opening one takes you back to the run so the collapsed banner reopens
 - **Loader**: the long-task banner carries no helper copy and its cancel/background controls are small borderless glyph buttons instead of boxed clusters

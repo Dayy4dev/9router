@@ -11,10 +11,54 @@ import {
   readStoredJob,
   writeStoredJob,
 } from "@/shared/utils/proxyImportClient";
+import {
+  startDashboardJob,
+  pollDashboardJob,
+  cancelDashboardJob,
+  fetchDashboardJob,
+  readStoredDashboardJob,
+  clearStoredDashboardJob,
+} from "@/shared/utils/dashboardJobsClient";
 
 // One task id for the batch import, shared by the loop, the seed of `importing`
 // after a navigation, and the banner in the layout dock.
 const PROXY_IMPORT_TASK = "proxy-pools-import";
+
+// One task id per operation kind, so the banner, the bell, and a reloaded page
+// all talk about the same run.
+const dashboardTaskId = (kind) => `dashboard-job-${kind}`;
+
+/**
+ * Adopt a server-side job: put its banner up, follow its progress, and hand
+ * the finished record to `onFinal`. The job itself belongs to the server, so
+ * an operator who closes the browser here still gets the work; the reattach
+ * path below simply runs this again after a reload.
+ */
+const followDashboardJob = async (kind, jobId, { title, pollMs = 1000, onFinal }) => {
+  const taskId = dashboardTaskId(kind);
+  useTaskStore.getState().start({
+    id: taskId,
+    title,
+    message: "Starting",
+    progress: 0,
+    onCancel: () => cancelDashboardJob(jobId),
+  });
+  try {
+    const final = await pollDashboardJob(
+      jobId,
+      (job) => {
+        useTaskStore.getState().update(taskId, {
+          message: job.message || "",
+          progress: typeof job.progress === "number" ? job.progress : 0,
+        });
+      },
+      { pollMs }
+    );
+    if (final) onFinal?.(final);
+  } finally {
+    useTaskStore.getState().finish(taskId);
+  }
+};
 
 function getStatusVariant(status) {
   if (status === "active") return "success";
@@ -370,68 +414,116 @@ export default function ProxyPoolsPage() {
     });
   };
 
+  // The pool list can hold six thousand entries, and testing them is one request
+  // each - minutes of work that used to be driven by this component. If the tab
+  // closed mid-run the loop died with it and the health status was left half
+  // written, so the work now belongs to the server: one POST starts it, this
+  // page only reads progress, and the banner and the bell can show it after a
+  // reload or from another menu.
   const handleHealthCheck = async () => {
     const targets = selectedIds.length > 0
       ? proxyPools.filter((p) => selectedIds.includes(p.id))
       : proxyPools;
     if (targets.length === 0) return;
+
     setHealthChecking(true);
     setHealthProgress({ current: 0, total: targets.length });
-    let alive = 0; const deadIds = [];
-    let done = 0;
-    const CONCURRENCY = 10;
-    const queue = [...targets];
 
-    const worker = async () => {
-      while (queue.length > 0) {
-        const pool = queue.shift();
-        if (!pool) break;
-        try {
-          const res = await fetch(`/api/proxy-pools/${pool.id}/test`, { method: "POST" });
-          const data = await res.json();
-          if (res.ok && data.ok) alive += 1; else deadIds.push(pool.id);
-        } catch {
-          deadIds.push(pool.id);
-        } finally {
-          done += 1;
-          setHealthProgress({ current: done, total: targets.length });
-        }
-      }
-    };
-
-    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, targets.length) }, worker));
-    await fetchProxyPools();
-    setHealthChecking(false);
-    setHealthProgress({ current: 0, total: 0 });
-
-    if (deadIds.length > 0) {
-      setConfirmState({
-        title: "Disable Dead Proxies",
-        message: `Alive: ${alive}, Dead: ${deadIds.length}.\n\nDisable ${deadIds.length} dead proxies?`,
-        onConfirm: async () => {
-          setConfirmState(null);
-          setBulkBusy(true);
-          try {
-            for (const id of deadIds) {
-              try {
-                await fetch(`/api/proxy-pools/${id}`, {
-                  method: "PUT",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ isActive: false }),
-                });
-              } catch {}
-            }
-            await fetchProxyPools();
-            notify.success(`Disabled ${deadIds.length} dead proxies`);
-          } finally {
-            setBulkBusy(false);
+    try {
+      const { jobId, pollMs } = await startDashboardJob(
+        "health-check",
+        { poolIds: targets.map((p) => p.id) },
+        "Health check"
+      );
+      await followDashboardJob("health-check", jobId, {
+        title: "Health check",
+        pollMs,
+        onFinal: (job) => {
+          if (job.status === "cancelled") {
+            notify.info(job.message || "Health check stopped");
+            return;
           }
-        }
+          if (job.status !== "done") {
+            notify.error(job.error || job.message || "Health check failed");
+            return;
+          }
+          const deadIds = job.result?.deadIds || [];
+          if (deadIds.length > 0) {
+            setConfirmState({
+              title: "Disable Dead Proxies",
+              message: `Alive: ${job.result.alive}, Dead: ${deadIds.length}.\n\nDisable ${deadIds.length} dead proxies?`,
+              onConfirm: async () => {
+                setConfirmState(null);
+                setBulkBusy(true);
+                try {
+                  for (const id of deadIds) {
+                    try {
+                      await fetch(`/api/proxy-pools/${id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ isActive: false }),
+                      });
+                    } catch {}
+                  }
+                  await fetchProxyPools();
+                  notify.success(`Disabled ${deadIds.length} dead proxies`);
+                } finally {
+                  setBulkBusy(false);
+                }
+              },
+            });
+          } else {
+            notify.success(job.message || "Health check done");
+          }
+        },
       });
-    } else {
-      notify.success(`Health check done. Alive: ${alive}, Dead: ${deadIds.length}`);
+    } catch (error) {
+      notify.error(error?.message || "Could not start the health check");
+    } finally {
+      await fetchProxyPools();
+      setHealthChecking(false);
+      setHealthProgress({ current: 0, total: 0 });
     }
   };
+
+  // Reattach to a health check that outlived this page. The server kept it
+  // running, so this only reconnects the banner - it never starts a new run.
+  useEffect(() => {
+    const stored = readStoredDashboardJob("health-check");
+    if (!stored) return;
+    let alive = true;
+    (async () => {
+      const job = await fetchDashboardJob(stored.jobId);
+      if (!alive) return;
+      if (!job || job.status === "done" || job.status === "error" || job.status === "cancelled") {
+        clearStoredDashboardJob("health-check");
+        return;
+      }
+      setHealthChecking(true);
+      setHealthProgress({
+        current: 0,
+        total: Number(job.result?.total) || 0,
+      });
+      await followDashboardJob("health-check", stored.jobId, {
+        title: "Health check",
+        onFinal: (final) => {
+          clearStoredDashboardJob("health-check");
+          if (!alive) return;
+          if (final.status === "done") {
+            notify.success(final.message || "Health check done");
+          } else if (final.status === "cancelled") {
+            notify.info(final.message || "Health check stopped");
+          } else {
+            notify.error(final.error || final.message || "Health check failed");
+          }
+        },
+      });
+    })();
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Cleanup selectedIds when pools change
   useEffect(() => {
@@ -533,91 +625,67 @@ export default function ProxyPoolsPage() {
     setShowDenoModal(false);
   };
 
-  const handleVercelDeploy = async () => {
-    if (!vercelForm.vercelToken.trim()) return;
-    setDeployLabel("Deploying Vercel Relay");
+  // Relay deploys are one long request each (the provider builds, uploads, and
+  // reports ready). The dialog closes the moment the request starts and the run
+  // belongs to the server, so closing the browser during a minute-long deploy
+  // no longer loses it: the banner follows it here, and a reload reattaches.
+  const runRelayDeploy = async (provider, form, { label, onDone }) => {
+    setDeployLabel(label);
     setDeploying(true);
-    // Same reason as the import modal: the dialog's own overlay would keep
-    // swallowing clicks for the whole minute-long deploy. The page's
-    // ProgressCard reports progress and can background into the TaskDock.
-    setShowVercelModal(false);
     try {
-      const res = await fetch("/api/proxy-pools/vercel-deploy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(vercelForm),
+      const { jobId, pollMs } = await startDashboardJob(
+        "deploy-relay",
+        { provider, form },
+        label
+      );
+      await followDashboardJob("deploy-relay", jobId, {
+        title: label,
+        pollMs,
+        onFinal: async (job) => {
+          await fetchProxyPools();
+          onDone?.();
+          if (job.status === "done") {
+            notify.success(job.message || "Deployed");
+          } else if (job.status === "cancelled") {
+            notify.info(job.message || "Deploy cancelled");
+          } else {
+            notify.error(job.error || job.message || "Deploy failed");
+          }
+        },
       });
-      const data = await res.json();
-      if (res.ok) {
-        await fetchProxyPools();
-        closeVercelModal();
-        notify.success(`Deployed: ${data.deployUrl}`);
-      } else {
-        notify.error(data.error || "Deploy failed");
-      }
     } catch (error) {
-      console.log("Error deploying Vercel relay:", error);
-      notify.error("Deploy failed");
+      notify.error(error?.message || "Deploy failed");
     } finally {
       setDeploying(false);
       setDeployLabel(null);
     }
+  };
+
+  const handleVercelDeploy = async () => {
+    if (!vercelForm.vercelToken.trim()) return;
+    setShowVercelModal(false);
+    await runRelayDeploy("vercel", vercelForm, {
+      label: "Deploying Vercel Relay",
+      onDone: closeVercelModal,
+    });
   };
 
   const handleCloudflareDeploy = async () => {
     if (!cloudflareForm.accountId.trim() || !cloudflareForm.apiToken.trim()) return;
-    setDeployLabel("Deploying Cloudflare Worker");
-    setDeploying(true);
     setShowCloudflareModal(false);
-    try {
-      const res = await fetch("/api/proxy-pools/cloudflare-deploy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cloudflareForm),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        await fetchProxyPools();
-        closeCloudflareModal();
-        notify.success(`Deployed: ${data.deployUrl}`);
-      } else {
-        notify.error(data.error || "Deploy failed");
-      }
-    } catch (error) {
-      console.log("Error deploying Cloudflare relay:", error);
-      notify.error("Deploy failed");
-    } finally {
-      setDeploying(false);
-      setDeployLabel(null);
-    }
+    await runRelayDeploy("cloudflare", cloudflareForm, {
+      label: "Deploying Cloudflare Worker",
+      onDone: closeCloudflareModal,
+    });
   };
 
   const handleDenoDeploy = async () => {
-    if (!denoForm.denoToken.trim()) return;
-    setDeployLabel("Deploying Deno Relay");
-    setDeploying(true);
+    if (!denoForm.denoToken.trim() || !denoForm.orgDomain.trim()) return;
     setShowDenoModal(false);
-    try {
-      const res = await fetch("/api/proxy-pools/deno-deploy", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(denoForm),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        await fetchProxyPools();
-        closeDenoModal();
-        notify.success(`Deployed: ${data.deployUrl}`);
-      } else {
-        notify.error(data.error || "Deploy failed");
-      }
-    } catch (error) {
-      console.log("Error deploying Deno relay:", error);
-      notify.error("Deploy failed");
-    } finally {
-      setDeploying(false);
-      setDeployLabel(null);
-    }
+    await runRelayDeploy("deno", denoForm, {
+      label: "Deploying Deno Relay",
+      onDone: closeDenoModal,
+    });
   };
 
   const parseProxyLine = (line) => {

@@ -310,12 +310,19 @@ export default function ModelSelectModal({
     // self-hosted endpoints (Ollama, internal relays, etc.) don't always need a stored
     // key, so gating on connections hides models the user already added. These nodes
     // are LLM-only, so only surface them when no kind filter is active.
+    //
+    // The node itself must still exist. A custom model outlives the node it was
+    // registered against, and without the node record there is no prefix, key or
+    // endpoint left to route it: the group opens as a raw "OpenAI Compatible
+    // (xxxxxxxx)" heading holding only dead rows. This rule mirrors
+    // isOrphanCompatAlias for the ungrouped custom models below.
     // See #4177, #2113, #2119, #1988.
     const compatibleNodeIds = kindFilter
       ? []
       : customModels
           .map((m) => m.providerAlias)
-          .filter((alias) => isOpenAICompatibleProvider(alias) || isAnthropicCompatibleProvider(alias));
+          .filter((alias) => isOpenAICompatibleProvider(alias) || isAnthropicCompatibleProvider(alias))
+          .filter((alias) => (providerNodes || []).some((node) => node?.id === alias));
 
     // Only show connected providers (including both standard and custom)
     const providerIdsToShow = new Set([

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSessionContext } from "@/lib/auth/dashboardPermissions";
-import { filterModelsByAllowedModels, worstModelStatus } from "@/lib/usage/availableModels.js";
+import { filterModelsByAllowedModels, collapseModelsByAdmittedId, worstModelStatus } from "@/lib/usage/availableModels.js";
 import { AI_MODELS } from "@/shared/constants/config";
 import { FREE_PROVIDERS, getProviderAlias, resolveProviderId } from "@/shared/constants/providers";
 import { getDisabledModels } from "@/lib/disabledModelsDb";
@@ -320,12 +320,19 @@ export async function GET() {
     }
 
     const models = filterModelsByAllowedModels(distinct, allowedModelsRaw);
-    models.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    // One row per model, not one per connection. A model served by twenty
+    // connections is still one model the key may call: the uncollapsed list
+    // showed deepseek-v4-pro twenty-one times and the key looked far less
+    // restricted than the dozen models it was actually given. Collapsing is
+    // display-only - usage history and the request gate stay per call path.
+    const shown = collapseModelsByAdmittedId(models, allowedModelsRaw);
+    shown.sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
     return NextResponse.json(
       {
-        models,
+        models: shown,
         total: withStatus.length,
+        callPaths: models.length,
         keyName: isApiKey ? ctx.session.keyName || "API Key" : null,
         tokenLimit: isApiKey ? ctx.session.tokenLimit || 0 : 0,
         allowedModels: allowedModelsRaw,

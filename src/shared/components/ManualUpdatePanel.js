@@ -2,6 +2,18 @@ import PropTypes from "prop-types";
 import Button from "./Button";
 
 /**
+ * `latestVersion` arrives already tagged: updateCheck reads the changelog
+ * heading, so it is "v0.5.165" (or "git-abc1234" when the changelog has no
+ * release yet). Prefixing another "v" here printed "vv0.5.165" in the banner.
+ * Strip at most one leading "v" so the text reads exactly once, and leave a
+ * tagless value alone rather than half-mangling it.
+ */
+function versionLabel(version) {
+  if (typeof version !== "string" || !version) return "";
+  return version.startsWith("v") ? version : `v${version}`;
+}
+
+/**
  * Full-screen panel shown after "Update now": copies the install command,
  * counts down, then shuts the server down so the operator can paste the
  * command into a terminal.
@@ -15,7 +27,7 @@ export default function ManualUpdatePanel({ latestVersion, installCmd, copied, o
           <span className="material-symbols-outlined text-[24px]">content_copy</span>
         </div>
         <div>
-          <h2 className="text-lg font-semibold">Update 9Router{latestVersion ? ` to v${latestVersion}` : ""}</h2>
+          <h2 className="text-lg font-semibold">Update 9Router{latestVersion ? ` to ${versionLabel(latestVersion)}` : ""}</h2>
           <p className="text-xs text-white/60">
             {isDisconnected
               ? "Server stopped. Paste the command into a terminal to install."

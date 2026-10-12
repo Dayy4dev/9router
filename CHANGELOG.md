@@ -1,3 +1,11 @@
+# v0.5.166 (2026-10-12) · 1 commit
+
+## Features
+- **Custom Models**: an anti-probe switch sits above the model list. It turns the BazaarLink-oriented check on or off and says what it does; the anti-mask panel appears in the form only while the switch is on. The state lives in settings, so every administrator gets the same editor instead of each browser deciding alone.
+
+## Fixes
+- **Usage**: the overview sparkline under each metric card is gone - the numbers stay in one centred row. `/api/usage/sparks` still feeds the activity heatmap.
+
 # v0.5.165 (2026-10-11) · 18 commits
 
 ## Features

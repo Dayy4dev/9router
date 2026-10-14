@@ -1,3 +1,8 @@
+# v0.5.176 (2026-10-14) · 1 commit
+
+## Fixes
+- **Endpoint Keys UI**: remove the "Key switched off" text badge from the inactive API key card in `EndpointPageClient.js` - the toggle switch already communicates the off state, the extra label was visual noise -Custom
+
 # v0.5.175 (2026-10-14) · 1 commit
 
 ## Features

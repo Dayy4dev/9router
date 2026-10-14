@@ -7,6 +7,7 @@ import { injectReasoningContent } from "../utils/reasoningContentInjector.js";
 import { resolveSessionId } from "../utils/sessionManager.js";
 import { isMuseSparkModel } from "../providers/models/helpers.js";
 import { applyFingerprintTools } from "../utils/opencodeFingerprint.js";
+import { ANTHROPIC_API_VERSION } from "../providers/shared.js";
 import {
   normalizeResponsesInput,
   clampResponsesCallId,
@@ -14,7 +15,7 @@ import {
   coerceResponsesOutput,
 } from "../translator/formats/responsesApi.js";
 
-const OPENCODE_UA = "opencode/1.18.31";
+const OPENCODE_UA = "opencode/latest/2.0.29/cli";
 const MAX_SESSION_LENGTH = 256;
 const MAX_TOOL_NAME_LEN = 128;
 const SESSION_HEADER = "x-opencode-session";
@@ -25,17 +26,22 @@ export const OPENCODE_REQUEST_RE = /^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/;
 const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 function hasValidOpencodeVersion(ua) {
-  const m = String(ua || "").match(/opencode\/(\d+)\.(\d+)(?:\.(\d+))?/i);
-  if (!m) return false;
-  const major = parseInt(m[1], 10);
-  const minor = parseInt(m[2], 10);
-  return major > 1 || (major === 1 && minor >= 17);
+  const str = String(ua || "");
+  if (/opencode\/(?:latest|stable|preview|dev|\d+)/i.test(str)) {
+    const m = str.match(/(\d+)\.(\d+)(?:\.(\d+))?/);
+    if (!m) return false;
+    const major = parseInt(m[1], 10);
+    const minor = parseInt(m[2], 10);
+    return major >= 2 || (major === 1 && minor >= 17);
+  }
+  return false;
 }
 // Models served by /zen/v1/responses; every other model stays on /chat/completions.
 const RESPONSES_MODELS = new Set([
   "muse-spark-1.2-contributor-free",
   "muse-spark-1.3-contributor-free",
 ]);
+const MESSAGES_MODELS = new Set(["union-alpha"]);
 
 let lastTimestamp = 0;
 let counter = 0;
@@ -56,15 +62,14 @@ export function generateSessionId(timestamp = Date.now()) {
   }
   counter++;
 
-  // Exact bash formula:
-  // 12 hexadecimal characters: timestamp + counter, descending
-  // $(( (~(timestamp_ms * 4096 + counter)) & 281474976710655 ))
-  const timestamp_ms = BigInt(timestamp);
-  const time_val = (~(timestamp_ms * 4096n + BigInt(counter))) & 281474976710655n;
-  const time_part = time_val.toString(16).padStart(12, "0");
-  const random_part = unstableRandom();
-
-  return `ses_${time_part}${random_part}`;
+  const current = BigInt(timestamp) * 0x1000n + BigInt(counter);
+  const value = ~current;
+  const time = Array.from({ length: 6 }, (_, index) =>
+    Number((value >> BigInt(40 - 8 * index)) & 0xffn)
+      .toString(16)
+      .padStart(2, "0")
+  ).join("");
+  return `ses_${time}${unstableRandom()}`;
 }
 
 export function generateRequestId(timestamp = Date.now()) {
@@ -78,36 +83,20 @@ export function generateRequestId(timestamp = Date.now()) {
   return `msg_${time}${unstableRandom()}`;
 }
 
-const translatedSessions = new Map();
-const MAX_TRANSLATED_SESSIONS = 1000;
-const translatedSessionCleanup = setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of translatedSessions) {
-    if (now - entry.lastUsed > MEMORY_CONFIG.sessionTtlMs) {
-      translatedSessions.delete(key);
-    }
-  }
-}, MEMORY_CONFIG.sessionCleanupIntervalMs);
-if (translatedSessionCleanup.unref) translatedSessionCleanup.unref();
-
 export function translateSessionId(sessionId, clientTool = "") {
   if (typeof sessionId === "string" && OPENCODE_SESSION_RE.test(sessionId.trim())) {
     return sessionId.trim();
   }
-  const key = `opencode:ses:${clientTool || "generic"}:${sessionId || ""}`;
-  const existing = translatedSessions.get(key);
-  if (existing) {
-    existing.lastUsed = Date.now();
-    translatedSessions.delete(key);
-    translatedSessions.set(key, existing);
-    return existing.sessionId;
+  const digest = crypto
+    .createHash("sha256")
+    .update(`opencode\0${clientTool || "generic"}\0${sessionId || ""}`)
+    .digest();
+  const timeHex = digest.subarray(0, 6).toString("hex");
+  let randomPart = "";
+  for (let i = 6; i < 20; i++) {
+    randomPart += BASE62_CHARS[digest[i] % 62];
   }
-  const id = generateSessionId();
-  if (translatedSessions.size >= MAX_TRANSLATED_SESSIONS) {
-    translatedSessions.delete(translatedSessions.keys().next().value);
-  }
-  translatedSessions.set(key, { sessionId: id, lastUsed: Date.now() });
-  return id;
+  return `ses_${timeHex}${randomPart}`;
 }
 
 function normalizeSession(value) {
@@ -270,6 +259,10 @@ function baseModelId(model) {
 function isResponsesModel(model) {
   const base = baseModelId(model);
   return RESPONSES_MODELS.has(base) || isMuseSparkModel(base);
+}
+
+function isMessagesModel(model) {
+  return MESSAGES_MODELS.has(baseModelId(model));
 }
 
 function resolveOpencodeSession(body, credentials, providerSessionId, clientTool) {
@@ -437,7 +430,7 @@ export class OpenCodeExecutor extends BaseExecutor {
         body.input = [{ type: "message", role: "user", content: [{ type: "input_text", text: "..." }] }];
       }
       // Responses API names the output cap max_output_tokens and takes thinking
-      // as reasoning:{effort,summary} - normalize the Chat fields at this boundary.
+      // as reasoning:{effort,summary} — normalize the Chat fields at this boundary.
       if (body.max_output_tokens === undefined) {
         if (body.max_completion_tokens !== undefined) body.max_output_tokens = body.max_completion_tokens;
         else if (body.max_tokens !== undefined) body.max_output_tokens = body.max_tokens;
@@ -465,22 +458,21 @@ export class OpenCodeExecutor extends BaseExecutor {
 
   buildUrl(model) {
     const base = this.config.baseUrl;
-    if (isResponsesModel(model)) return `${base}/zen/v1/responses`;
-    return `${base}/zen/v1/chat/completions`;
+    if (isResponsesModel(model)) return `${base}/inference/v1/responses`;
+    if (isMessagesModel(model)) return `${base}/inference/v1/messages`;
+    return `${base}/inference/v1/chat/completions`;
   }
 
-  buildHeaders(credentials, stream = true) {
+  buildHeaders(credentials, stream = true, url = "") {
     const raw = credentials?.rawHeaders || {};
     const lower = {};
     for (const [k, v] of Object.entries(raw)) lower[k.toLowerCase()] = v;
 
     const downstreamUa = lower["user-agent"] || "";
     const isOpencodeDownstream = hasValidOpencodeVersion(downstreamUa);
-    const auth = credentials?.apiKey ? `Bearer ${credentials.apiKey}` : "Bearer public";
 
-    const session = credentials?.[SESSION_FIELD] || this.prepareRequestCredentials({ credentials })[SESSION_FIELD] || generateSessionId();
-    const downstreamReq = normalizeRequestId(lower["x-opencode-request"]);
-    const requestId = credentials?.[REQ_FIELD] || downstreamReq || generateRequestId();
+    const session = credentials?.[SESSION_FIELD] || this.prepareRequestCredentials({ credentials })[SESSION_FIELD];
+    const auth = credentials?.apiKey ? `Bearer ${credentials.apiKey}` : "Bearer public";
 
     const headers = {
       "Content-Type": "application/json",
@@ -488,10 +480,16 @@ export class OpenCodeExecutor extends BaseExecutor {
       "User-Agent": isOpencodeDownstream ? downstreamUa : OPENCODE_UA,
       "x-opencode-client": lower["x-opencode-client"] || "desktop",
       "x-opencode-session": session,
-      "x-opencode-request": requestId,
+      "x-opencode-session-id": session,
+      "x-session-affinity": session,
+      "x-session-id": session,
       "x-opencode-project": lower["x-opencode-project"] || "global",
       "Accept": stream ? "text/event-stream" : "*/*",
     };
+    if (lower["x-opencode-request"]) {
+      headers["x-opencode-request"] = lower["x-opencode-request"];
+    }
+    if (url.endsWith("/messages")) headers["anthropic-version"] = ANTHROPIC_API_VERSION;
     return headers;
   }
 }

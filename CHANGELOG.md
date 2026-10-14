@@ -1,3 +1,8 @@
+# v0.5.177 (2026-10-14) · 1 commit
+
+## What Was Fixed?
+- **OpenCode Free 403 FreeTierError bypassed**: upstream v2.0.29 updated its anti-abuse gate, migrating free-tier endpoints to `/inference/v1/...`, enforcing official client UAs (`opencode/latest/2.0.29/cli`), requiring canonical tool fingerprints (`read` and `shell`), and sending `x-opencode-session-id`, `x-session-affinity`, `x-session-id`, and `x-opencode-project: global`. Verified live with cat-jam-free, nemotron-3.5-lightning-free, and longcat-2.5-preview-free returning 200 OK -Custom
+
 # v0.5.176 (2026-10-14) · 1 commit
 
 ## What Was Deleted?

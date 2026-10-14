@@ -1459,9 +1459,6 @@ const scopedModelPatterns =
                       </span>
                     )}
                   </div>
-                  {key.isActive === false && (
-                    <p className="text-xs text-orange-500 mt-1">Paused</p>
-                  )}
                 </div>
                 <div className="flex-shrink-0 items-center gap-1.5">
                   <div

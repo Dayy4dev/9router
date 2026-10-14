@@ -1,3 +1,8 @@
+# v0.5.172 (2026-10-14) · 1 commit
+
+## What Was Deleted?
+- **Endpoint page**: the orange "Paused" label under a switched-off API key is gone - the toggle still shows the off state and the row still dims, without the extra text -Custom
+
 # v0.5.171 (2026-10-14) · 25 commits
 
 ## What's Added?

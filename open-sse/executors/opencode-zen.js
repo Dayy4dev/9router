@@ -23,6 +23,12 @@ import {
   OPENCODE_CANONICAL_TOOL_DEFINITIONS,
 } from "../utils/opencodeFingerprint.js";
 
+export {
+  generateSessionId,
+  generateRequestId,
+  translateSessionId,
+  hasValidOpencodeVersion,
+} from "./opencode.js";
 import {
   generateSessionId,
   generateRequestId,

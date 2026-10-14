@@ -1,3 +1,12 @@
+# v0.5.179 (2026-10-15) · 2 commits
+
+### Fixes
+- **OpenCode Free**: Terapkan patch terbaru PR #4840 (`f2f74a77`) untuk mencegah 403 `FreeTierError` pada testing dari browser / dashboard:
+  - Perbaiki validasi User-Agent agar regex tidak false-positive pada token browser (misal `Mozilla/5.0`) sehingga User-Agent selalu di-spoof ke `opencode/latest/2.0.29/cli`.
+  - Terjemahkan dan simpan cache session ID non-native ke format canonical inverted timestamp 12-hex agar lolos validasi upstream.
+  - Guard fallback session header dan pastikan header `anthropic-version` terpasang pada model pesan.
+- **OpenCode Fingerprint**: Normalisasi alias `bash` / `Bash` ke tool canonical `shell` lengkap dengan skema parameter resmi OpenCode.
+
 # v0.5.178 (2026-10-14) · 1 commit
 
 ## What Was Fixed?

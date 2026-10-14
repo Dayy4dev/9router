@@ -1,3 +1,8 @@
+# v0.5.178 (2026-10-14) · 1 commit
+
+## What Was Fixed?
+- **OpenCode Free big-pickle removed & forced Bearer public**: big-pickle was retired from OpenCode free tier and returned 403 FreeTierError during provider tests. Dropped big-pickle from free model filters and ensured upstream Authorization header always uses "Bearer public" without leaking 9router user API keys -Custom
+
 # v0.5.177 (2026-10-14) · 1 commit
 
 ## What Was Fixed?

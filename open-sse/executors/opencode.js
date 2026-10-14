@@ -472,7 +472,7 @@ export class OpenCodeExecutor extends BaseExecutor {
     const isOpencodeDownstream = hasValidOpencodeVersion(downstreamUa);
 
     const session = credentials?.[SESSION_FIELD] || this.prepareRequestCredentials({ credentials })[SESSION_FIELD];
-    const auth = credentials?.apiKey ? `Bearer ${credentials.apiKey}` : "Bearer public";
+    const auth = "Bearer public";
 
     const headers = {
       "Content-Type": "application/json",

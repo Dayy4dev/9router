@@ -1,3 +1,8 @@
+# v0.5.176 (2026-10-14) · 1 commit
+
+## What Was Deleted?
+- **9Remote link from navigation sidebar**: removed external link to 9remote.cc from the dashboard sidebar menu -Custom
+
 # v0.5.175 (2026-10-14) · 1 commit
 
 ## What Was Fixed?

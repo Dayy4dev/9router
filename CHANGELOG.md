@@ -1,3 +1,8 @@
+# v0.5.175 (2026-10-14) · 1 commit
+
+## Features
+- **OpenCode Free & Zen**: implement PR #4782 session translation cache & inverted timestamp generator (`translateSessionId`) across both `opencode.js` and `opencode-zen.js` to ensure generated sessions carry valid descending timestamp headers and prevent 403 FreeTierError -Custom
+
 # v0.5.167 (2026-10-14) · 1 commit
 
 ## Features

@@ -78,20 +78,36 @@ export function generateRequestId(timestamp = Date.now()) {
   return `msg_${time}${unstableRandom()}`;
 }
 
+const translatedSessions = new Map();
+const MAX_TRANSLATED_SESSIONS = 1000;
+const translatedSessionCleanup = setInterval(() => {
+  const now = Date.now();
+  for (const [key, entry] of translatedSessions) {
+    if (now - entry.lastUsed > MEMORY_CONFIG.sessionTtlMs) {
+      translatedSessions.delete(key);
+    }
+  }
+}, MEMORY_CONFIG.sessionCleanupIntervalMs);
+if (translatedSessionCleanup.unref) translatedSessionCleanup.unref();
+
 export function translateSessionId(sessionId, clientTool = "") {
   if (typeof sessionId === "string" && OPENCODE_SESSION_RE.test(sessionId.trim())) {
     return sessionId.trim();
   }
-  const digest = crypto
-    .createHash("sha256")
-    .update(`opencode\0${clientTool || "generic"}\0${sessionId || ""}`)
-    .digest();
-  const timeHex = digest.subarray(0, 6).toString("hex");
-  let randomPart = "";
-  for (let i = 6; i < 20; i++) {
-    randomPart += BASE62_CHARS[digest[i] % 62];
+  const key = `opencode:ses:${clientTool || "generic"}:${sessionId || ""}`;
+  const existing = translatedSessions.get(key);
+  if (existing) {
+    existing.lastUsed = Date.now();
+    translatedSessions.delete(key);
+    translatedSessions.set(key, existing);
+    return existing.sessionId;
   }
-  return `ses_${timeHex}${randomPart}`;
+  const id = generateSessionId();
+  if (translatedSessions.size >= MAX_TRANSLATED_SESSIONS) {
+    translatedSessions.delete(translatedSessions.keys().next().value);
+  }
+  translatedSessions.set(key, { sessionId: id, lastUsed: Date.now() });
+  return id;
 }
 
 function normalizeSession(value) {

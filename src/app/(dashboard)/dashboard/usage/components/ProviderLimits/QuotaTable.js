@@ -266,7 +266,6 @@ export default function QuotaTable({
                   </div>
                 </div>
 
-<<<<<<< HEAD
               {/* Reset time */}
               <div className="min-w-0 shrink">
                 {countdown !== "-" || resetDisplay ? (

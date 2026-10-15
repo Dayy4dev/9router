@@ -26,6 +26,8 @@ import AddCustomModelModal from "./AddCustomModelModal";
 import BulkImportCodexModal from "./BulkImportCodexModal";
 import BulkImportGrokCliModal from "./BulkImportGrokCliModal";
 import CustomConfigCard from "./CustomConfigCard";
+import AutoPingScheduleModal from "./AutoPingScheduleModal";
+import { getScheduleSlotLabels } from "@/shared/services/quotaPingSchedule";
 
 const ONE_BY_ONE_DELAY_MS = 1000;
 
@@ -72,7 +74,8 @@ export default function ProviderDetailPage() {
   const [providerStrategy, setProviderStrategy] = useState(null);
   const [providerStickyLimit, setProviderStickyLimit] = useState("");
   const [thinkingMode, setThinkingMode] = useState("auto");
-  const [autoPing, setAutoPing] = useState({ enabled: false, connections: {} });
+  const [autoPing, setAutoPing] = useState({ enabled: false, connections: {}, schedules: {} });
+  const [scheduleConnection, setScheduleConnection] = useState(null);
   const [suggestedModels, setSuggestedModels] = useState([]);
   const [suggestedModelsError, setSuggestedModelsError] = useState(null);
   const [liveModels, setLiveModels] = useState([]);
@@ -348,7 +351,7 @@ export default function ProviderDetailPage() {
       setThinkingMode(thinkingCfg.mode || "auto");
       const autoPingSettingsKey = AUTO_PING_SETTINGS_KEYS[providerId];
       const apCfg = autoPingSettingsKey ? settingsData[autoPingSettingsKey] || {} : {};
-      setAutoPing({ enabled: apCfg.enabled === true, connections: apCfg.connections || {} });
+      setAutoPing({ enabled: apCfg.enabled === true, connections: apCfg.connections || {}, schedules: apCfg.schedules || {} });
       if (nodesRes.ok) {
         let node = (nodesData.nodes || []).find((entry) => entry.id === providerId) || null;
 
@@ -479,6 +482,10 @@ export default function ProviderDetailPage() {
 
   const handleAutoPingConnection = (connectionId, on) => {
     saveAutoPing({ ...autoPing, connections: { ...autoPing.connections, [connectionId]: on } });
+  };
+
+  const handleAutoPingSchedule = (connectionId, schedule) => {
+    saveAutoPing({ ...autoPing, schedules: { ...autoPing.schedules, [connectionId]: schedule } });
   };
 
   useEffect(() => {
@@ -1077,6 +1084,9 @@ export default function ProviderDetailPage() {
                   on: autoPing.connections[conn.id] === true,
                   onToggle: (on) => handleAutoPingConnection(conn.id, on),
                   provider: providerId,
+                  scheduleOn: autoPing.schedules?.[conn.id]?.enabled === true,
+                  scheduleSummary: getScheduleSlotLabels(autoPing.schedules?.[conn.id]).join(" / "),
+                  onOpenSchedule: () => setScheduleConnection(conn),
                 } : null}
                 onUpdateProxy={async (proxyPoolId) => {
                   try {
@@ -2010,6 +2020,16 @@ export default function ProviderDetailPage() {
           isOpen={showBulkImportGrokCli}
           onClose={() => setShowBulkImportGrokCli(false)}
           onSuccess={fetchConnections}
+        />
+      )}
+
+      {scheduleConnection && (
+        <AutoPingScheduleModal
+          isOpen={!!scheduleConnection}
+          onClose={() => setScheduleConnection(null)}
+          connection={scheduleConnection}
+          schedule={autoPing.schedules?.[scheduleConnection.id] || null}
+          onSave={(schedule) => handleAutoPingSchedule(scheduleConnection.id, schedule)}
         />
       )}
 

@@ -1,7 +1,8 @@
 # v0.5.181 (2026-10-15) · 1 commit
 
-### Features
-- **Update Banner**: Restyle update notification banner with modern glassmorphism glow, amber/gold accent badge, and responsive flex layout for mobile and desktop -Custom
+## Fixes
+
+- **Reverted the update banner restyle.** The glassmorphism/amber-glow banner from `9bddda9` was rolled back to the original dashboard banner, restoring the upstream look and the previous markup and styling.
 
 # v0.5.180 (2026-10-15) · 1 commit
 

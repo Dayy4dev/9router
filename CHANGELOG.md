@@ -1,3 +1,8 @@
+# v0.5.181 (2026-10-15) · 1 commit
+
+### Features
+- **Update Banner**: Restyle update notification banner with modern glassmorphism glow, amber/gold accent badge, and responsive flex layout for mobile and desktop -Custom
+
 # v0.5.180 (2026-10-15) · 1 commit
 
 ### Fixes

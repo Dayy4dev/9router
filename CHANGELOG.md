@@ -1,8 +1,8 @@
-# v0.5.184 (2026-10-15) · 1 commit
+# v0.5.184 (2026-10-15) · 4 commits
 
 ## Features
 
-- **Provider panel: full catalogue with a FREE badge.** The suggested list on the OpenCode Free page now shows every upstream model (87) instead of only ids ending in `-free`, which had hidden free models without the suffix such as `big-pickle` and `union-alpha`. Free models are grouped first with a green FREE badge and paid models sit under a separate "Other models" heading, so the two can never be read as one list.
+- **Provider panel: full catalogue with a FREE badge.** The suggested list on the OpenCode Free page now shows every upstream model (87) instead of only ids ending in `-free`, which had hidden free models without the suffix - `big-pickle` is now allowlisted as known-free and verified 200 on the free tier. Free models are grouped first (12) with a green FREE badge and paid models sit under a separate "Other models" heading, so the two can never be read as one list.
 
 ## Fixes
 

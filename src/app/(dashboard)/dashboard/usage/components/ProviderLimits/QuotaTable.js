@@ -295,6 +295,7 @@ export default function QuotaTable({
                 )}
               </div>
             </div>
+          </div>
           );
         })}
       </div>

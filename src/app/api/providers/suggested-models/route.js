@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { FILTERS, FALLBACK_SUGGESTIONS } from "./filters.js";
 import REGISTRY from "open-sse/providers/registry/index.js";
 import { getSyncedFreeCatalog, syncOneFreeCatalog, startFreeCatalogSync } from "@/shared/services/freeCatalogSync.js";
+import { fetch as undiciFetch } from "undici";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,7 @@ async function serveSuggestedModels(request) {
   const headers =
     type === "opencode-free" ? { "x-opencode-client": "desktop" } : undefined;
   try {
-    const res = await fetch(url, {
+    const res = await undiciFetch(url, {
       signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
       ...(headers ? { headers } : {}),
     });

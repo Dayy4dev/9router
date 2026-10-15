@@ -103,6 +103,8 @@ export const FILTERS = {
 // free model". Results are cached per fetcher for 10 minutes so a hot endpoint
 // is not re-hit on every request.
 
+import { fetch as undiciFetch } from "undici";
+
 const LIVE_CACHE_TTL_MS = 10 * 60 * 1000;
 const LIVE_TIMEOUT_MS = 15000;
 const liveCache = new Map(); // `${url}\0${type}` -> { data, expiresAt }
@@ -133,7 +135,7 @@ export async function fetchSuggestedModelsServer(fetcher) {
   const lookup = (async () => {
     let data = [];
     try {
-      const res = await fetch(fetcher.url, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
+      const res = await undiciFetch(fetcher.url, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
       if (res.ok) {
         const json = await res.json();
         const raw = json?.data ?? json?.models ?? json;

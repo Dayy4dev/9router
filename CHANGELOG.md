@@ -1,3 +1,9 @@
+# v0.5.182 (2026-10-15) · 1 commit
+
+## Fixes
+
+- **Suggested model list: hard request ceiling.** `/api/providers/suggested-models` and its server-side fetcher now race the whole lookup against a fixed timeout. A stalled await previously held the route open indefinitely and left the provider panel blank; it now answers the curated fallback list instead.
+
 # v0.5.181 (2026-10-15) · 1 commit
 
 ## Fixes

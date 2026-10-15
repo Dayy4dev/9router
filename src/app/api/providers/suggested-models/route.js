@@ -6,6 +6,18 @@ import { getSyncedFreeCatalog, syncOneFreeCatalog, startFreeCatalogSync } from "
 export const dynamic = "force-dynamic";
 
 const UPSTREAM_TIMEOUT_MS = 15000;
+// Whole-request ceiling: every await below (DB lookup, upstream fetch)
+// must settle inside this window. On breach the route answers the
+// curated fallback built at import time - no DB, no network - so a
+// stalled backend can never leave the provider panel blank.
+const ROUTE_TIMEOUT_MS = 12000;
+
+function routeTimeout() {
+  return new Promise((_, reject) => {
+    const t = setTimeout(() => reject(new Error("suggested-models route timeout")), ROUTE_TIMEOUT_MS);
+    if (typeof t.unref === "function") t.unref();
+  });
+}
 const UPSTREAM_UNAVAILABLE_MESSAGE = "Live model list is unavailable, showing built-in models instead.";
 const STALE_MESSAGE = "Live model list is unavailable, showing the last synced models instead.";
 
@@ -21,6 +33,18 @@ function findSyncableEntry(url, type) {
 let syncStarted = false;
 
 export async function GET(request) {
+  try {
+    return await Promise.race([serveSuggestedModels(request), routeTimeout()]);
+  } catch {
+    // Timeout or unexpected throw: curated fallback, no DB, no network.
+    const { searchParams } = new URL(request.url);
+    const type = searchParams.get("type");
+    const data = (type && FALLBACK_SUGGESTIONS[type]) || [];
+    return NextResponse.json({ data, error: UPSTREAM_UNAVAILABLE_MESSAGE });
+  }
+}
+
+async function serveSuggestedModels(request) {
   // First request arms the background syncer; afterwards this is a no-op.
   // The route is the earliest reliable hook on installs that never render the
   // provider page at boot.

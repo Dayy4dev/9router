@@ -114,6 +114,12 @@ const liveCache = new Map(); // `${url}\0${type}` -> { data, expiresAt }
  * @param {{ url?: string, type?: string }} fetcher
  * @returns {Promise<Array<{ id: string, name: string }>>}
  */
+// Hard ceiling for the whole lookup: the fetch above carries its own abort
+// signal, but anything else in the chain (a stalled event loop, a promise
+// that never settles) must not hold the route open forever. Late results are
+// discarded instead of cached, so the next request retries clean.
+const SERVER_CEILING_MS = LIVE_TIMEOUT_MS + 5000;
+
 export async function fetchSuggestedModelsServer(fetcher) {
   if (!fetcher?.url || !fetcher?.type) return [];
   const filter = FILTERS[fetcher.type];
@@ -124,19 +130,31 @@ export async function fetchSuggestedModelsServer(fetcher) {
   if (hit && Date.now() < hit.expiresAt) return hit.data;
 
   const fallback = FALLBACK_SUGGESTIONS[fetcher.type] ?? [];
-  let data = [];
-  try {
-    const res = await fetch(fetcher.url, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
-    if (res.ok) {
-      const json = await res.json();
-      const raw = json?.data ?? json?.models ?? json;
-      data = filter(Array.isArray(raw) ? raw : []);
+  const lookup = (async () => {
+    let data = [];
+    try {
+      const res = await fetch(fetcher.url, { signal: AbortSignal.timeout(LIVE_TIMEOUT_MS) });
+      if (res.ok) {
+        const json = await res.json();
+        const raw = json?.data ?? json?.models ?? json;
+        data = filter(Array.isArray(raw) ? raw : []);
+      }
+    } catch {
+      // Offline, timed out, or malformed - the fallback below keeps the list useful.
     }
-  } catch {
-    // Offline, timed out, or malformed - the fallback below keeps the list useful.
-  }
-  if (data.length === 0) data = fallback;
+    if (data.length === 0) data = fallback;
+    liveCache.set(key, { data, expiresAt: Date.now() + LIVE_CACHE_TTL_MS });
+    return data;
+  })();
 
-  liveCache.set(key, { data, expiresAt: Date.now() + LIVE_CACHE_TTL_MS });
-  return data;
+  let timer;
+  const ceiling = new Promise((resolve) => {
+    timer = setTimeout(() => resolve(fallback), SERVER_CEILING_MS);
+    if (typeof timer.unref === "function") timer.unref();
+  });
+  try {
+    return await Promise.race([lookup, ceiling]);
+  } finally {
+    clearTimeout(timer);
+  }
 }

@@ -1,3 +1,13 @@
+# v0.5.184 (2026-10-15) · 1 commit
+
+## Features
+
+- **Provider panel: full catalogue with a FREE badge.** The suggested list on the OpenCode Free page now shows every upstream model (87) instead of only ids ending in `-free`, which had hidden free models without the suffix such as `big-pickle` and `union-alpha`. Free models are grouped first with a green FREE badge and paid models sit under a separate "Other models" heading, so the two can never be read as one list.
+
+## Fixes
+
+- **Free-tier consumers stay on the free subset.** `/api/models`, `/api/v1/models`, `ModelSelectModal` and `freeCatalogSync` now filter on the new `isFree` flag through a single `onlyFree` helper, so widening the suggested list cannot advertise paid ids that answer 401 without a key.
+
 # v0.5.183 (2026-10-15) · 1 commit
 
 ## Fixes

@@ -2,6 +2,13 @@
 # Assemble the Next.js standalone bundle for the systemd unit.
 # The unit runs: node custom-server.js from .next/standalone, so every file the
 # server needs at runtime that `next build` does not copy must be placed here.
+#
+# Why the source tree is copied wholesale: custom-server.js imports server
+# modules by absolute path under its own __dirname (dashboardGuard, the auth
+# guard hooks, telegramBackup, backgroundTokenRefresh, securityLogRepo,
+# dashboardSession). `next build` only traces the subset of src/ that reached
+# the webpack graph, so those files were missing and AuthGuard answered 503
+# with "guard unavailable". A superset of src/ is what the unit expects.
 set -e
 cd /root/9router
 
@@ -10,6 +17,12 @@ if [ ! -f .next/standalone/server.js ]; then
   exit 1
 fi
 
+# server-side source tree + launch hooks the custom server imports by path
+rm -rf .next/standalone/src .next/standalone/scripts
+cp -a src        .next/standalone/src
+cp -a scripts    .next/standalone/scripts
+
+# files the unit reads from its working directory
 cp -a custom-server.js .next/standalone/custom-server.js
 cp -a CHANGELOG.md     .next/standalone/CHANGELOG.md
 cp -a package.json     .next/standalone/package.json

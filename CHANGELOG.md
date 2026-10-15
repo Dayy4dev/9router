@@ -1,3 +1,9 @@
+# v0.5.183 (2026-10-15) · 1 commit
+
+## Fixes
+
+- **Suggested model list: bypass Next.js fetch for free catalogues.** The live catalogue lookups in `/api/providers/suggested-models` and its server-side fetcher now use undici directly. The server-side global fetch is Next.js's patched copy, which swallowed abort signals and let the upstream call hang until the outer ceiling answered with the curated fallback - the panel then showed only built-in models instead of the live list.
+
 # v0.5.182 (2026-10-15) · 1 commit
 
 ## Fixes

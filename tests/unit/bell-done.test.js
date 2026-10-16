@@ -69,6 +69,37 @@ describe("the bell carries a running indicator", () => {
   });
 });
 
+describe("every row in the panel can be dismissed", () => {
+  it("task rows carry an X of their own", () => {
+    // The panel lists two kinds of row - notices and running work. Giving only
+    // notices a control left the other half undeletable.
+    expect(toast).toContain("onClick={() => dismissTask(task)}");
+    expect(toast).toContain('aria-label={`Remove ${task.title || "task"}`}');
+  });
+
+  it("the X is a sibling of the row button, never nested in it", () => {
+    const row = toast.slice(toast.indexOf("<li key={task.id}"), toast.indexOf("</li>"));
+    expect(row).toContain("flex items-start");
+    expect(row.match(/<button/g).length).toBe(2);
+  });
+
+  it("a store row retires through the store, so it stays gone", () => {
+    expect(toast).toContain("useTaskStore((state) => state.dismiss)");
+    expect(toast).toContain("dismiss(task.id)");
+  });
+
+  it("a polled-only row is hidden locally - there is no store entry to retire", () => {
+    expect(toast).toContain('source: "job"');
+    expect(toast).toContain("setHidden((prev) => new Set(prev).add(task.id))");
+    // ...and it comes back once the run ends and the poll drops it.
+    expect(toast).toContain("!hidden.has(t.id)");
+  });
+
+  it("the bell itself needs no bridge: it derives from the same store", () => {
+    expect(bell).toContain("useTaskStore((state) => state.tasks)");
+  });
+});
+
 describe("per-item actions reach the feed", () => {
   it("the route accepts a bare id for a dismissed row", () => {
     expect(route).toContain("clearNotificationById");

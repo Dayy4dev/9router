@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { useTaskStore } from "@/store/taskStore";
 
@@ -20,6 +20,9 @@ export function mergeLiveTasks(tasks, jobs) {
     title: t.title,
     message: t.message,
     progress: t.progress,
+    // Store rows retire through the store itself; polled-only rows have no
+    // store entry, so the X on those only hides them in this panel.
+    source: "store",
     // A task stays in the store after it finishes so the bell can say so; the
     // store's own timer retires it, so state is carried, not assumed.
     state: t.state || "running",
@@ -37,6 +40,7 @@ export function mergeLiveTasks(tasks, jobs) {
       progress: job.progress,
       state: job.status === "queued" ? "queued" : "running",
       href: job.href || null,
+      source: "job",
     });
   }
   return merged;
@@ -61,15 +65,28 @@ function percentOf(progress) {
  */
 export default function NotifToast({ jobs = [], onPick = null }) {
   const tasks = useTaskStore((state) => state.tasks);
+  const dismiss = useTaskStore((state) => state.dismiss);
+  // Polled-only rows belong to a run whose page is closed and never entered
+  // the store, so there is nothing to retire server-side from here; the X only
+  // hides them in this panel until the run itself ends and the poll drops it.
+  const [hidden, setHidden] = useState(() => new Set());
   const live = useMemo(
     () =>
       // Finished rows sort last: what is still running is what the operator is
       // scanning for, and it should not sit under a retired run.
-      [...mergeLiveTasks(tasks, jobs)].sort(
-        (a, b) => Number(a.state === "done") - Number(b.state === "done")
-      ),
-    [tasks, jobs]
+      [...mergeLiveTasks(tasks, jobs)]
+        .sort((a, b) => Number(a.state === "done") - Number(b.state === "done"))
+        .filter((t) => (t.source === "job" ? !hidden.has(t.id) : true)),
+    [tasks, jobs, hidden]
   );
+
+  const dismissTask = (task) => {
+    if (task.source === "job") {
+      setHidden((prev) => new Set(prev).add(task.id));
+    } else {
+      dismiss(task.id);
+    }
+  };
 
   // "Nothing to report" belongs to the notice list below; a section header
   // over an empty list is decoration.
@@ -100,14 +117,15 @@ export default function NotifToast({ jobs = [], onPick = null }) {
             .filter(Boolean)
             .join(", ");
           return (
-            <li key={task.id}>
-              <button
-                type="button"
-                onClick={() => onPick?.(task)}
-                aria-label={aria}
-                className="group block w-full text-left border-b border-border-subtle/60 last:border-0"
-              >
-                <span className="flex items-start gap-2 px-3.5 py-2.5 transition-colors group-hover:bg-surface-2">
+            <li key={task.id} className="border-b border-border-subtle/60 last:border-0">
+              <div className="group flex items-start">
+                <button
+                  type="button"
+                  onClick={() => onPick?.(task)}
+                  aria-label={aria}
+                  className="block min-w-0 flex-1 text-left"
+                >
+                  <span className="flex items-start gap-2 px-3.5 py-2.5 transition-colors group-hover:bg-surface-2">
                   <span
                     className={`material-symbols-outlined text-[16px] mt-0.5 shrink-0 ${
                       finished ? "text-success" : "text-primary"
@@ -144,17 +162,29 @@ export default function NotifToast({ jobs = [], onPick = null }) {
                       )}
                     </span>
                   </span>
-                  {pct !== null ? (
-                    <span
-                      className={`shrink-0 font-mono text-[11px] font-semibold tabular-nums ${
-                        finished ? "text-success" : "text-primary"
-                      }`}
-                    >
-                      {pct}%
-                    </span>
-                  ) : null}
-                </span>
-              </button>
+                    {pct !== null ? (
+                      <span
+                        className={`shrink-0 font-mono text-[11px] font-semibold tabular-nums ${
+                          finished ? "text-success" : "text-primary"
+                        }`}
+                      >
+                        {pct}%
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+                <div className="flex shrink-0 items-center pr-2.5 py-2.5">
+                  <button
+                    type="button"
+                    onClick={() => dismissTask(task)}
+                    title="Remove"
+                    aria-label={`Remove ${task.title || "task"}`}
+                    className="flex size-6 items-center justify-center rounded-md text-text-muted transition-colors hover:bg-surface-2 hover:text-text-main"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">close</span>
+                  </button>
+                </div>
+              </div>
             </li>
           );
         })}

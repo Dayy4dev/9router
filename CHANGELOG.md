@@ -1,3 +1,9 @@
+# v0.5.190 (2026-10-16) - 1 commit
+
+- **revert(arena):** restore the original compare models view, undoing the
+  task 6 redesign on request. The arena page returns to its pre-redesign
+  form and the now-orphaned .arena-sticky CSS block is removed.
+
 # v0.5.189 (2026-10-16) - 1 commit
 
 - **fix(arena):** frost the pinned composer band in glass instead of an opaque

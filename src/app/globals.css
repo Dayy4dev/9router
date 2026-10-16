@@ -1,5 +1,11 @@
 /* source() sets scan base to src/ for both webpack + Turbopack; auto-detection still skips binaries + gitignore */
 @import "tailwindcss" source("../../");
+/* Chrome design tokens. Unlayered here on purpose: unlayered rules outrank
+   Tailwind's @layer utilities, so an interaction state (.chrome-focus,
+   .chrome-interactive) cannot be silently defeated by a stale utility still
+   sitting in a component's className list. Import position is irrelevant to
+   that ordering - only the layer - so right after tailwindcss is just tidy. */
+@import "../shared/styles/chrome.css";
 /* Icon font comes from the material-symbols package; declared here instead of importing
    the package stylesheet because its unlayered .material-symbols-outlined rule would
    outrank every Tailwind text-[..] utility and pin all icons to 24px.

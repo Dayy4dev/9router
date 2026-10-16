@@ -1,4 +1,4 @@
-# v0.5.190 (2026-10-16) - 1 commit
+# v0.5.190 (2026-10-16) · 1 commit commit
 
 - **revert(arena):** restore the original compare models view, undoing the
   task 6 redesign on request. The arena page returns to its pre-redesign
@@ -16,7 +16,7 @@
 
 - **PRD Builder removed** from the dashboard: route, sidebar entry and UI gone, with a forward migration that drops its tables on live installs while migration 003 stays in place -Custom
 - **Update banner** restyled to the welcome banner's card language - header row, accent, action row - keeping version, behind-by and release-notes text -Custom
-- **Compare Models** redesigned as a sticky composer with side-by-side columns, real idle/running/done/error states, proper empty and error states and a stacked mobile layout -Custom
+- **Compare Models** redesigned as a sticky composer with side-by-side columns, real idle/running/done/error states, proper empty and error states and a stacked mobile layout -Custom (**reverted in v0.5.190** on request; the original view is live)
 - **Custom plugins reach the request**: enabled plugins inject their instruction text into the system prompt with explicit delimiters; no change when nothing is enabled, no duplicate block when enabled twice -Custom
 - **Plugin marks on models**: a model with a custom plugin enabled shows that plugin's mark beside its name, matched by the same rule the request path uses -Custom
 - **Long-task progress** moved into the notification bell as a Tasks section with percent bars; the bell badge counts live tasks, the floating card stays as the transient signal -Custom

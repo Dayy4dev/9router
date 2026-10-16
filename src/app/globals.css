@@ -761,3 +761,23 @@ button:disabled,
   background: rgba(255, 255, 255, 0.26);
 }
 
+/* ============================================================
+   Sticky page furniture
+
+   A pinned element has to be opaque, or the page scrolls visibly
+   through it. The two themes disagree about what "opaque page" looks
+   like - in glass it is the dark aurora base, not the shell's
+   transparent bg-bg - so the backdrop is named here rather than left
+   to a surface token that either theme may override.
+   ============================================================ */
+.arena-sticky {
+  background-color: var(--color-bg);
+}
+
+.dark .arena-sticky {
+  background-color: var(--color-bg-alt);
+}
+
+.dark.glass .arena-sticky {
+  background-color: #0b0e14;
+}

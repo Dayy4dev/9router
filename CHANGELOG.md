@@ -1,3 +1,23 @@
+# v0.5.197 (2026-10-16) · 2 commits
+
+## What's New
+
+- **Model import shows in the notification bell**: "Importing models" was a
+  local dialog that lived only on the provider page, so closing the tab lost
+  the run and nothing else in the dashboard knew it existed. It now registers
+  as a long task like every other operation - visible in the bell while it
+  runs, with a Completed row when it ends.
+
+## What Was Fixed
+
+- **"Fetching model list" no longer hangs**: the model-list endpoint talked to
+  the provider with no timeout at all, so a stalled upstream left the dashboard
+  spinning for minutes with no error. Every outbound read now races a fixed
+  20-second budget, custom resolvers included, and a timeout answers plainly
+  instead of looking like a crash. The browser also stops waiting on its own
+  request after 20 seconds.
+
+
 # v0.5.196 (2026-10-16) · 2 commits
 
 ## What Was Fixed

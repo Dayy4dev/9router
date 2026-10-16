@@ -1,15 +1,20 @@
 # v0.5.190 (2026-10-16) · 1 commit
 
-- **revert(arena):** restore the original compare models view, undoing the
-  task 6 redesign on request. The arena page returns to its pre-redesign
-  form and the now-orphaned .arena-sticky CSS block is removed.
+## Reverts
 
-# v0.5.189 (2026-10-16) - 1 commit
+- **Compare Models restored**: the original view is back, undoing the task 6
+  redesign on request. The `.arena-sticky` CSS block the redesign introduced
+  goes with it, since nothing references it any more.
 
-- **fix(arena):** frost the pinned composer band in glass instead of an opaque
-  slab, so the Compare Models composer follows the active theme instead of
-  burying the aurora behind a flat plate (audit found no other hardcoded
-  colour in the arena page: every class is a theme token)
+# v0.5.189 (2026-10-16) · 1 commit
+
+## Fixes
+
+- **Compare Models composer in glass**: the pinned band carried an opaque
+  `#0b0e14` plate that buried the aurora behind it. It now uses the same frost
+  and blur as the sidebar, so the composer follows the active theme. An audit
+  of the arena page found no other hardcoded colour - every class is a theme
+  token. (Undone by the v0.5.190 revert.)
 
 # v0.5.188 (2026-10-16) · 20 commits
 ## Features

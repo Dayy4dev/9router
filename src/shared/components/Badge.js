@@ -2,6 +2,14 @@
 
 import { cn } from "@/shared/utils/cn";
 
+// Radius is the only thing the contract changes here. A badge was a pill
+// (rounded-full), which put it in the same shape family as the Toggle track -
+// genuinely circular and genuinely interactive. A badge is a label, so it
+// takes the chip radius (--r-chip). The variant colours keep their explicit
+// dark: pairs: they were already correct on both themes, and swapping them for
+// the semantic scale would have dropped the light-mode text contrast
+// (green-600 -> --color-success is a 3.4:1 -> 2.6:1 regression on the
+// 10%-tinted background).
 const variants = {
   default: "bg-surface-2 text-text-muted ring-1 ring-inset ring-border-subtle",
   primary: "bg-brand-500/10 text-brand-600 dark:text-brand-300 ring-1 ring-inset ring-brand-500/20",
@@ -28,9 +36,9 @@ export default function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full font-semibold",
-        variants[variant],
-        sizes[size],
+        "inline-flex items-center gap-1.5 rounded-[var(--r-chip)] font-semibold",
+        variants[variant] ?? variants.default,
+        sizes[size] ?? sizes.md,
         className
       )}
     >

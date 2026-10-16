@@ -1,3 +1,18 @@
+# v0.5.191 (2026-10-16) · 4 commits
+
+## What's New
+
+- **AI Gateway Prompt Injection** (PR #8, by SatriaDivo): gateway rules that
+  prepend, append or override system and user prompts across combos, models
+  (wildcards supported) or all traffic, with per-key restriction, keyword and
+  regex triggers, dynamic templating and a dashboard simulator, applied to
+  live chat requests fail-open behind the feature flag -Custom
+
+## What Was Fixed
+
+- **PR #8 test**: its own suite called `extractUserText` without importing
+  it (12/13 green); one-line import added, now 13/13 -Custom
+
 # v0.5.190 (2026-10-16) · 1 commit
 
 ## What Was Undone

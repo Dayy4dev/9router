@@ -1,3 +1,13 @@
+# v0.5.186 (2026-10-16) · 3 commits
+## Features
+
+- **Design-token contract** landed at `src/shared/styles/chrome.css`: one radius ladder, a three-tier elevation scale, one motion/focus/disabled definition shared by the whole chrome layer -Custom
+
+## Fixes
+
+- **Card / Modal / Drawer / Select / Input / Toggle / Badge / Tooltip / Pagination / SegmentedControl** consume the contract instead of hardcoded radii, shadows and durations, so overlays and surfaces read as one system -Custom
+- **Nested modal scroll** is reference-counted in `src/shared/utils/scrollLock.js`; closing an inner dialog no longer re-enables page scroll behind the outer one -Custom
+
 # v0.5.185 (2026-10-15) · 34 commits
 ## Features
 

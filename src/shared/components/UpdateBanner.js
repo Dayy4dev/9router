@@ -223,7 +223,7 @@ export default function UpdateBanner({ pollMs = POLL_MS }) {
       />
 
       {(isDisconnected || isUpdating) && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-6 fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-sm p-6 fade-in">
           {isUpdating ? (
             <ManualUpdatePanel
               latestVersion={info.latestVersion}

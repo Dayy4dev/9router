@@ -883,7 +883,7 @@ export default function ProxyPoolsPage() {
             </Button>
 
             {showRelayMenu && (
-              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-black/10 bg-white p-1 shadow-xl dark:border-white/10 dark:bg-zinc-900 sm:left-auto sm:right-0">
+              <div className="absolute left-0 top-full z-50 mt-1 w-48 rounded-xl border border-border bg-surface p-1 shadow-xl sm:left-auto sm:right-0">
                 <button
                   onClick={() => {
                     openCloudflareModal();

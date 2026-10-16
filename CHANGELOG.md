@@ -1,3 +1,10 @@
+# v0.5.189 (2026-10-16) - 1 commit
+
+- **fix(arena):** frost the pinned composer band in glass instead of an opaque
+  slab, so the Compare Models composer follows the active theme instead of
+  burying the aurora behind a flat plate (audit found no other hardcoded
+  colour in the arena page: every class is a theme token)
+
 # v0.5.188 (2026-10-16) · 20 commits
 ## Features
 

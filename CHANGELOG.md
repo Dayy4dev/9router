@@ -1,6 +1,6 @@
 # v0.5.190 (2026-10-16) · 1 commit
 
-## Reverts
+## What Was Undone
 
 - **Compare Models restored**: the original view is back, undoing the task 6
   redesign on request. The `.arena-sticky` CSS block the redesign introduced
@@ -8,7 +8,7 @@
 
 # v0.5.189 (2026-10-16) · 1 commit
 
-## Fixes
+## What Was Fixed
 
 - **Compare Models composer in glass**: the pinned band carried an opaque
   `#0b0e14` plate that buried the aurora behind it. It now uses the same frost
@@ -17,35 +17,44 @@
   token. (Undone by the v0.5.190 revert.)
 
 # v0.5.188 (2026-10-16) · 20 commits
-## Features
 
-- **PRD Builder removed** from the dashboard: route, sidebar entry and UI gone, with a forward migration that drops its tables on live installs while migration 003 stays in place -Custom
+## What Was Removed
+
+- **PRD Builder** is gone from the dashboard: route, sidebar entry and UI removed, with a forward migration that drops its tables on live installs while migration 003 stays in place -Custom
+
+## What's New
+
 - **Update banner** restyled to the welcome banner's card language - header row, accent, action row - keeping version, behind-by and release-notes text -Custom
 - **Compare Models** redesigned as a sticky composer with side-by-side columns, real idle/running/done/error states, proper empty and error states and a stacked mobile layout -Custom (**reverted in v0.5.190** on request; the original view is live)
 - **Custom plugins reach the request**: enabled plugins inject their instruction text into the system prompt with explicit delimiters; no change when nothing is enabled, no duplicate block when enabled twice -Custom
 - **Plugin marks on models**: a model with a custom plugin enabled shows that plugin's mark beside its name, matched by the same rule the request path uses -Custom
 - **Long-task progress** moved into the notification bell as a Tasks section with percent bars; the bell badge counts live tasks, the floating card stays as the transient signal -Custom
 
-## Fixes
+## What Changed
 
 - **Add OpenAI Compatible button** is now an opt-in white variant, legible on both dark and glass -Custom
 - **Responsive contract**: PageShell owns page padding, max-width and vertical rhythm, wide tables scroll horizontally instead of clipping, modals scroll internally and the drawer can no longer exceed a phone viewport -Custom
 - **Plugin marks redrawn** to match each plugin's function inside the existing 24x24 drawing language -Custom
 
 # v0.5.187 (2026-10-16) · 2 commits
-## Fixes
+
+## What Was Fixed
 
 - **Theme colour audit**: eight colour tokens that four hundred call sites referenced but the theme never declared (`bg-bg-subtle`, `text-text-primary`, `border-border-hover` and five more) are now defined for both dark and glass, so those surfaces finally render -Custom
 - **Themed scrims and panels**: raw `bg-black/NN` overlays, `zinc`/`white` dark-only panels and hex status icons replaced with theme tokens (scrim, surface, danger, success/warning) so modals, banners and cards follow the selected theme -Custom
 
 # v0.5.186 (2026-10-16) · 3 commits
-## Features
+
+## What's New
 
 - **Design-token contract** landed at `src/shared/styles/chrome.css`: one radius ladder, a three-tier elevation scale, one motion/focus/disabled definition shared by the whole chrome layer -Custom
 
-## Fixes
+## What Changed
 
 - **Card / Modal / Drawer / Select / Input / Toggle / Badge / Tooltip / Pagination / SegmentedControl** consume the contract instead of hardcoded radii, shadows and durations, so overlays and surfaces read as one system -Custom
+
+## What Was Fixed
+
 - **Nested modal scroll** is reference-counted in `src/shared/utils/scrollLock.js`; closing an inner dialog no longer re-enables page scroll behind the outer one -Custom
 
 # v0.5.185 (2026-10-15) · 34 commits

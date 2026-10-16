@@ -832,6 +832,12 @@ button:disabled,
   background-color: var(--color-bg-alt);
 }
 
+/* Glass: the pinned band uses the same frost + blur as the sidebar, not an
+   opaque slab. An opaque plate here buried the aurora - the composer was the
+   one surface in the app that hid the theme behind it. The frost is dense
+   enough that streamed text still cannot ghost through the pinned band. */
 .dark.glass .arena-sticky {
-  background-color: #0b0e14;
+  background-color: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
 }

@@ -445,7 +445,7 @@ export default function ProvidersPage() {
             </Button>
             <Button
               size="sm"
-              variant="secondary"
+              variant="white"
               icon="add"
               onClick={() => setShowAddCompatibleModal(true)}
               className="w-full sm:w-auto"

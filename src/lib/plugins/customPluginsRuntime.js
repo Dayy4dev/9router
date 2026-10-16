@@ -22,6 +22,7 @@
 //   - open-sse/translator/concerns/contextSqueezer.js (requests)
 
 import { getSettings } from "@/lib/localDb";
+import { matchesModel } from "@/shared/utils/pluginModelMatch";
 import { FORMATS } from "open-sse/translator/formats.js";
 import { getCapabilitiesForModel } from "open-sse/providers/capabilities.js";
 import { squeezeContext } from "open-sse/translator/concerns/contextSqueezer.js";
@@ -64,16 +65,6 @@ export function clearPluginCache() {
   lastFetch = 0;
 }
 
-function matchesModel(modelList, modelKey) {
-  if (!Array.isArray(modelList) || !modelKey) return false;
-  const key = String(modelKey).toLowerCase();
-  const bare = key.includes("/") ? key.split("/").pop() : key;
-  return modelList.some((m) => {
-    const s = String(m).toLowerCase();
-    const sBare = s.includes("/") ? s.split("/").pop() : s;
-    return s === key || sBare === bare || s === bare || key === sBare;
-  });
-}
 
 /**
  * Every name this request could be called by, in the order the layers know it:

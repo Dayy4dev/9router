@@ -1,3 +1,19 @@
+# v0.5.195 (2026-10-16) · 2 commits
+
+## What's New
+
+- **Finished runs stay visible in the bell**: a completed long task keeps its
+  row for 30 seconds, marked `Completed` in green, before it retires itself -
+  so a finished import is announced instead of vanishing silently.
+- **A green dot on the bell**: while any operation is running, a small green
+  dot sits on the bell icon (top right), clear of the unread badge, so the
+  work in flight is known without opening the panel.
+- **Per-notice controls**: every notice row carries two buttons - mark as read
+  (check) and remove (trash). The existing "Mark all read" header action is
+  unchanged, and removing keeps the dedupe row so a condition that is still
+  true is announced again.
+
+
 # v0.5.194 (2026-10-16) · 2 commits
 
 ## What Was Fixed

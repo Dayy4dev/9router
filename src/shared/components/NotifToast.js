@@ -20,9 +20,9 @@ export function mergeLiveTasks(tasks, jobs) {
     title: t.title,
     message: t.message,
     progress: t.progress,
-    // A task is in the store only while it runs; the caller's finally{} removes
-    // it, so presence is the state.
-    state: "running",
+    // A task stays in the store after it finishes so the bell can say so; the
+    // store's own timer retires it, so state is carried, not assumed.
+    state: t.state || "running",
     // Where this run is driven from, so a row can still take the operator back
     // to it once the page that started it is closed.
     href: t.href || null,
@@ -61,7 +61,15 @@ function percentOf(progress) {
  */
 export default function NotifToast({ jobs = [], onPick = null }) {
   const tasks = useTaskStore((state) => state.tasks);
-  const live = useMemo(() => mergeLiveTasks(tasks, jobs), [tasks, jobs]);
+  const live = useMemo(
+    () =>
+      // Finished rows sort last: what is still running is what the operator is
+      // scanning for, and it should not sit under a retired run.
+      [...mergeLiveTasks(tasks, jobs)].sort(
+        (a, b) => Number(a.state === "done") - Number(b.state === "done")
+      ),
+    [tasks, jobs]
+  );
 
   // "Nothing to report" belongs to the notice list below; a section header
   // over an empty list is decoration.
@@ -71,7 +79,7 @@ export default function NotifToast({ jobs = [], onPick = null }) {
     <div className="border-b border-border-subtle">
       <div className="px-3.5 pt-3 pb-1">
         <span className="text-xs font-semibold uppercase tracking-wide text-text-muted">
-          Running in background
+          {live.some((t) => t.state !== "done") ? "Running in background" : "Completed"}
         </span>
       </div>
       <ul className="max-h-[min(180px,30vh)] overflow-y-auto custom-scrollbar">
@@ -79,13 +87,15 @@ export default function NotifToast({ jobs = [], onPick = null }) {
           const pct = percentOf(task.progress);
           // The message already carries the counts ("20/30 proxies"); the
           // fallbacks describe what is known instead of inventing a number.
-          const line = task.message || (pct !== null ? `${pct}%` : "Starting");
+          const finished = task.state === "done";
+          const line =
+            task.message || (finished ? "Completed" : pct !== null ? `${pct}%` : "Starting");
           const counts = /(\d+)\s*\/\s*(\d+)/.exec(task.message || "");
           const aria = [
             task.title || "Working",
             counts ? `${counts[1]} of ${counts[2]}` : null,
             pct !== null ? `${pct}%` : null,
-            task.state,
+            finished ? "completed" : task.state,
           ]
             .filter(Boolean)
             .join(", ");
@@ -98,16 +108,24 @@ export default function NotifToast({ jobs = [], onPick = null }) {
                 className="group block w-full text-left border-b border-border-subtle/60 last:border-0"
               >
                 <span className="flex items-start gap-2 px-3.5 py-2.5 transition-colors group-hover:bg-surface-2">
-                  <span className="material-symbols-outlined text-[16px] mt-0.5 shrink-0 text-primary">
-                    progress_activity
+                  <span
+                    className={`material-symbols-outlined text-[16px] mt-0.5 shrink-0 ${
+                      finished ? "text-success" : "text-primary"
+                    }`}
+                  >
+                    {finished ? "check_circle" : "progress_activity"}
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline gap-2">
                       <span className="truncate text-xs font-medium text-text-main">
                         {task.title || "Working"}
                       </span>
-                      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-text-muted">
-                        {task.state}
+                      <span
+                        className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide ${
+                          finished ? "text-success" : "text-text-muted"
+                        }`}
+                      >
+                        {finished ? "Completed" : task.state}
                       </span>
                     </span>
                     <span className="mt-0.5 block truncate font-mono text-[11px] leading-tight text-text-muted">
@@ -118,14 +136,20 @@ export default function NotifToast({ jobs = [], onPick = null }) {
                         <span className="progress-indeterminate block h-full w-2/5 bg-primary" />
                       ) : (
                         <span
-                          className="block h-full bg-primary transition-[width] duration-300"
+                          className={`block h-full transition-[width] duration-300 ${
+                            finished ? "bg-success" : "bg-primary"
+                          }`}
                           style={{ width: `${pct}%` }}
                         />
                       )}
                     </span>
                   </span>
                   {pct !== null ? (
-                    <span className="shrink-0 font-mono text-[11px] font-semibold tabular-nums text-primary">
+                    <span
+                      className={`shrink-0 font-mono text-[11px] font-semibold tabular-nums ${
+                        finished ? "text-success" : "text-primary"
+                      }`}
+                    >
                       {pct}%
                     </span>
                   ) : null}

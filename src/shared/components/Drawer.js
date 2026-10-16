@@ -55,7 +55,7 @@ export default function Drawer({
         aria-modal="true"
         aria-label={typeof title === "string" ? title : undefined}
         className={cn(
-          "absolute right-0 top-0 h-full bg-surface flex flex-col",
+          "absolute right-0 top-0 h-full max-w-[calc(100vw-2.5rem)] bg-surface flex flex-col",
           "shadow-[var(--elev-3)]",
           "chrome-enter-drawer",
           // A drawer is flush with the right viewport edge, so it only rounds

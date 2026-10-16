@@ -13,10 +13,10 @@ import { cn } from "@/shared/utils/cn";
 const variants = {
   default: "bg-surface-2 text-text-muted ring-1 ring-inset ring-border-subtle",
   primary: "bg-brand-500/10 text-brand-600 dark:text-brand-300 ring-1 ring-inset ring-brand-500/20",
-  success: "bg-green-500/10 text-green-600 dark:text-green-400 ring-1 ring-inset ring-green-500/20",
-  warning: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 ring-1 ring-inset ring-yellow-500/20",
-  error: "bg-red-500/10 text-red-600 dark:text-red-400 ring-1 ring-inset ring-red-500/20",
-  info: "bg-blue-500/10 text-blue-600 dark:text-blue-400 ring-1 ring-inset ring-blue-500/20",
+  success: "bg-success/10 text-success ring-1 ring-inset ring-success/20",
+  warning: "bg-warning/10 text-warning ring-1 ring-inset ring-warning/20",
+  error: "bg-danger/10 text-danger ring-1 ring-inset ring-danger/20",
+  info: "bg-info/10 text-info ring-1 ring-inset ring-info/20",
 };
 
 const sizes = {
@@ -46,10 +46,10 @@ export default function Badge({
         <span
           className={cn(
             "size-1.5 rounded-full",
-            variant === "success" && "bg-green-500",
-            variant === "warning" && "bg-yellow-500",
-            variant === "error" && "bg-red-500",
-            variant === "info" && "bg-blue-500",
+            variant === "success" && "bg-success",
+            variant === "warning" && "bg-warning",
+            variant === "error" && "bg-danger",
+            variant === "info" && "bg-info",
             variant === "primary" && "bg-brand-500",
             variant === "default" && "bg-text-muted"
           )}

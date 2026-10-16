@@ -1,3 +1,14 @@
+# v0.5.196 (2026-10-16) · 2 commits
+
+## What Was Fixed
+
+- **Dismiss control on task rows**: the running-work rows in the bell ("Running
+  in background" / "Completed") had no remove button while notice rows did.
+  Every task row now carries its own X. A store-backed row retires through the
+  store so it stays gone; a row for a run whose page is closed is hidden for
+  that run only.
+
+
 # v0.5.195 (2026-10-16) · 2 commits
 
 ## What's New

@@ -1,3 +1,9 @@
+# v0.5.187 (2026-10-16) · 2 commits
+## Fixes
+
+- **Theme colour audit**: eight colour tokens that four hundred call sites referenced but the theme never declared (`bg-bg-subtle`, `text-text-primary`, `border-border-hover` and five more) are now defined for both dark and glass, so those surfaces finally render -Custom
+- **Themed scrims and panels**: raw `bg-black/NN` overlays, `zinc`/`white` dark-only panels and hex status icons replaced with theme tokens (scrim, surface, danger, success/warning) so modals, banners and cards follow the selected theme -Custom
+
 # v0.5.186 (2026-10-16) · 3 commits
 ## Features
 

@@ -1,4 +1,4 @@
-# v0.5.188 (2026-10-16) · 6 commits
+# v0.5.188 (2026-10-16) · 14 commits
 ## Features
 
 - **PRD Builder removed** from the dashboard: route, sidebar entry and UI gone, with a forward migration that drops its tables on live installs while migration 003 stays in place -Custom

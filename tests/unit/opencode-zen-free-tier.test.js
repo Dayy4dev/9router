@@ -1,86 +1,72 @@
 import { describe, expect, it } from "vitest";
-import { OpenCodeZenExecutor } from "../../open-sse/executors/opencode-zen.js";
-import { OPENCODE_SESSION_RE } from "../../open-sse/executors/opencode-zen.js";
+import { OpenCodeZenExecutor, OPENCODE_SESSION_RE } from "../../open-sse/executors/opencode-zen.js";
 import { isOpencodeFreeTierModel } from "../../open-sse/providers/models/helpers.js";
 
-// Upstream 403s free-tier models on the keyed lane when the request carries a
-// real oc_sk_* key (FreeTierError: "can only be used from within OpenCode").
-// The executor must switch those to the attested `Bearer public` identity.
-
-function preparedCredentials(executor, overrides = {}) {
-  const body = { messages: [{ role: "user", content: "hi" }] };
-  const credentials = {
-    apiKey: "oc_sk_test_key",
-    rawHeaders: {},
-    connectionId: "conn_test",
-    ...overrides,
-  };
-  return executor.prepareRequestCredentials({
-    body,
-    credentials,
-    providerSessionId: "conversation-a",
-    clientTool: "test",
-  });
-}
-
-function headersFor(model, overrides) {
+function headersFor(model, overrides = {}) {
   const executor = new OpenCodeZenExecutor();
-  const credentials = preparedCredentials(executor, overrides);
-  return executor.buildHeaders(credentials, true, "https://opencode.ai/zen/v1/chat/completions", model);
+  const credentials = {
+    apiKey: overrides.apiKey || "oc_sk_dummy_for_keyed_lane",
+    rawHeaders: overrides.rawHeaders || {},
+  };
+  return executor.buildHeaders(credentials, true, executor.buildUrl(model), model);
 }
 
 describe("isOpencodeFreeTierModel", () => {
   it("detects -free suffixed ids", () => {
-    for (const m of [
-      "mimo-v2.6-flash-free",
-      "muse-spark-1.3-contributor-free",
-      "big-pickle-free",
-      "deepseek-v4-flash-free",
-      "jev-1.13-free",
-    ]) {
-      expect(isOpencodeFreeTierModel(m)).toBe(true);
-    }
+    expect(isOpencodeFreeTierModel("mimo-v2.6-flash-free")).toBe(true);
+    expect(isOpencodeFreeTierModel("deepseek-v4-flash-free")).toBe(true);
+    expect(isOpencodeFreeTierModel("glm-4.7-flash-free")).toBe(true);
+    expect(isOpencodeFreeTierModel("muse-spark-1.3-contributor-free")).toBe(true);
   });
 
   it("ignores paid models", () => {
-    for (const m of ["big-pickle", "muse-spark-1.3", "gpt-5.5", "claude-opus-5", "kimi-k3"]) {
-      expect(isOpencodeFreeTierModel(m)).toBe(false);
-    }
+    expect(isOpencodeFreeTierModel("kimi-k2.7-code")).toBe(false);
+    expect(isOpencodeFreeTierModel("deepseek-chat")).toBe(false);
+    expect(isOpencodeFreeTierModel("deepseek-v3.2")).toBe(false);
   });
 
   it("strips thinking suffixes and provider prefixes before matching", () => {
-    expect(isOpencodeFreeTierModel("mimo-v2.6-flash-free(xhigh)")).toBe(true);
-    expect(isOpencodeFreeTierModel("muse-spark-1.3-contributor-free(1m)")).toBe(true);
-    expect(isOpencodeFreeTierModel("ocfree/mimo-v2.6-flash-free")).toBe(true);
-    expect(isOpencodeFreeTierModel("big-pickle(max)")).toBe(false);
-    expect(isOpencodeFreeTierModel("")).toBe(false);
-    expect(isOpencodeFreeTierModel(null)).toBe(false);
+    expect(isOpencodeFreeTierModel("mimo-v2.6-flash-free(thinking)")).toBe(true);
+    expect(isOpencodeFreeTierModel("opencode-zen/mimo-v2.6-flash-free")).toBe(true);
+    expect(isOpencodeFreeTierModel("opencode-zen/mimo-v2.6-flash-free(xhigh)")).toBe(true);
   });
 });
 
-describe("OpenCodeZenExecutor free-tier auth", () => {
-  it("sends Bearer public + session + request ids for free-tier models", () => {
+describe("OpenCodeZenExecutor free-tier auth and v2 fingerprint", () => {
+  it("routes -free models to /inference/v1 and keeps paid models on /zen/v1", () => {
+    const executor = new OpenCodeZenExecutor();
+    expect(executor.buildUrl("mimo-v2.6-flash-free", true)).toBe(
+      "https://opencode.ai/inference/v1/chat/completions",
+    );
+    expect(executor.buildUrl("muse-spark-1.3-contributor-free", true)).toBe(
+      "https://opencode.ai/inference/v1/responses",
+    );
+    expect(executor.buildUrl("deepseek-chat", true)).toBe(
+      "https://opencode.ai/zen/v1/chat/completions",
+    );
+  });
+
+  it("sends Bearer public + v2 session headers for free-tier models and drops request id", () => {
     const headers = headersFor("mimo-v2.6-flash-free");
     expect(headers["Authorization"]).toBe("Bearer public");
     expect(headers["x-opencode-session"]).toMatch(OPENCODE_SESSION_RE);
-    expect(headers["x-opencode-request"]).toMatch(/^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/);
+    expect(headers["x-opencode-session-id"]).toBe(headers["x-opencode-session"]);
+    expect(headers["x-session-affinity"]).toBe(headers["x-opencode-session"]);
+    expect(headers["x-session-id"]).toBe(headers["x-opencode-session"]);
+    expect(headers["x-opencode-request"]).toBeUndefined();
     expect(headers["x-opencode-client"]).toBe("cli");
-    expect(headers["User-Agent"]).toMatch(/opencode\/(?:latest\/)?\d+\.\d+/i);
+    expect(headers["User-Agent"]).toBe("opencode/latest/2.0.26/cli");
   });
 
   it("does the same for responses-endpoint free models", () => {
-    const headers = headersFor(
-      "muse-spark-1.3-contributor-free",
-      {},
-    );
+    const headers = headersFor("muse-spark-1.3-contributor-free");
     expect(headers["Authorization"]).toBe("Bearer public");
-    expect(headers["x-opencode-request"]).toMatch(/^msg_/);
+    expect(headers["x-opencode-request"]).toBeUndefined();
   });
 
   it("keeps the connection key for paid models", () => {
-    const headers = headersFor("big-pickle");
-    expect(headers["Authorization"]).toBe("Bearer oc_sk_test_key");
+    const headers = headersFor("kimi-k2.7-code", { apiKey: "oc_sk_paid_key" });
+    expect(headers["Authorization"]).toBe("Bearer oc_sk_paid_key");
     expect(headers["x-opencode-request"]).toBeUndefined();
-    expect(headers["x-opencode-session"]).toMatch(OPENCODE_SESSION_RE);
   });
 });

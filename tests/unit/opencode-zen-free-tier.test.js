@@ -50,10 +50,11 @@ describe("OpenCodeZenExecutor free-tier auth and v2 fingerprint", () => {
     const headers = headersFor("mimo-v2.6-flash-free");
     expect(headers["Authorization"]).toBe("Bearer public");
     expect(headers["x-opencode-session"]).toMatch(OPENCODE_SESSION_RE);
-    expect(headers["x-opencode-session-id"]).toBe(headers["x-opencode-session"]);
-    expect(headers["x-session-affinity"]).toBe(headers["x-opencode-session"]);
-    expect(headers["x-session-id"]).toBe(headers["x-opencode-session"]);
     expect(headers["x-opencode-request"]).toBeUndefined();
+    expect(headers["x-opencode-project"]).toBeUndefined();
+    expect(headers["x-session-affinity"]).toBeUndefined();
+    expect(headers["x-session-id"]).toBeUndefined();
+    expect(headers["x-opencode-session-id"]).toBeUndefined();
     expect(headers["x-opencode-client"]).toBe("cli");
     expect(headers["User-Agent"]).toBe("opencode/latest/2.0.26/cli");
   });

@@ -209,11 +209,12 @@ describe("OpenCode Free User-Agent Validation", () => {
     });
     const session = headers["x-opencode-session"];
     expect(session).toMatch(OPENCODE_SESSION_RE);
-    expect(headers["x-opencode-session-id"]).toBe(session);
-    expect(headers["x-session-affinity"]).toBe(session);
-    expect(headers["x-session-id"]).toBe(session);
     expect(headers["x-opencode-client"]).toBe("cli");
     expect("x-opencode-request" in headers).toBe(false);
+    expect("x-opencode-project" in headers).toBe(false);
+    expect("x-session-affinity" in headers).toBe(false);
+    expect("x-session-id" in headers).toBe(false);
+    expect("x-opencode-session-id" in headers).toBe(false);
   });
 });
 

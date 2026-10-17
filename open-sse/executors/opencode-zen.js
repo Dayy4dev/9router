@@ -222,16 +222,17 @@ export class OpenCodeZenExecutor extends DefaultExecutor {
     const lower = {};
     for (const [k, v] of Object.entries(raw)) lower[k.toLowerCase()] = v;
     const downstreamUa = lower["user-agent"] || "";
-    // Free-tier gate: spoof the official v2 client UA and session header mirrors.
+    // Free-tier gate: spoof the official v2 client UA and canonical session header.
+    // Redundant session aliases and project header are omitted unless explicitly provided downstream.
     headers["User-Agent"] = hasValidOpencodeVersion(downstreamUa) ? downstreamUa : OPENCODE_UA;
     headers["x-opencode-client"] = lower["x-opencode-client"] || OPENCODE_CLIENT;
-    headers["x-opencode-project"] = lower["x-opencode-project"] || "global";
     const session = credentials?.[SESSION_FIELD]
       || this.prepareRequestCredentials({ credentials })[SESSION_FIELD];
     headers[SESSION_HEADER] = session;
-    headers["x-opencode-session-id"] = session;
-    headers["x-session-affinity"] = session;
-    headers["x-session-id"] = session;
+    if (lower["x-opencode-project"]) headers["x-opencode-project"] = lower["x-opencode-project"];
+    if (lower["x-opencode-session-id"]) headers["x-opencode-session-id"] = lower["x-opencode-session-id"];
+    if (lower["x-session-affinity"]) headers["x-session-affinity"] = lower["x-session-affinity"];
+    if (lower["x-session-id"]) headers["x-session-id"] = lower["x-session-id"];
     if (isOpencodeFreeTierModel(model)) {
       // Free-tier models are gated behind the attested free-tier identity even
       // on the keyed lane: a real oc_sk_* key answers 403 FreeTierError, while
@@ -249,7 +250,7 @@ export class OpenCodeZenExecutor extends DefaultExecutor {
     // Free-tier gate: upstream 403s stream:false even when everything else is valid.
     if (out && typeof out === "object") out.stream = true;
     if (!isResponsesModel(model || body?.model)) {
-      ensureChatFingerprintTools(out);
+      applyFingerprintTools(out, false);
       return out;
     }
     const normalized = normalizeResponsesInput(out.input);
@@ -273,7 +274,7 @@ export class OpenCodeZenExecutor extends DefaultExecutor {
     delete out.reasoning_effort;
     out.stream = true;
     out.store = false;
-    ensureResponsesFingerprintTools(out);
+    applyFingerprintTools(out, true);
     normalizeResponsesTools(out);
     sanitizeResponsesItems(out);
     return out;

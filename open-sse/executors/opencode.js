@@ -396,20 +396,21 @@ export class OpenCodeExecutor extends BaseExecutor {
 
     const session = credentials?.[SESSION_FIELD] || this.prepareRequestCredentials({ credentials })[SESSION_FIELD];
 
-    // Mirrors the v2 CLI. Upstream needs x-opencode-session-id next to
-    // x-opencode-session, and rejects any x-opencode-request (v1 only) with 403.
+    // Upstream v2 requires canonical x-opencode-session and rejects x-opencode-request with 403.
+    // Redundant session aliases (x-opencode-session-id, x-session-affinity, x-session-id)
+    // and project header (x-opencode-project: "global") are omitted unless explicitly provided downstream.
     const headers = {
       "Content-Type": "application/json",
       "Authorization": "Bearer public",
       "User-Agent": isOpencodeDownstream ? downstreamUa : OPENCODE_UA,
       "x-opencode-client": lower["x-opencode-client"] || OPENCODE_CLIENT,
       "x-opencode-session": session,
-      "x-opencode-session-id": session,
-      "x-session-affinity": session,
-      "x-session-id": session,
-      "x-opencode-project": lower["x-opencode-project"] || "global",
       "Accept": stream ? "text/event-stream" : "*/*",
     };
+    if (lower["x-opencode-project"]) headers["x-opencode-project"] = lower["x-opencode-project"];
+    if (lower["x-opencode-session-id"]) headers["x-opencode-session-id"] = lower["x-opencode-session-id"];
+    if (lower["x-session-affinity"]) headers["x-session-affinity"] = lower["x-session-affinity"];
+    if (lower["x-session-id"]) headers["x-session-id"] = lower["x-session-id"];
     if (url.endsWith("/messages")) headers["anthropic-version"] = ANTHROPIC_API_VERSION;
     return headers;
   }

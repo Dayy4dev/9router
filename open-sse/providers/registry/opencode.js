@@ -16,7 +16,6 @@ export default {
     baseUrl: "https://opencode.ai",
     headers: {
       "x-opencode-client": "cli",
-      "x-opencode-project": "global",
     },
     forceStream: true,
     noAuth: true,
@@ -43,7 +42,6 @@ export default {
     baseUrl: "https://opencode.ai/inference/v1/systemone",
     headers: {
       "x-opencode-client": "cli",
-      "x-opencode-project": "global",
       "User-Agent": "opencode/latest/2.0.29/cli",
     },
   },

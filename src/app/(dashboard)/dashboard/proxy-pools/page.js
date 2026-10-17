@@ -114,6 +114,7 @@ export default function ProxyPoolsPage() {
   const [deployLabel, setDeployLabel] = useState(null);
   const [testingId, setTestingId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [viewingBoundPool, setViewingBoundPool] = useState(null);
   // The row markup is heavy, so a large import used to render every pool at
   // once and lock the page up. A page window plus a filter bounds the DOM.
   const [search, setSearch] = useState("");
@@ -899,16 +900,24 @@ export default function ProxyPoolsPage() {
 
   const deleteAllDeadPools = () => {
     if (errorPools.length === 0) return;
-    const boundCount = errorPools.reduce((sum, p) => sum + (p.boundConnectionCount || 0), 0);
+    const unboundDead = errorPools.filter((p) => !p.boundConnectionCount);
+    const boundDead = errorPools.filter((p) => (p.boundConnectionCount || 0) > 0);
+    const boundCount = boundDead.reduce((sum, p) => sum + (p.boundConnectionCount || 0), 0);
+
+    if (unboundDead.length === 0) {
+      notify.warning(`All ${errorPools.length} failed proxy pools are currently bound to ${boundCount} connection(s). Unbind them first or use "Disable Dead".`);
+      return;
+    }
+
     setConfirmState({
       title: "Delete Failed Proxies",
-      message: boundCount > 0
-        ? `Delete ${errorPools.length} failed proxy pool(s)? Note: ${boundCount} connection(s) still bound to these pools cannot be deleted.`
-        : `Permanently delete ${errorPools.length} failed proxy pool(s)? This cannot be undone.`,
+      message: boundDead.length > 0
+        ? `Found ${errorPools.length} failed proxies. ${unboundDead.length} unbound proxies will be permanently deleted. (${boundDead.length} proxy pools bound to ${boundCount} connection(s) will be skipped).`
+        : `Permanently delete all ${unboundDead.length} failed proxy pool(s)? This cannot be undone.`,
       confirmText: "Delete",
       variant: "danger",
       onConfirm: () => runBulkDelete({
-        ids: errorPools.map((p) => p.id),
+        ids: unboundDead.map((p) => p.id),
         boundLabel: " failed proxy pools",
       }),
     });
@@ -1198,9 +1207,25 @@ export default function ProxyPoolsPage() {
                     {pool.type === "netlify" && (
                       <Badge variant="default" size="sm">netlify relay</Badge>
                     )}
-                    <Badge variant="default" size="sm">
-                      {pool.boundConnectionCount || 0} bound
-                    </Badge>
+                    {pool.boundConnectionCount > 0 ? (
+                      <button
+                        type="button"
+                        onClick={() => setViewingBoundPool(pool)}
+                        className="cursor-pointer transition-opacity hover:opacity-80"
+                        title="Click to view bound connections"
+                      >
+                        <Badge variant="primary" size="sm">
+                          <span className="flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[13px]">link</span>
+                            {pool.boundConnectionCount} bound
+                          </span>
+                        </Badge>
+                      </button>
+                    ) : (
+                      <Badge variant="default" size="sm">
+                        0 bound
+                      </Badge>
+                    )}
                   </div>
                   <p className="text-xs text-text-muted truncate mt-1">{pool.proxyUrl}</p>
                   {pool.noProxy ? (
@@ -1616,6 +1641,42 @@ export default function ProxyPoolsPage() {
             <Button fullWidth variant="ghost" onClick={closeFormModal} disabled={saving}>
               Cancel
             </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Bound Connections Modal */}
+      <Modal
+        isOpen={!!viewingBoundPool}
+        onClose={() => setViewingBoundPool(null)}
+        title={`Connections bound to "${viewingBoundPool?.name}"`}
+        size="md"
+        footer={(
+          <Button variant="secondary" onClick={() => setViewingBoundPool(null)}>
+            Close
+          </Button>
+        )}
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-xs text-text-muted">
+            The following {viewingBoundPool?.boundConnections?.length || 0} connection(s) are actively configured to route through this proxy pool:
+          </p>
+          <div className="max-h-60 overflow-y-auto divide-y divide-border-subtle rounded-lg border border-border">
+            {viewingBoundPool?.boundConnections?.map((conn) => (
+              <div key={conn.id} className="flex items-center justify-between p-2.5 text-xs">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium truncate">{conn.name}</p>
+                  <p className="text-text-muted truncate mt-0.5">Provider: {conn.provider}</p>
+                </div>
+                <a
+                  href={`/dashboard/providers/${conn.provider}`}
+                  className="ml-2 inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
+                >
+                  View Provider
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                </a>
+              </div>
+            ))}
           </div>
         </div>
       </Modal>

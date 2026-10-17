@@ -35,7 +35,13 @@ function buildUsageMap(connections = []) {
     const proxyPoolId = connection?.providerSpecificData?.proxyPoolId;
     if (!proxyPoolId) continue;
 
-    usageMap.set(proxyPoolId, (usageMap.get(proxyPoolId) || 0) + 1);
+    const existing = usageMap.get(proxyPoolId) || [];
+    existing.push({
+      id: connection.id,
+      provider: connection.provider,
+      name: connection.name || connection.displayName || connection.email || connection.id,
+    });
+    usageMap.set(proxyPoolId, existing);
   }
 
   return usageMap;
@@ -62,10 +68,14 @@ export async function GET(request) {
     const connections = await getProviderConnections();
     const usageMap = buildUsageMap(connections);
 
-    const enrichedProxyPools = proxyPools.map((pool) => ({
-      ...pool,
-      boundConnectionCount: usageMap.get(pool.id) || 0,
-    }));
+    const enrichedProxyPools = proxyPools.map((pool) => {
+      const boundConnections = usageMap.get(pool.id) || [];
+      return {
+        ...pool,
+        boundConnectionCount: boundConnections.length,
+        boundConnections,
+      };
+    });
 
     return NextResponse.json({ proxyPools: enrichedProxyPools });
   } catch (error) {

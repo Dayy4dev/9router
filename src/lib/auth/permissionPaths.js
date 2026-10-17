@@ -79,6 +79,7 @@ const API_PERMISSION_RULES = [
   { prefix: "/api/models/custom", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
   { prefix: "/api/model-editor", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
   { prefix: "/api/prompt-injection", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
+  { prefix: "/api/prd", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
   { prefix: "/api/models", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
   { prefix: "/api/combos", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
   { prefix: "/api/tags", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },

@@ -62,6 +62,11 @@ export {
   getDisabledModels, getDisabledByProvider, disableModels, enableModels,
 } from "./repos/disabledModelsRepo.js";
 
+// PRD Document Writer
+export {
+  getPrdDocs, getPrdDoc, savePrdDoc, deletePrdDoc,
+} from "./repos/prdRepo.js";
+
 // Usage
 export {
   statsEmitter, trackPendingRequest, getActiveRequests,

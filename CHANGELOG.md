@@ -1,3 +1,9 @@
+# v0.5.202 (2026-10-17) · 2 commits
+
+## What Was Fixed
+
+- **OpenCode Free & Zen executors**: Synchronized 100% with Decolua master upstream (open-sse executors, registry, fingerprint definitions, and test suites). Restored official upstream session aliases, headers, and test specifications.
+
 # v0.5.201 (2026-10-17) · 2 commits
 
 ## What Was Fixed

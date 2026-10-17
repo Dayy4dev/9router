@@ -287,6 +287,7 @@ export default function ProxyPoolsPage() {
     return proxyPools.filter((pool) => {
       if (statusFilter === "active" && pool.isActive !== true) return false;
       if (statusFilter === "inactive" && pool.isActive === true) return false;
+      if (statusFilter === "failed" && pool.testStatus !== "error") return false;
       if (statusFilter === "unbound" && (pool.boundConnectionCount || 0) > 0) return false;
       if (!q) return true;
       return (
@@ -859,6 +860,60 @@ export default function ProxyPoolsPage() {
     [proxyPools]
   );
 
+  const errorPools = useMemo(
+    () => proxyPools.filter((pool) => pool.testStatus === "error"),
+    [proxyPools]
+  );
+
+  const disableAllDeadPools = () => {
+    const deadActive = errorPools.filter((p) => p.isActive === true);
+    if (deadActive.length === 0) return;
+    setConfirmState({
+      title: "Disable Dead Proxies",
+      message: `Disable ${deadActive.length} failed proxy pool(s)?`,
+      confirmText: "Disable",
+      variant: "danger",
+      onConfirm: async () => {
+        setConfirmState(null);
+        setBulkBusy(true);
+        try {
+          let count = 0;
+          for (const p of deadActive) {
+            try {
+              const res = await fetch(`/api/proxy-pools/${p.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isActive: false }),
+              });
+              if (res.ok) count += 1;
+            } catch {}
+          }
+          await fetchProxyPools();
+          notify.success(`Disabled ${count} dead proxy pool(s)`);
+        } finally {
+          setBulkBusy(false);
+        }
+      },
+    });
+  };
+
+  const deleteAllDeadPools = () => {
+    if (errorPools.length === 0) return;
+    const boundCount = errorPools.reduce((sum, p) => sum + (p.boundConnectionCount || 0), 0);
+    setConfirmState({
+      title: "Delete Failed Proxies",
+      message: boundCount > 0
+        ? `Delete ${errorPools.length} failed proxy pool(s)? Note: ${boundCount} connection(s) still bound to these pools cannot be deleted.`
+        : `Permanently delete ${errorPools.length} failed proxy pool(s)? This cannot be undone.`,
+      confirmText: "Delete",
+      variant: "danger",
+      onConfirm: () => runBulkDelete({
+        ids: errorPools.map((p) => p.id),
+        boundLabel: " failed proxy pools",
+      }),
+    });
+  };
+
   if (loading) {
     return (
       <PageShell width="reading">
@@ -957,18 +1012,57 @@ export default function ProxyPoolsPage() {
           )}
           <Badge variant="default">Total: {proxyPools.length}</Badge>
           <Badge variant="success">Active: {activeCount}</Badge>
+          {errorPools.length > 0 && (
+            <Badge variant="danger">Failed: {errorPools.length}</Badge>
+          )}
+
           {proxyPools.length > 0 && (
-            <Button
-              size="sm"
-              variant="secondary"
-              icon="delete"
-              onClick={deleteAllPools}
-              disabled={bulkBusy || healthChecking}
-              className="ml-auto"
-              title="Delete every proxy pool at once"
-            >
-              Delete All
-            </Button>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                icon={healthChecking ? "progress_activity" : "science"}
+                onClick={handleHealthCheck}
+                disabled={healthChecking || bulkBusy}
+                title="Test all proxy pools"
+              >
+                {healthChecking ? `Testing ${healthProgress.current}/${healthProgress.total}` : "Test All"}
+              </Button>
+              {errorPools.some((p) => p.isActive === true) && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon="block"
+                  onClick={disableAllDeadPools}
+                  disabled={bulkBusy || healthChecking}
+                  title="Disable all failed proxies"
+                >
+                  Disable Dead
+                </Button>
+              )}
+              {errorPools.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon="delete_sweep"
+                  onClick={deleteAllDeadPools}
+                  disabled={bulkBusy || healthChecking}
+                  title="Delete all failed proxies"
+                >
+                  Delete Dead
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant="secondary"
+                icon="delete"
+                onClick={deleteAllPools}
+                disabled={bulkBusy || healthChecking}
+                title="Delete every proxy pool at once"
+              >
+                Delete All
+              </Button>
+            </div>
           )}
         </div>
 
@@ -1018,11 +1112,12 @@ export default function ProxyPoolsPage() {
                 className="w-full"
               />
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-2">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-2 overflow-x-auto">
               {[
                 { id: "all", label: "All" },
                 { id: "active", label: "Active" },
                 { id: "inactive", label: "Inactive" },
+                { id: "failed", label: "Failed" },
                 { id: "unbound", label: "Unbound" },
               ].map((opt) => (
                 <button
@@ -1111,8 +1206,26 @@ export default function ProxyPoolsPage() {
                   {pool.noProxy ? (
                     <p className="text-xs text-text-muted truncate">No proxy: {pool.noProxy}</p>
                   ) : null}
-                  <p className="text-[11px] text-text-muted mt-1">
-                    Last tested: {formatDateTime(pool.lastTestedAt)}
+                  <p className="text-[11px] text-text-muted mt-1 flex items-center gap-1.5">
+                    <span>Last tested: {formatDateTime(pool.lastTestedAt)}</span>
+                    {Number.isFinite(Number(pool.elapsedMs)) && Number(pool.elapsedMs) > 0 && (
+                      <span
+                        className={`px-1.5 py-0.2 rounded font-mono text-[10px] font-medium ${
+                          pool.testStatus === "active"
+                            ? Number(pool.elapsedMs) < 1000
+                              ? "text-emerald-500 bg-emerald-500/10"
+                              : Number(pool.elapsedMs) < 3000
+                              ? "text-amber-500 bg-amber-500/10"
+                              : "text-orange-500 bg-orange-500/10"
+                            : "text-red-500 bg-red-500/10"
+                        }`}
+                        title={`Test latency: ${pool.elapsedMs}ms`}
+                      >
+                        {Number(pool.elapsedMs) < 1000
+                          ? `${pool.elapsedMs}ms`
+                          : `${(Number(pool.elapsedMs) / 1000).toFixed(1)}s`}
+                      </span>
+                    )}
                     {pool.lastError ? ` · ${pool.lastError}` : ""}
                   </p>
                   </div>

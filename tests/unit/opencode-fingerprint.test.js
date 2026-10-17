@@ -7,7 +7,7 @@ import {
   restoreToolNames,
   takeRenamedToolNames,
   OPENCODE_FINGERPRINT_TOOLS,
-} from "../../open-sse/utils/opencodeFingerprint.js";
+} from "open-sse/utils/opencodeFingerprint.js";
 
 const CC_TOOLS = ["Task", "Bash", "Glob", "Grep", "Read", "Edit", "Write", "WebFetch"];
 const flat = (names) => names.map((name) => ({ type: "function", name }));

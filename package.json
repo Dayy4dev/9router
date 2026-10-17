@@ -10,6 +10,7 @@
     "postbuild": "node scripts/copy-standalone-assets.mjs",
     "postbuild:bun": "node scripts/copy-standalone-assets.mjs",
     "start": "node custom-server.js --port 20127",
+    "start:4000": "node custom-server.js --port 4000",
     "dev:bun": "bun --bun next dev --port 20127",
     "build:bun": "bun --bun next build",
     "start:bun": "bun ./.next/standalone/custom-server.js",

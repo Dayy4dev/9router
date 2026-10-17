@@ -1,12 +1,146 @@
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import fs, { readFileSync } from "node:fs";
+import fsPromises from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
+import { homedir } from "node:os";
 
-const projectRoot = dirname(fileURLToPath(import.meta.url));
-// Stamp the build with the revision and the release it was made from. A deploy
-// that ships without .git history still knows what it is, so the update banner can
-// compare it against the repository instead of staying silent forever.
+const projectRoot = resolve(dirname(fileURLToPath(import.meta.url)));
+const userHome = resolve(homedir());
+
+// --- WINDOWS HOME DIRECTORY SCAN BLOCKER ---
+// Hanya blokir folder sistem/user Windows di C:\Users\<user> yang bikin EPERM & Out of Memory,
+// tapi tetap izinkan node_modules dan folder project.
+const projectRootLower = projectRoot.toLowerCase();
+const userHomeLower = userHome.toLowerCase();
+
+// Daftar folder di C:\Users\<user> yang TIDAK BOLEH di-scan oleh Next.js / Webpack
+const blockedUserDirs = [
+  "appdata",
+  "application data",
+  "local settings",
+  "my documents",
+  "documents",
+  "downloads",
+  "desktop",
+  "pictures",
+  "videos",
+  "music",
+  "cookies",
+  "nethood",
+  "printhood",
+  "recent",
+  "sendto",
+  "start menu",
+  "templates",
+  "onedrive",
+  "saved games",
+  "searches",
+  "favorites",
+  "contacts",
+  "links",
+  "3d objects",
+  ".config",
+  ".codex",
+  ".vscode",
+  ".cursor",
+  ".npm",
+  ".cache",
+  ".local",
+  ".ssh",
+  ".git",
+];
+
+function shouldBlockDirScan(targetPath) {
+  if (!targetPath) return false;
+  const strPath =
+    typeof targetPath === "string"
+      ? targetPath
+      : targetPath instanceof URL
+        ? fileURLToPath(targetPath)
+        : String(targetPath);
+  const resolved = resolve(strPath).toLowerCase();
+
+  // 1. Selalu izinkan semua yang ada di dalam projectRoot
+  if (
+    resolved === projectRootLower ||
+    resolved.startsWith(projectRootLower + "\\") ||
+    resolved.startsWith(projectRootLower + "/")
+  ) {
+    return false;
+  }
+
+  // 2. Blokir jika mencoba men-scan root C:\Users\dafi secara langsung
+  if (resolved === userHomeLower) {
+    return true;
+  }
+
+  // 3. Blokir jika masuk ke folder sistem/pribadi Windows di dalam C:\Users\dafi
+  if (
+    resolved.startsWith(userHomeLower + "\\") ||
+    resolved.startsWith(userHomeLower + "/")
+  ) {
+    const relativeToHome = resolved.slice(userHomeLower.length + 1);
+    const firstSegment = relativeToHome.split(/[\\/]/)[0];
+    if (blockedUserDirs.includes(firstSegment)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const origReaddir = fs.readdir;
+fs.readdir = function (path, options, callback) {
+  if (typeof options === "function") {
+    callback = options;
+    options = undefined;
+  }
+  if (shouldBlockDirScan(path)) {
+    return process.nextTick(() => callback(null, []));
+  }
+  const wrappedCallback = function (err, files) {
+    if (err && (err.code === "EPERM" || err.code === "EACCES")) {
+      return callback(null, []);
+    }
+    return callback(err, files);
+  };
+  return options !== undefined
+    ? origReaddir.call(this, path, options, wrappedCallback)
+    : origReaddir.call(this, path, wrappedCallback);
+};
+
+const origReaddirSync = fs.readdirSync;
+fs.readdirSync = function (path, options) {
+  if (shouldBlockDirScan(path)) {
+    return [];
+  }
+  try {
+    return origReaddirSync.call(this, path, options);
+  } catch (err) {
+    if (err && (err.code === "EPERM" || err.code === "EACCES")) {
+      return [];
+    }
+    throw err;
+  }
+};
+
+const origPromisesReaddir = fsPromises.readdir;
+fsPromises.readdir = async function (path, options) {
+  if (shouldBlockDirScan(path)) {
+    return [];
+  }
+  try {
+    return await origPromisesReaddir.call(this, path, options);
+  } catch (err) {
+    if (err && (err.code === "EPERM" || err.code === "EACCES")) {
+      return [];
+    }
+    throw err;
+  }
+};
+// --- END WINDOWS HOME DIRECTORY SCAN BLOCKER ---
+
 function stampBuild() {
   const stamp = {};
   try {
@@ -24,58 +158,43 @@ function stampBuild() {
   }
   return stamp;
 }
-// CLI bundling needs workspace root so tracing includes hoisted node_modules (slim ~50MB).
-// Docker / default uses projectRoot so server.js lands at /app/server.js (not nested).
-const tracingRoot = process.env.NEXT_TRACING_ROOT_MODE === "workspace"
-  ? join(projectRoot, "..")
-  : projectRoot;
-const proxyClientMaxBodySize = process.env.NINEROUTER_PROXY_CLIENT_MAX_BODY_SIZE || "128mb";
+
+const parentDir = resolve(projectRoot, "..");
+const tracingRoot =
+  process.env.NEXT_TRACING_ROOT_MODE === "workspace" &&
+  parentDir.toLowerCase() !== userHomeLower
+    ? parentDir
+    : projectRoot;
+
+const EXTERNAL_PACKAGES = [
+  "better-sqlite3",
+  "sql.js",
+  "node:sqlite",
+  "bun:sqlite",
+  "open",
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   output: "standalone",
-  // `open` must stay external. It derives its own directory from `import.meta.url`, and
-  // webpack replaces that with the absolute path of the BUILD machine as a string literal.
-  // A release built on macOS therefore ships `file:///Users/.../open/index.js`, which
-  // `fileURLToPath` rejects on Windows ("File URL path must be absolute" - no drive
-  // letter). That throw happens at module scope, so every consumer of `open` dies on
-  // import - including xAI/Grok token refresh, which loads the OAuth service that imports
-  // it. Keeping it external preserves the real `import.meta.url` at runtime.
-  // @aws-sdk/credential-providers must stay external for the same class of reason: it reads
-  // ~/.aws/config and the SSO token cache from disk at runtime and resolves its credential
-  // plugins by dynamic require, neither of which survives bundling.
-  serverExternalPackages: ["better-sqlite3", "sql.js", "node:sqlite", "bun:sqlite", "open", "@aws-sdk/credential-providers"],
-  turbopack: {
-    root: tracingRoot
-  },
   images: {
     unoptimized: true
   },
   env: stampBuild(),
   experimental: {
-    // Next 14 reads tracing keys here (top-level is Next 15+ and ignored with a
-    // warning). #4: also exclude Windows user-profile junctions (EPERM scandir
-    // AppData/Local/Application Data) plus roaming/config caches from NFT tracing.
     outputFileTracingRoot: tracingRoot,
     outputFileTracingExcludes: {
       "*": [
         "./gitbook/**/*",
-        "**/AppData/Local/**/*",
-        "**/AppData/Roaming/**/*",
-        "**/.config/**/*",
-        "**/.codex/**/*",
-        "**/Cookies/**/*",
+        "**/AppData/**",
+        "**/Application Data/**",
+        "**/.config/**",
+        "**/.codex/**",
+        "**/Cookies/**",
       ],
     },
-    // Next 14 reads this key (top-level serverExternalPackages is Next 15+ and
-    // ignored with a warning). Keep both so the db adapters stay external.
-    serverComponentsExternalPackages: ["better-sqlite3", "sql.js", "node:sqlite", "bun:sqlite", "open"],
-    // #1529/#1572: LLM clients can send long context or base64 image payloads through /v1 rewrites.
-    proxyClientMaxBodySize,
-    // Cache fetch responses across HMR refreshes for faster dev reloads.
-    serverComponentsHmrCache: true,
-    // Tree-shake heavy barrel imports to cut compile + bundle size
+    serverComponentsExternalPackages: EXTERNAL_PACKAGES,
     optimizePackageImports: ["@xyflow/react", "@dnd-kit/core", "@dnd-kit/sortable", "material-symbols", "marked"],
   },
   webpack: (config, { isServer }) => {
@@ -93,11 +212,15 @@ const nextConfig = {
       aggregateTimeout: 300,
       ignored: /[\\/](node_modules|\.git|logs|\.next|\.next-cli-build|gitbook|cli|open-sse\.old|tests|docs)[\\/]/,
     };
-    // Defense in depth: bun:sqlite is never used on Node 22 runners, and the
-    // runtime import is already guarded + dynamic - keep it out of the bundle.
+    // Pastikan semua EXTERNAL_PACKAGES ("better-sqlite3", "sql.js", "node:sqlite", "bun:sqlite", "open")
+    // diperlakukan sebagai runtime external oleh Webpack agar tidak gagal saat build
     if (isServer) {
       config.externals = config.externals || [];
-      if (!config.externals.includes("bun:sqlite")) config.externals.push("bun:sqlite");
+      for (const pkg of EXTERNAL_PACKAGES) {
+        if (!config.externals.includes(pkg)) {
+          config.externals.push(pkg);
+        }
+      }
     }
     return config;
   },

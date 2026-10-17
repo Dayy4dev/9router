@@ -16,6 +16,8 @@ import { resolveClineModels, resolveClinepassModels } from "open-sse/services/cl
 import { NOUS_MODELS_URL, normalizeNousModels } from "open-sse/services/nous.js";
 import codexProvider from "open-sse/providers/registry/codex.js";
 
+export const dynamic = "force-dynamic";
+
 const GEMINI_CLI_MODELS_URL = "https://cloudcode-pa.googleapis.com/v1internal:fetchAvailableModels";
 
 // Model discovery talks to provider endpoints the operator does not control,
@@ -24,10 +26,12 @@ const GEMINI_CLI_MODELS_URL = "https://cloudcode-pa.googleapis.com/v1internal:fe
 // list" with no end in sight. 20s matches what the retry budget elsewhere
 // treats as a dead upstream: long enough for a slow catalog, short enough
 // that a hung socket cannot pass for progress.
-const MODELS_TIMEOUT_MS = 20000;
+// Client ceiling sits at 20s; bounding the upstream read at 15s guarantees
+// the route can answer 504 before the browser aborts.
+const MODELS_TIMEOUT_MS = 15000;
 
 function withModelTimeout(init = {}) {
-  return { ...init, signal: AbortSignal.timeout(MODELS_TIMEOUT_MS) };
+  return { cache: "no-store", ...init, signal: AbortSignal.timeout(MODELS_TIMEOUT_MS) };
 }
 
 // Model discovery must identify as the same Codex CLI version as inference.
@@ -538,10 +542,10 @@ const PROVIDER_MODELS_CONFIG = {
   "ollama-local": {
     customResolver: async (connection) => {
       const url = `${resolveOllamaLocalHost(connection)}/api/tags`;
-      const response = await fetch(url, {
+      const response = await fetch(url, withModelTimeout({
         method: "GET",
         headers: { "Content-Type": "application/json" }
-      });
+      }));
       if (!response.ok) {
         const errorText = await response.text();
         console.log("Error fetching models from ollama-local:", errorText);

@@ -127,9 +127,6 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   // Client-side cap for the list-fetch step: the route bounds each upstream
   // read, but without this the browser still waits on the route itself with no
   // ceiling when the provider stalls.
-  // Client-side cap for the list-fetch step: the route bounds each upstream
-  // read, but without this the browser still waits on the route itself with no
-  // ceiling when the provider stalls.
   const LIST_TIMEOUT_MS = 20000;
   const handleImport = async () => {
     if (importing) return;

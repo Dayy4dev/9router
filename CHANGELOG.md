@@ -1,3 +1,9 @@
+# v0.5.201 (2026-10-17) · 2 commits
+
+## What Was Fixed
+
+- **OpenCode Free & Zen executors**: Pruned redundant and unused tracking headers (`x-opencode-project`, `x-opencode-session-id`, `x-session-affinity`, `x-session-id`) across OpenCode free-tier requests to align strictly with upstream CLI behavior and prevent fingerprint mismatches.
+
 # v0.5.200 (2026-10-17) · 2 commits
 
 ## What Was Fixed

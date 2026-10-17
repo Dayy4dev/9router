@@ -1190,6 +1190,32 @@ export default function ProviderDetailPage() {
     }
   };
 
+  const [isTestingAll, setIsTestingAll] = useState(false);
+
+  const handleTestAllModels = async (targetIds) => {
+    if (isTestingAll || !targetIds?.length) return;
+    setIsTestingAll(true);
+    setModelsTestError("");
+
+    // Pool of workers to run tests concurrently (max 4 concurrent)
+    const queue = [...targetIds];
+    const workerCount = Math.min(4, queue.length);
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const modelId = queue.shift();
+        if (!modelId) break;
+        await handleTestModel(modelId);
+      }
+    };
+
+    try {
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    } finally {
+      setIsTestingAll(false);
+    }
+  };
+
   const renderModelsSection = () => {
     if (isCompatible) {
       return (
@@ -1853,8 +1879,20 @@ export default function ProviderDetailPage() {
               ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)),
             ].filter((m) => { const k = getModelKind(m); return !k || k === "llm"; }).map((m) => m.id);
             const activeIds = allIds.filter((id) => !disabledModelIds.includes(id));
+            const canTest = connections.length > 0 || isFreeNoAuth;
             return (
               <div className="flex gap-2">
+                {canTest && activeIds.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    icon={isTestingAll ? "progress_activity" : "science"}
+                    disabled={isTestingAll}
+                    onClick={() => handleTestAllModels(activeIds)}
+                  >
+                    {isTestingAll ? translate("Testing...") : translate("Test All")}
+                  </Button>
+                )}
                 {disabledModelIds.length > 0 && (
                   <Button size="sm" variant="secondary" icon="restart_alt" onClick={handleEnableAll}>
                     Active All

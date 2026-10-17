@@ -78,10 +78,11 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   const [importing, setImporting] = useState(false);
   const [importTotals, setImportTotals] = useState(null);
   const [testingModelId, setTestingModelId] = useState(null);
+  const [isTestingAll, setIsTestingAll] = useState(false);
   const [modelTestResults, setModelTestResults] = useState({});
 
   const handleTestModel = async (modelId) => {
-    if (testingModelId) return;
+    if (testingModelId === modelId) return;
     setTestingModelId(modelId);
     try {
       const res = await fetch("/api/models/test", {
@@ -95,6 +96,39 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
       setModelTestResults((prev) => ({ ...prev, [modelId]: "error" }));
     } finally {
       setTestingModelId(null);
+    }
+  };
+
+  const handleTestAllModels = async (modelsToTest) => {
+    if (isTestingAll || !modelsToTest?.length) return;
+    setIsTestingAll(true);
+    const queue = [...modelsToTest];
+    const workerCount = Math.min(4, queue.length);
+
+    const worker = async () => {
+      while (queue.length > 0) {
+        const m = queue.shift();
+        if (!m?.id) break;
+        setTestingModelId(m.id);
+        try {
+          const res = await fetch("/api/models/test", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ model: `${providerStorageAlias}/${m.id}` }),
+          });
+          const data = await res.json();
+          setModelTestResults((prev) => ({ ...prev, [m.id]: data.ok ? "ok" : "error" }));
+        } catch {
+          setModelTestResults((prev) => ({ ...prev, [m.id]: "error" }));
+        }
+      }
+    };
+
+    try {
+      await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    } finally {
+      setTestingModelId(null);
+      setIsTestingAll(false);
     }
   };
 
@@ -236,6 +270,17 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
         <Button size="sm" variant="secondary" icon="download" onClick={handleImport} disabled={!canImport || importing}>
           Import from /models
         </Button>
+        {connections.length > 0 && allModels.length > 0 && (
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={isTestingAll ? "progress_activity" : "science"}
+            onClick={() => handleTestAllModels(allModels)}
+            disabled={isTestingAll || importing}
+          >
+            {isTestingAll ? "Testing..." : "Test All"}
+          </Button>
+        )}
       </div>
 
       {!canImport && (

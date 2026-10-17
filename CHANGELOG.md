@@ -1,3 +1,9 @@
+# v0.5.200 (2026-10-17) · 2 commits
+
+## What Was Fixed
+
+- **OpenCode Free & Zen executors**: Aligned `opencode.js` and `opencode-zen.js` with Decolua v2 CLI fingerprinting and PR #4860 routing. Free-tier models are routed to `/inference/v1`, obsolete `x-opencode-request` header is removed to eliminate 403 `FreeTierError`, bitmask session ID generation with pinned counters is synchronized, and verbatim `read`/`shell` schemas are enforced.
+
 # v0.5.199 (2026-10-17) · 2 commits
 
 ## What Was Fixed

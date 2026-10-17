@@ -68,6 +68,8 @@ export default function ProviderDetailPage() {
   const [modelTestLatencies, setModelTestLatencies] = useState({});
   const [modelsTestError, setModelsTestError] = useState("");
   const [testingModelIds, setTestingModelIds] = useState(() => new Set());
+  const [modelSearchQuery, setModelSearchQuery] = useState("");
+  const [modelStatusFilter, setModelStatusFilter] = useState("all"); // "all" | "ok" | "error" | "untested"
   const [showAddCustomModel, setShowAddCustomModel] = useState(false);
   const [selectedConnectionIds, setSelectedConnectionIds] = useState([]);
   const [bulkProxyPoolId, setBulkProxyPoolId] = useState("__none__");
@@ -1258,10 +1260,39 @@ export default function ProviderDetailPage() {
       type: "llm",
     }).filter((row) => !studioTargetIndex.isStudioTarget(providerStorageAlias, row.id));
 
+    // Apply search query & status filter
+    const matchesFilter = (m) => {
+      if (modelSearchQuery.trim()) {
+        const q = modelSearchQuery.trim().toLowerCase();
+        const idMatch = m.id?.toLowerCase().includes(q);
+        const nameMatch = m.name?.toLowerCase().includes(q);
+        if (!idMatch && !nameMatch) return false;
+      }
+      if (modelStatusFilter !== "all") {
+        const status = modelTestResults[m.id];
+        if (modelStatusFilter === "ok" && status !== "ok") return false;
+        if (modelStatusFilter === "error" && status !== "error") return false;
+        if (modelStatusFilter === "untested" && status) return false;
+      }
+      return true;
+    };
+
+    const filteredCustomModelRows = customModelRows.filter(matchesFilter);
+    const filteredDisplayModels = displayModels.filter(matchesFilter);
+
+    const hasAnyModels = customModelRows.length > 0 || displayModels.length > 0;
+    const hasFilteredModels = filteredCustomModelRows.length > 0 || filteredDisplayModels.length > 0;
+
     return (
       <div className="flex flex-wrap gap-3">
+        {hasAnyModels && !hasFilteredModels && (
+          <div className="w-full py-4 text-center text-xs text-text-muted">
+            {translate("No models match the current filter.")}
+          </div>
+        )}
+
         {/* Custom models first */}
-        {customModelRows.map((model) => (
+        {filteredCustomModelRows.map((model) => (
           <ModelRow
             key={`${model.source}-${model.fullModel}`}
             model={{ id: model.id, name: model.name }}
@@ -1288,7 +1319,7 @@ export default function ProviderDetailPage() {
           />
         ))}
 
-        {displayModels.map((model) => {
+        {filteredDisplayModels.map((model) => {
           const fullModel = `${providerStorageAlias}/${model.id}`;
           const oldFormatModel = `${providerId}/${model.id}`;
           const existingAlias = Object.entries(modelAliases).find(
@@ -1863,67 +1894,107 @@ export default function ProviderDetailPage() {
 
       {/* Models */}
       <Card>
-        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold">
-              {"Available Models"}
-            </h2>
-            {providerThinkingLevels && (
-              <select
-                value={thinkingMode}
-                onChange={(e) => handleThinkingModeChange(e.target.value)}
-                title="Appends (level) suffix to copied model names"
-                className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none"
-              >
-                {providerThinkingLevels.map((opt) => (
-                  <option key={opt} value={opt}>{`Thinking: ${opt.charAt(0).toUpperCase() + opt.slice(1)}`}</option>
-                ))}
-              </select>
-            )}
+        <div className="mb-4 flex flex-col gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold">
+                {"Available Models"}
+              </h2>
+              {providerThinkingLevels && (
+                <select
+                  value={thinkingMode}
+                  onChange={(e) => handleThinkingModeChange(e.target.value)}
+                  title="Appends (level) suffix to copied model names"
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none"
+                >
+                  {providerThinkingLevels.map((opt) => (
+                    <option key={opt} value={opt}>{`Thinking: ${opt.charAt(0).toUpperCase() + opt.slice(1)}`}</option>
+                  ))}
+                </select>
+              )}
+            </div>
+            {!isCompatible && (() => {
+              const customModelRows = getProviderCustomModelRows({
+                customModels,
+                modelAliases,
+                providerAlias: providerStorageAlias,
+                builtInModels: models,
+                type: "llm",
+              }).filter((row) => !studioTargetIndex.isStudioTarget(providerStorageAlias, row.id));
+
+              const allIds = Array.from(new Set([
+                ...customModelRows.map((m) => m.id),
+                ...models.filter((m) => { const k = getModelKind(m); return !k || k === "llm"; }).map((m) => m.id),
+                ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)).map((m) => m.id),
+              ]));
+
+              const activeIds = allIds.filter((id) => !disabledModelIds.includes(id));
+              const canTest = connections.length > 0 || isFreeNoAuth;
+              return (
+                <div className="flex gap-2">
+                  {canTest && activeIds.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={isTestingAll ? "progress_activity" : "science"}
+                      disabled={isTestingAll}
+                      onClick={() => handleTestAllModels(activeIds)}
+                    >
+                      {isTestingAll ? translate("Testing...") : translate("Test All")}
+                    </Button>
+                  )}
+                  {disabledModelIds.length > 0 && (
+                    <Button size="sm" variant="secondary" icon="restart_alt" onClick={handleEnableAll}>
+                      Active All
+                    </Button>
+                  )}
+                  {activeIds.length > 0 && (
+                    <Button size="sm" variant="secondary" icon="block" onClick={() => handleDisableAll(activeIds)}>
+                      Disable All
+                    </Button>
+                  )}
+                </div>
+              );
+            })()}
           </div>
-          {!isCompatible && (() => {
-            const customModelRows = getProviderCustomModelRows({
-              customModels,
-              modelAliases,
-              providerAlias: providerStorageAlias,
-              builtInModels: models,
-              type: "llm",
-            }).filter((row) => !studioTargetIndex.isStudioTarget(providerStorageAlias, row.id));
 
-            const allIds = Array.from(new Set([
-              ...customModelRows.map((m) => m.id),
-              ...models.filter((m) => { const k = getModelKind(m); return !k || k === "llm"; }).map((m) => m.id),
-              ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)).map((m) => m.id),
-            ]));
-
-            const activeIds = allIds.filter((id) => !disabledModelIds.includes(id));
-            const canTest = connections.length > 0 || isFreeNoAuth;
-            return (
-              <div className="flex gap-2">
-                {canTest && activeIds.length > 0 && (
-                  <Button
-                    size="sm"
-                    variant="secondary"
-                    icon={isTestingAll ? "progress_activity" : "science"}
-                    disabled={isTestingAll}
-                    onClick={() => handleTestAllModels(activeIds)}
+          {!isCompatible && (
+            <div className="flex flex-col sm:flex-row gap-2 items-center">
+              <div className="relative flex-1 w-full">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-text-muted">
+                  search
+                </span>
+                <input
+                  type="text"
+                  placeholder={translate("Search models by id or name...")}
+                  value={modelSearchQuery}
+                  onChange={(e) => setModelSearchQuery(e.target.value)}
+                  className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-7 text-xs focus:border-primary focus:outline-none"
+                />
+                {modelSearchQuery && (
+                  <button
+                    onClick={() => setModelSearchQuery("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground"
                   >
-                    {isTestingAll ? translate("Testing...") : translate("Test All")}
-                  </Button>
-                )}
-                {disabledModelIds.length > 0 && (
-                  <Button size="sm" variant="secondary" icon="restart_alt" onClick={handleEnableAll}>
-                    Active All
-                  </Button>
-                )}
-                {activeIds.length > 0 && (
-                  <Button size="sm" variant="secondary" icon="block" onClick={() => handleDisableAll(activeIds)}>
-                    Disable All
-                  </Button>
+                    <span className="material-symbols-outlined text-sm">close</span>
+                  </button>
                 )}
               </div>
-            );
-          })()}
+              <div className="flex items-center gap-1.5 w-full sm:w-auto">
+                <span className="text-[11px] text-text-muted whitespace-nowrap">Status:</span>
+                <select
+                  value={modelStatusFilter}
+                  onChange={(e) => setModelStatusFilter(e.target.value)}
+                  className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none"
+                >
+                  <option value="all">All Models</option>
+                  <option value="ok">Reachable (OK)</option>
+                  <option value="error">Failed (Error)</option>
+                  <option value="untested">Untested</option>
+                </select>
+              </div>
+            </div>
+          )}
         </div>
         {!!modelsTestError && (
           <div className="mb-3">

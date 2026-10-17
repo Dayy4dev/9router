@@ -99,6 +99,8 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   const [isTestingAll, setIsTestingAll] = useState(false);
   const [modelTestResults, setModelTestResults] = useState({});
   const [modelTestLatencies, setModelTestLatencies] = useState({});
+  const [modelSearchQuery, setModelSearchQuery] = useState("");
+  const [modelStatusFilter, setModelStatusFilter] = useState("all");
 
   const handleTestModel = async (modelId) => {
     if (testingModelId === modelId) return;
@@ -166,6 +168,20 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
     modelAliases,
     providerAlias: providerStorageAlias,
     type: "llm",
+  });
+
+  const filteredModels = allModels.filter(({ id }) => {
+    if (modelSearchQuery.trim()) {
+      const q = modelSearchQuery.trim().toLowerCase();
+      if (!id.toLowerCase().includes(q)) return false;
+    }
+    if (modelStatusFilter !== "all") {
+      const status = modelTestResults[id];
+      if (modelStatusFilter === "ok" && status !== "ok") return false;
+      if (modelStatusFilter === "error" && status !== "error") return false;
+      if (modelStatusFilter === "untested" && status) return false;
+    }
+    return true;
   });
 
   const handleAdd = async () => {
@@ -312,15 +328,57 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
         )}
       </div>
 
+      {allModels.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-2 items-center">
+          <div className="relative flex-1 w-full">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-sm text-text-muted">
+              search
+            </span>
+            <input
+              type="text"
+              placeholder="Search models by id or name..."
+              value={modelSearchQuery}
+              onChange={(e) => setModelSearchQuery(e.target.value)}
+              className="w-full rounded-md border border-border bg-background py-1.5 pl-8 pr-7 text-xs focus:border-primary focus:outline-none"
+            />
+            {modelSearchQuery && (
+              <button
+                onClick={() => setModelSearchQuery("")}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-foreground"
+              >
+                <span className="material-symbols-outlined text-sm">close</span>
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 w-full sm:w-auto">
+            <span className="text-[11px] text-text-muted whitespace-nowrap">Status:</span>
+            <select
+              value={modelStatusFilter}
+              onChange={(e) => setModelStatusFilter(e.target.value)}
+              className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:border-primary focus:outline-none"
+            >
+              <option value="all">All Models</option>
+              <option value="ok">Reachable (OK)</option>
+              <option value="error">Failed (Error)</option>
+              <option value="untested">Untested</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {!canImport && (
         <p className="text-xs text-text-muted">
           Add a connection to enable importing models.
         </p>
       )}
 
-      {allModels.length > 0 && (
+      {allModels.length > 0 && filteredModels.length === 0 && (
+        <p className="text-xs text-text-muted">No models match the current filter.</p>
+      )}
+
+      {filteredModels.length > 0 && (
         <div className="flex flex-col gap-3">
-          {allModels.map(({ id, alias, source }) => (
+          {filteredModels.map(({ id, alias, source }) => (
             <CompatibleModelRow
               key={`${source}-${providerStorageAlias}/${id}`}
               modelId={id}

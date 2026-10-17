@@ -9,6 +9,7 @@ import { APP_CONFIG } from "@/shared/constants/config";
 import { MEDIA_PROVIDER_KINDS } from "@/shared/constants/providers";
 import useSettingsStore from "@/store/settingsStore";
 import { useSessionStore } from "@/store/sessionStore";
+import { useSidebarStore } from "@/store/sidebarStore";
 
 // const VISIBLE_MEDIA_KINDS = ["embedding", "image", "imageToText", "tts", "stt", "webSearch", "webFetch", "video", "music"];
 const VISIBLE_MEDIA_KINDS = ["embedding", "image", "video", "tts", "stt", "systemone"];
@@ -47,21 +48,31 @@ const systemItems = [
   { href: "/dashboard/proxy-pools", label: "Proxy Pools", icon: "lan" },
 ];
 
-function NavLink({ href, icon, label, active, onClick, sub = false }) {
+function NavLink({ href, icon, label, active, onClick, sub = false, collapsed = false }) {
   return (
     <Link
       href={href}
       onClick={onClick}
+      title={collapsed ? label : undefined}
       className={cn(
-        "relative flex min-w-0 items-center gap-3 rounded-[10px] transition-all group",
-        sub ? "pl-7 pr-3 py-[6px]" : "px-3 py-[7px]",
+        "relative flex min-w-0 items-center rounded-[10px] transition-all group",
+        collapsed
+          ? "justify-center p-2 size-9 mx-auto"
+          : sub
+          ? "gap-3 pl-7 pr-3 py-[6px]"
+          : "gap-3 px-3 py-[7px]",
         active
           ? "bg-primary/10 text-primary font-semibold"
           : "text-text-muted hover:bg-surface-2 hover:text-text-main"
       )}
     >
       {active && (
-        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary" />
+        <span
+          className={cn(
+            "absolute left-0 top-1/2 -translate-y-1/2 bg-primary",
+            collapsed ? "h-4 w-[2px] rounded-r-full" : "h-5 w-[3px] rounded-r-full"
+          )}
+        />
       )}
       <span
         className={cn(
@@ -72,7 +83,11 @@ function NavLink({ href, icon, label, active, onClick, sub = false }) {
       >
         {icon}
       </span>
-      <span className="text-[13px] font-medium leading-none min-w-0 truncate" title={label}>{label}</span>
+      {!collapsed && (
+        <span className="text-[13px] font-medium leading-none min-w-0 truncate" title={label}>
+          {label}
+        </span>
+      )}
     </Link>
   );
 }
@@ -81,6 +96,13 @@ export default function Sidebar({ onClose }) {
   const pathname = usePathname();
   const [mediaOpen, setMediaOpen] = useState(false);
   const [enableTranslator, setEnableTranslator] = useState(false);
+  const collapsed = useSidebarStore((state) => state.collapsed);
+  const toggleCollapsed = useSidebarStore((state) => state.toggle);
+  const initFromStorage = useSidebarStore((state) => state.initFromStorage);
+
+  useEffect(() => {
+    initFromStorage();
+  }, [initFromStorage]);
   // One cached session for the whole shell; the theme store and HeaderMenu read
   // the same role instead of each fetching /api/auth/status again.
   // Two scalar selectors: an object-returning selector would hand React a new
@@ -157,22 +179,61 @@ export default function Sidebar({ onClose }) {
 
   return (
     <>
-      <aside className="flex w-72 flex-col border-r border-border-subtle bg-vibrancy backdrop-blur-xl transition-colors duration-300 min-h-full">
-
-        {/* Logo */}
-        <div className="px-6 py-4 flex flex-col gap-2">
-          <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="flex items-center justify-center size-9 rounded-[10px] bg-gradient-to-br from-brand-500 to-brand-700 shadow-[var(--shadow-warm)]">
-              <span className="material-symbols-outlined text-white text-[20px]">hub</span>
-            </div>
-            <div className="flex flex-col">
-              <h1 className="text-lg font-semibold tracking-tight text-text-main">
-                {APP_CONFIG.name}
-              </h1>
-              <span className="text-xs text-text-muted">v{APP_CONFIG.version}</span>
-            </div>
-          </Link>
-          {isApiKeyUser && (
+      <aside
+        className={cn(
+          "flex flex-col border-r border-border-subtle bg-vibrancy backdrop-blur-xl transition-[width] duration-200 min-h-full",
+          collapsed ? "w-16" : "w-72"
+        )}
+      >
+        {/* Logo & Toggle */}
+        <div
+          className={cn(
+            "py-4 flex flex-col gap-2 border-b border-border-subtle/50",
+            collapsed ? "px-2 items-center" : "px-6"
+          )}
+        >
+          <div className="flex items-center justify-between w-full">
+            <Link
+              href="/dashboard"
+              className={cn("flex items-center gap-3 min-w-0", collapsed && "justify-center w-full")}
+              title={collapsed ? `${APP_CONFIG.name} v${APP_CONFIG.version}` : undefined}
+            >
+              <div className="flex items-center justify-center size-9 rounded-[10px] bg-gradient-to-br from-brand-500 to-brand-700 shadow-[var(--shadow-warm)] shrink-0">
+                <span className="material-symbols-outlined text-white text-[20px]">hub</span>
+              </div>
+              {!collapsed && (
+                <div className="flex flex-col min-w-0">
+                  <h1 className="text-lg font-semibold tracking-tight text-text-main truncate">
+                    {APP_CONFIG.name}
+                  </h1>
+                  <span className="text-xs text-text-muted">v{APP_CONFIG.version}</span>
+                </div>
+              )}
+            </Link>
+            {!collapsed && (
+              <button
+                type="button"
+                onClick={toggleCollapsed}
+                className="hidden lg:flex items-center justify-center size-8 rounded-[8px] text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors shrink-0"
+                title="Collapse sidebar"
+                aria-label="Collapse sidebar"
+              >
+                <span className="material-symbols-outlined text-[18px]">left_panel_close</span>
+              </button>
+            )}
+          </div>
+          {collapsed && (
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="hidden lg:flex items-center justify-center size-8 rounded-[8px] text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors mt-1"
+              title="Expand sidebar"
+              aria-label="Expand sidebar"
+            >
+              <span className="material-symbols-outlined text-[18px]">left_panel_open</span>
+            </button>
+          )}
+          {isApiKeyUser && !collapsed && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
               <span className="material-symbols-outlined text-[15px]">key</span>
               <span className="truncate">{authStatus?.displayName || "API Key User"}</span>
@@ -181,7 +242,12 @@ export default function Sidebar({ onClose }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-2 space-y-0.5 overflow-y-auto custom-scrollbar">
+        <nav
+          className={cn(
+            "flex-1 py-2 space-y-0.5 overflow-y-auto custom-scrollbar",
+            collapsed ? "px-2" : "px-4"
+          )}
+        >
           {filteredNavItems.map((item) => (
             <NavLink
               key={item.href}
@@ -190,15 +256,18 @@ export default function Sidebar({ onClose }) {
               label={item.label}
               active={isActive(item.href)}
               onClick={onClose}
+              collapsed={collapsed}
             />
           ))}
 
           {/* FEATURE+ section - custom tools added by this fork */}
           {filteredWorkshopItems.length > 0 && (
-            <div className="pt-3 mt-2 space-y-0.5">
-              <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
-                FEATURE+
-              </p>
+            <div className={cn("pt-3 mt-2 space-y-0.5", collapsed && "border-t border-border-subtle/50 pt-2 mt-2")}>
+              {!collapsed ? (
+                <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
+                  FEATURE+
+                </p>
+              ) : null}
               {filteredWorkshopItems.map((item) => (
                 <NavLink
                   key={item.href}
@@ -207,6 +276,7 @@ export default function Sidebar({ onClose }) {
                   label={item.label}
                   active={isActive(item.href)}
                   onClick={onClose}
+                  collapsed={collapsed}
                 />
               ))}
             </div>
@@ -214,36 +284,49 @@ export default function Sidebar({ onClose }) {
 
           {/* System section - an API key session sees only the parts it may use */}
           {(!isApiKeyUser || canOpenMedia || filteredSystemItems.length > 0 || filteredDebugItems.length > 0) && (
-            <div className="pt-3 mt-2 space-y-0.5">
-              <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
-                System
-              </p>
+            <div className={cn("pt-3 mt-2 space-y-0.5", collapsed && "border-t border-border-subtle/50 pt-2 mt-2")}>
+              {!collapsed ? (
+                <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
+                  System
+                </p>
+              ) : null}
 
               {/* Media Providers accordion */}
               {canOpenMedia && (
-              <button
-                onClick={() => setMediaOpen((v) => !v)}
-                className={cn(
-                  "relative w-full flex items-center gap-3 px-3 py-[7px] rounded-[10px] transition-all group",
-                  pathname.startsWith("/dashboard/media-providers")
-                    ? "bg-primary/10 text-primary"
-                    : "text-text-muted hover:bg-surface-2 hover:text-text-main"
-                )}
-              >
-                {pathname.startsWith("/dashboard/media-providers") && (
-                  <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary" />
-                )}
-                <span className="material-symbols-outlined size-[18px] text-[18px] leading-none shrink-0">perm_media</span>
-                <span className="text-[13px] font-medium leading-none flex-1 text-left min-w-0 truncate" title="Media Providers">Media Providers</span>
-                {MEDIA_PROVIDER_KINDS.some((k) => VISIBLE_MEDIA_KINDS.includes(k.id) && k.isNew) && (
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[3px] bg-green-500/15 text-green-400">NEW</span>
-                )}
-                <span className="material-symbols-outlined text-[14px] transition-transform" style={{ transform: mediaOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
-                  expand_more
-                </span>
-              </button>
+                collapsed ? (
+                  <NavLink
+                    href="/dashboard/media-providers/image"
+                    icon="perm_media"
+                    label="Media Providers"
+                    active={pathname.startsWith("/dashboard/media-providers")}
+                    onClick={onClose}
+                    collapsed={true}
+                  />
+                ) : (
+                  <button
+                    onClick={() => setMediaOpen((v) => !v)}
+                    className={cn(
+                      "relative w-full flex items-center gap-3 px-3 py-[7px] rounded-[10px] transition-all group",
+                      pathname.startsWith("/dashboard/media-providers")
+                        ? "bg-primary/10 text-primary"
+                        : "text-text-muted hover:bg-surface-2 hover:text-text-main"
+                    )}
+                  >
+                    {pathname.startsWith("/dashboard/media-providers") && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-primary" />
+                    )}
+                    <span className="material-symbols-outlined size-[18px] text-[18px] leading-none shrink-0">perm_media</span>
+                    <span className="text-[13px] font-medium leading-none flex-1 text-left min-w-0 truncate" title="Media Providers">Media Providers</span>
+                    {MEDIA_PROVIDER_KINDS.some((k) => VISIBLE_MEDIA_KINDS.includes(k.id) && k.isNew) && (
+                      <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-[3px] bg-green-500/15 text-green-400">NEW</span>
+                    )}
+                    <span className="material-symbols-outlined text-[14px] transition-transform" style={{ transform: mediaOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                      expand_more
+                    </span>
+                  </button>
+                )
               )}
-              {canOpenMedia && mediaOpen && (
+              {canOpenMedia && mediaOpen && !collapsed && (
                 <div className="pl-4">
                   {MEDIA_PROVIDER_KINDS.filter((k) => VISIBLE_MEDIA_KINDS.includes(k.id)).map((kind) => (
                     <NavLink
@@ -276,6 +359,7 @@ export default function Sidebar({ onClose }) {
                   label={item.label}
                   active={isActive(item.href)}
                   onClick={onClose}
+                  collapsed={collapsed}
                 />
               ))}
 
@@ -290,25 +374,25 @@ export default function Sidebar({ onClose }) {
                     label={item.label}
                     active={isActive(item.href)}
                     onClick={onClose}
+                    collapsed={collapsed}
                   />
                 ) : null;
               })}
 
-
               {/* Settings */}
               {!isApiKeyUser && (
-              <NavLink
-                href='/dashboard/profile'
-                icon='settings'
-                label='9Router Settings'
-                active={isActive('/dashboard/profile')}
-                onClick={onClose}
-              />
+                <NavLink
+                  href='/dashboard/profile'
+                  icon='settings'
+                  label='9Router Settings'
+                  active={isActive('/dashboard/profile')}
+                  onClick={onClose}
+                  collapsed={collapsed}
+                />
               )}
             </div>
           )}
         </nav>
-
       </aside>
     </>
   );
@@ -316,5 +400,6 @@ export default function Sidebar({ onClose }) {
 
 Sidebar.propTypes = {
   onClose: PropTypes.func,
+  collapsed: PropTypes.bool,
 };
 

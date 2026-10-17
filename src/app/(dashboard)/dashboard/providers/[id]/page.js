@@ -1874,10 +1874,20 @@ export default function ProviderDetailPage() {
             )}
           </div>
           {!isCompatible && (() => {
-            const allIds = [
-              ...models,
-              ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)),
-            ].filter((m) => { const k = getModelKind(m); return !k || k === "llm"; }).map((m) => m.id);
+            const customModelRows = getProviderCustomModelRows({
+              customModels,
+              modelAliases,
+              providerAlias: providerStorageAlias,
+              builtInModels: models,
+              type: "llm",
+            }).filter((row) => !studioTargetIndex.isStudioTarget(providerStorageAlias, row.id));
+
+            const allIds = Array.from(new Set([
+              ...customModelRows.map((m) => m.id),
+              ...models.filter((m) => { const k = getModelKind(m); return !k || k === "llm"; }).map((m) => m.id),
+              ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)).map((m) => m.id),
+            ]));
+
             const activeIds = allIds.filter((id) => !disabledModelIds.includes(id));
             const canTest = connections.length > 0 || isFreeNoAuth;
             return (

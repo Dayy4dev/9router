@@ -5,7 +5,7 @@ import PropTypes from "prop-types";
 import { Button, ProgressCard } from "@/shared/components";
 import { useTaskStore } from "@/store/taskStore";
 import { getProviderCustomModelRows } from "@/shared/utils/providerCustomModels";
-function CompatibleModelRow({ modelId, fullModel, copied, onCopy, onDeleteAlias, onTest, testStatus, isTesting }) {
+function CompatibleModelRow({ modelId, fullModel, copied, onCopy, onDeleteAlias, onTest, testStatus, latencyMs, isTesting }) {
   const borderColor = testStatus === "ok"
     ? "border-green-500/40"
     : testStatus === "error"
@@ -27,7 +27,25 @@ function CompatibleModelRow({ modelId, fullModel, copied, onCopy, onDeleteAlias,
         {testStatus === "ok" ? "check_circle" : testStatus === "error" ? "cancel" : "smart_toy"}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">{modelId}</p>
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium truncate">{modelId}</p>
+          {Number.isFinite(latencyMs) && latencyMs > 0 && (
+            <span
+              className={`px-1.5 py-0.2 rounded font-mono text-[10px] font-medium ${
+                testStatus === "ok"
+                  ? latencyMs < 800
+                    ? "text-emerald-500 bg-emerald-500/10"
+                    : latencyMs < 2500
+                    ? "text-amber-500 bg-amber-500/10"
+                    : "text-orange-500 bg-orange-500/10"
+                  : "text-red-500 bg-red-500/10"
+              }`}
+              title={`Ping response latency: ${latencyMs}ms`}
+            >
+              {latencyMs < 1000 ? `${latencyMs}ms` : `${(latencyMs / 1000).toFixed(1)}s`}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1 mt-1">
           <code className="text-xs text-text-muted font-mono bg-sidebar px-1.5 py-0.5 rounded">{fullModel}</code>
           <div className="relative group/btn">
@@ -80,10 +98,12 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   const [testingModelId, setTestingModelId] = useState(null);
   const [isTestingAll, setIsTestingAll] = useState(false);
   const [modelTestResults, setModelTestResults] = useState({});
+  const [modelTestLatencies, setModelTestLatencies] = useState({});
 
   const handleTestModel = async (modelId) => {
     if (testingModelId === modelId) return;
     setTestingModelId(modelId);
+    const start = Date.now();
     try {
       const res = await fetch("/api/models/test", {
         method: "POST",
@@ -91,9 +111,13 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
         body: JSON.stringify({ model: `${providerStorageAlias}/${modelId}` }),
       });
       const data = await res.json();
+      const latency = Number.isFinite(data.latencyMs) ? data.latencyMs : (Date.now() - start);
       setModelTestResults((prev) => ({ ...prev, [modelId]: data.ok ? "ok" : "error" }));
+      setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
     } catch {
+      const latency = Date.now() - start;
       setModelTestResults((prev) => ({ ...prev, [modelId]: "error" }));
+      setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
     } finally {
       setTestingModelId(null);
     }
@@ -110,6 +134,7 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
         const m = queue.shift();
         if (!m?.id) break;
         setTestingModelId(m.id);
+        const start = Date.now();
         try {
           const res = await fetch("/api/models/test", {
             method: "POST",
@@ -117,9 +142,13 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
             body: JSON.stringify({ model: `${providerStorageAlias}/${m.id}` }),
           });
           const data = await res.json();
+          const latency = Number.isFinite(data.latencyMs) ? data.latencyMs : (Date.now() - start);
           setModelTestResults((prev) => ({ ...prev, [m.id]: data.ok ? "ok" : "error" }));
+          setModelTestLatencies((prev) => ({ ...prev, [m.id]: latency }));
         } catch {
+          const latency = Date.now() - start;
           setModelTestResults((prev) => ({ ...prev, [m.id]: "error" }));
+          setModelTestLatencies((prev) => ({ ...prev, [m.id]: latency }));
         }
       }
     };
@@ -301,6 +330,7 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
               onDeleteAlias={() => source === "custom" ? onDeleteCustomModel(id) : onDeleteAlias(alias)}
               onTest={connections.length > 0 ? () => handleTestModel(id) : undefined}
               testStatus={modelTestResults[id]}
+              latencyMs={modelTestLatencies[id]}
               isTesting={testingModelId === id}
             />
           ))}

@@ -3,7 +3,7 @@ import { CapacityBadges } from "@/shared/components";
 import PluginMark from "@/shared/components/PluginMark";
 import { useModelPluginMarks } from "./useModelPluginMarks";
 
-export default function ModelRow({ model, fullModel, alias, copied, onCopy, testStatus, isCustom, isFree, onDeleteAlias, onTest, isTesting, onDisable, caps, thinkingSuffix }) {
+export default function ModelRow({ model, fullModel, alias, copied, onCopy, testStatus, latencyMs, isCustom, isFree, onDeleteAlias, onTest, isTesting, onDisable, caps, thinkingSuffix }) {
   const displayModel = thinkingSuffix ? `${fullModel}(${thinkingSuffix})` : fullModel;
   const borderColor = testStatus === "ok"
     ? "border-green-500/40"
@@ -42,6 +42,22 @@ export default function ModelRow({ model, fullModel, alias, copied, onCopy, test
               />
             ))}
             <CapacityBadges caps={caps} colorOverride="text-text-muted/70" size={12} />
+            {Number.isFinite(latencyMs) && latencyMs > 0 && (
+              <span
+                className={`px-1 py-0.2 rounded font-mono text-[9px] font-medium ${
+                  testStatus === "ok"
+                    ? latencyMs < 800
+                      ? "text-emerald-500 bg-emerald-500/10"
+                      : latencyMs < 2500
+                      ? "text-amber-500 bg-amber-500/10"
+                      : "text-orange-500 bg-orange-500/10"
+                    : "text-red-500 bg-red-500/10"
+                }`}
+                title={`Ping response latency: ${latencyMs}ms`}
+              >
+                {latencyMs < 1000 ? `${latencyMs}ms` : `${(latencyMs / 1000).toFixed(1)}s`}
+              </span>
+            )}
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
@@ -106,6 +122,7 @@ ModelRow.propTypes = {
   copied: PropTypes.string,
   onCopy: PropTypes.func.isRequired,
   testStatus: PropTypes.oneOf(["ok", "error"]),
+  latencyMs: PropTypes.number,
   isCustom: PropTypes.bool,
   isFree: PropTypes.bool,
   onDeleteAlias: PropTypes.func,

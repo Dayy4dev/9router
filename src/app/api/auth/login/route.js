@@ -74,11 +74,15 @@ export async function POST(request) {
       const { validateApiKey, getApiKeyByKey } = await import("@/lib/localDb");
       const keyStr = apiKey.trim();
       const valid = await validateApiKey(keyStr, null, ip);
-      if (valid !== true) {
+      // An exhausted quota still signs in: the usage page is the thing that
+      // has to show the bar at 100%, so locking the session out would hide
+      // the very state the operator needs to see. Request-side limits stay
+      // enforced because the SSE handler calls validateApiKey again.
+      const quotaExhausted = valid === "QUOTA_EXCEEDED";
+      if (valid !== true && !quotaExhausted) {
         let msg = "Invalid API key";
         if (valid === "KEY_DISABLED") msg = "API key is disabled";
         else if (valid === "KEY_EXPIRED") msg = "API key is expired";
-        else if (valid === "QUOTA_EXCEEDED") msg = "API key quota exceeded";
         else if (valid === "IP_NOT_ALLOWED") msg = "Client IP not allowed for this API key";
         await audit(request, ip, {
           type: "apikey_login_failed",
@@ -88,6 +92,14 @@ export async function POST(request) {
           actor: keyStr.slice(0, 8) + "…",
         });
         return NextResponse.json({ error: msg }, { status: 401 });
+      }
+      if (quotaExhausted) {
+        await audit(request, ip, {
+          type: "apikey_login_quota",
+          severity: "info",
+          actor: keyStr.slice(0, 8) + "…",
+          detail: "Signed in despite an exhausted token quota",
+        });
       }
 
       const keyObj = await getApiKeyByKey(keyStr);

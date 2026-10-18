@@ -37,7 +37,6 @@ export default function ModelRow({ model, fullModel, alias, copied, onCopy, test
                 key={key}
                 name={key}
                 size={12}
-                strokeWidth={2.4}
                 className="shrink-0 text-text-muted/70"
               />
             ))}

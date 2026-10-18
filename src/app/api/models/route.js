@@ -215,6 +215,7 @@ export async function GET() {
       if (csEnabled && names.some((n) => csModels.has(n))) {
         caps.contextSqueezer = true;
       }
+      const pluginMarks = applyPluginMarks(caps, names);
       models.push({
         provider: s.provider,
         model: s.callName,
@@ -294,8 +295,8 @@ export async function GET() {
 
     return NextResponse.json({ models });
   } catch (error) {
-    console.log("Error fetching models:", error);
-    return NextResponse.json({ error: "Failed to fetch models" }, { status: 500 });
+    console.error("[CRITICAL /api/models ERROR]:", error?.stack || error);
+    return NextResponse.json({ error: "Failed to fetch models", details: String(error) }, { status: 500 });
   }
 }
 

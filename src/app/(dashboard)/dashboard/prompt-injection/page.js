@@ -1303,11 +1303,12 @@ export default function PromptInjectionPage() {
           isOpen={showModelPicker}
           onClose={() => setShowModelPicker(false)}
           activeProviders={activeProviders}
-          onSelect={(modelId) => {
+          onSelect={(picked) => {
+            const modelId = typeof picked === "string" ? picked : picked?.value || picked?.name || picked?.id;
             if (modelId && !formData.targetModels.includes(modelId)) {
               setFormData((prev) => ({
                 ...prev,
-                targetModels: [...prev.targetModels, modelId],
+                targetModels: [...prev.targetModels, String(modelId)],
               }));
             }
             setShowModelPicker(false);

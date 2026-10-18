@@ -1,3 +1,9 @@
+# v0.5.216 (2026-10-18) · 1 commit
+
+## What Was Added
+
+- **Search box above the combo list** (ported from upstream decolua/9router PR #5008): filters case-insensitively over the combo name and the ids of its member models, shows an `N of M shown` counter while a query is active with an inline clear button, and renders an empty state with a **Clear search** action when nothing matches. The list now renders `filteredCombos` instead of the full set. Bulk operations were untouched (the fork has no header select-all), so a hidden combo can never be bulk-deleted.
+
 # v0.5.215 (2026-10-18) · 1 commit
 
 ## What Was Fixed

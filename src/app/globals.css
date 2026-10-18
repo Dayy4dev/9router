@@ -891,6 +891,16 @@ button:disabled,
   line-height: 1.55;
   white-space: pre;
 }
+
+/* Hide scrollbar for Chrome, Safari, Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 .prd-markdown table {
   width: 100%;
   margin: 0.8rem 0;

@@ -1007,26 +1007,28 @@ export default function ProxyPoolsPage() {
       </div>
 
       <Card>
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          {proxyPools.length > 0 && (
-            <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allSelected}
-                onChange={toggleSelectAll}
-                className="size-4 rounded border-black/20 dark:border-white/20"
-              />
-              {allSelected ? "Unselect all" : "Select all"}
-            </label>
-          )}
-          <Badge variant="default">Total: {proxyPools.length}</Badge>
-          <Badge variant="success">Active: {activeCount}</Badge>
-          {errorPools.length > 0 && (
-            <Badge variant="danger">Failed: {errorPools.length}</Badge>
-          )}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {proxyPools.length > 0 && (
+              <label className="flex items-center gap-1.5 text-xs text-text-muted cursor-pointer mr-1">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="size-4 rounded border-black/20 dark:border-white/20"
+                />
+                <span className="whitespace-nowrap">{allSelected ? "Unselect all" : "Select all"}</span>
+              </label>
+            )}
+            <Badge variant="default">Total: {proxyPools.length}</Badge>
+            <Badge variant="success">Active: {activeCount}</Badge>
+            {errorPools.length > 0 && (
+              <Badge variant="danger">Failed: {errorPools.length}</Badge>
+            )}
+          </div>
 
           {proxyPools.length > 0 && (
-            <div className="ml-auto flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 pt-2 sm:pt-0 border-t border-border/40 sm:border-0 sm:ml-auto">
               <Button
                 size="sm"
                 variant="secondary"
@@ -1034,6 +1036,7 @@ export default function ProxyPoolsPage() {
                 onClick={handleHealthCheck}
                 disabled={healthChecking || bulkBusy}
                 title="Test all proxy pools"
+                className="flex-1 sm:flex-none justify-center whitespace-nowrap min-w-[100px]"
               >
                 {healthChecking ? `Testing ${healthProgress.current}/${healthProgress.total}` : "Test All"}
               </Button>
@@ -1045,6 +1048,7 @@ export default function ProxyPoolsPage() {
                   onClick={disableAllDeadPools}
                   disabled={bulkBusy || healthChecking}
                   title="Disable all failed proxies"
+                  className="flex-1 sm:flex-none justify-center whitespace-nowrap"
                 >
                   Disable Dead
                 </Button>
@@ -1057,6 +1061,7 @@ export default function ProxyPoolsPage() {
                   onClick={deleteAllDeadPools}
                   disabled={bulkBusy || healthChecking}
                   title="Delete all failed proxies"
+                  className="flex-1 sm:flex-none justify-center whitespace-nowrap text-red-400 hover:text-red-300 hover:border-red-500/30"
                 >
                   Delete Dead
                 </Button>
@@ -1068,6 +1073,7 @@ export default function ProxyPoolsPage() {
                 onClick={deleteAllPools}
                 disabled={bulkBusy || healthChecking}
                 title="Delete every proxy pool at once"
+                className="flex-1 sm:flex-none justify-center whitespace-nowrap text-red-400 hover:text-red-300 hover:border-red-500/30"
               >
                 Delete All
               </Button>
@@ -1121,7 +1127,7 @@ export default function ProxyPoolsPage() {
                 className="w-full"
               />
             </div>
-            <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-2 overflow-x-auto">
+            <div className="flex items-center gap-1 p-1 rounded-lg bg-surface-2 overflow-x-auto no-scrollbar scroll-smooth max-w-full">
               {[
                 { id: "all", label: "All" },
                 { id: "active", label: "Active" },

@@ -365,17 +365,20 @@ export default function CombosPage() {
       {/* Zero-Config Auto-Routing Status Banner */}
       <Card>
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-primary text-[22px]">auto_awesome</span>
-              <div>
-                <h3 className="text-sm font-semibold flex items-center gap-2">
-                  Zero-Config Auto-Routing
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-border pb-3">
+            <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+              <span className="material-symbols-outlined text-primary text-[24px] shrink-0 mt-0.5 sm:mt-0">auto_awesome</span>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="text-sm font-semibold tracking-tight text-text-main whitespace-nowrap">
+                    Zero-Config Auto-Routing
+                  </h3>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-xs whitespace-nowrap">
+                    <span className="size-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                     Active & Ready
                   </span>
-                </h3>
-                <p className="text-xs text-text-muted mt-0.5">
+                </div>
+                <p className="text-xs text-text-muted mt-1 leading-relaxed">
                   Virtual routing engine dynamically evaluates healthy providers with sub-millisecond in-memory scoring. Zero manual setup needed.
                 </p>
               </div>
@@ -393,18 +396,18 @@ export default function CombosPage() {
               <div
                 key={v.id}
                 onClick={() => copy(v.id)}
-                className="group flex flex-col justify-between p-2.5 rounded-lg border border-border hover:border-primary/50 hover:bg-surface-2 transition-all cursor-pointer relative"
+                className="group flex flex-col justify-between p-3 rounded-lg border border-border/80 bg-surface/50 hover:border-primary/50 hover:bg-surface-2 transition-all cursor-pointer relative"
                 title="Click to copy model name"
               >
                 <div>
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs font-semibold text-primary">{v.label}</span>
-                    <span className="material-symbols-outlined text-xs text-text-muted group-hover:text-primary">
+                    <span className="material-symbols-outlined text-sm text-text-muted group-hover:text-primary transition-colors">
                       {copied === v.id ? "check" : "content_copy"}
                     </span>
                   </div>
-                  <span className="text-[10px] font-medium text-emerald-500 block mt-1">{v.tag}</span>
-                  <p className="text-[11px] text-text-muted mt-1 leading-tight">{v.desc}</p>
+                  <span className="text-[10px] font-medium text-emerald-400 block mt-1.5">{v.tag}</span>
+                  <p className="text-[11px] text-text-muted mt-1 leading-normal">{v.desc}</p>
                 </div>
               </div>
             ))}

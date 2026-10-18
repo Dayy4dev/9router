@@ -8,7 +8,7 @@ import ProviderIcon from "@/shared/components/ProviderIcon";
 import HeaderMenu from "@/shared/components/HeaderMenu";
 import NotificationBell from "@/shared/components/NotificationBell";
 import { useHeaderSearchStore } from "@/store/headerSearchStore";
-import { OAUTH_PROVIDERS, APIKEY_PROVIDERS } from "@/shared/constants/config";
+import { OAUTH_PROVIDERS, APIKEY_PROVIDERS, GITHUB_CONFIG } from "@/shared/constants/config";
 import { MEDIA_PROVIDER_KINDS, AI_PROVIDERS } from "@/shared/constants/providers";
 import { getProviderIconSrc } from "@/shared/utils/providerIcon";
 import { translate } from "@/i18n/runtime";
@@ -320,7 +320,7 @@ export default function Header({ onMenuClick, showMenuButton = true }) {
         )}
         <HeaderSearch />
         <a
-          href="https://github.com/serenhope/9router"
+          href={GITHUB_CONFIG.repoUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-2 px-3 py-1.5 rounded-[10px] text-xs font-medium text-text-muted hover:text-text-main hover:bg-surface-2 transition-all border border-border-subtle"

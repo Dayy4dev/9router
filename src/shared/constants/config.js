@@ -9,11 +9,11 @@ export const APP_CONFIG = {
 
 // GitHub configuration
 export const GITHUB_CONFIG = {
-  changelogUrl: "https://raw.githubusercontent.com/serenhope/9router/refs/heads/master/CHANGELOG.md",
+  changelogUrl: "https://raw.githubusercontent.com/Dayy4dev/9router/refs/heads/dev/CHANGELOG.md",
   donateUrl: "https://9router.com/api/donate",
-  repoUrl: "https://github.com/serenhope/9router",
-  apiRepo: "serenhope/9router", // update checks compare the running checkout with this
-  branch: "master",
+  repoUrl: "https://github.com/Dayy4dev/9router",
+  apiRepo: "Dayy4dev/9router", // update checks compare the running checkout with this
+  branch: "dev",
 };
 
 // Post-login thank-you dialog: shown once per login, skippable forever.
@@ -28,9 +28,9 @@ export const UPDATER_CONFIG = {
   // `9router` from npm would hand the operator a different codebase than the one
   // reporting the update, so the command points at this repository instead.
   npmPackageName: "9router",
-  repoPackageSpec: "github:serenhope/9router",
-  installCmd: "npm install -g github:serenhope/9router",
-  installCmdLatest: "npm install -g github:serenhope/9router@master",
+  repoPackageSpec: "github:Dayy4dev/9router#dev",
+  installCmd: "npm install -g github:Dayy4dev/9router#dev",
+  installCmdLatest: "npm install -g github:Dayy4dev/9router#dev",
   shutdownCountdownSec: 3,
   exitDelayMs: 500,
   statusPort: 20129,

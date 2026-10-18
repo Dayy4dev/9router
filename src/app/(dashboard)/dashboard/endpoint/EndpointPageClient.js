@@ -1310,12 +1310,12 @@ const scopedModelPatterns =
 
       {/* API Keys */}
       <Card id="require-api-key">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div className="flex items-center justify-between gap-3 mb-4">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <span className="material-symbols-outlined text-primary">vpn_key</span>
             API Keys
           </h2>
-          <Button icon="add" onClick={() => setShowAddModal(true)}>
+          <Button size="sm" icon="add" onClick={() => setShowAddModal(true)} className="whitespace-nowrap">
             Create Key
           </Button>
         </div>
@@ -1402,65 +1402,68 @@ const scopedModelPatterns =
                     <p className="text-xs text-text-muted truncate min-w-0">{creatorLabelFor(key)}</p>
                   )}
                   <div className="flex flex-wrap items-center gap-1.5 mt-1 min-w-0">
-                    <code className="text-xs text-text-muted font-mono break-all max-w-[200px] sm:max-w-xs min-w-0">
-                      {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
-                    </code>
-                    <div className="flex items-center gap-1 shrink-0">
-                      <button
-                        onClick={() => toggleKeyVisibility(key.id)}
-                        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
-                        title={visibleKeys.has(key.id) ? "Hide key" : "Show key"}
-                      >
-                        <span className="material-symbols-outlined text-[14px]">
-                          {visibleKeys.has(key.id) ? "visibility_off" : "visibility"}
-                        </span>
-                      </button>
-                      <button
-                        onClick={() => copy(key.key, key.id)}
-                        className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
-                      >
-                        <span className="material-symbols-outlined text-[14px]">
-                          {copied === key.id ? "check" : "content_copy"}
-                        </span>
-                      </button>
+                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-2 border border-border/60 max-w-full">
+                      <code className="text-xs text-text-muted font-mono whitespace-nowrap overflow-hidden text-ellipsis max-w-[170px] sm:max-w-xs select-all">
+                        {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
+                      </code>
+                      <div className="flex items-center gap-0.5 shrink-0 border-l border-border/40 pl-1">
+                        <button
+                          onClick={() => toggleKeyVisibility(key.id)}
+                          className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all cursor-pointer"
+                          title={visibleKeys.has(key.id) ? "Hide key" : "Show key"}
+                        >
+                          <span className="material-symbols-outlined text-[15px]">
+                            {visibleKeys.has(key.id) ? "visibility_off" : "visibility"}
+                          </span>
+                        </button>
+                        <button
+                          onClick={() => copy(key.key, key.id)}
+                          className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all cursor-pointer"
+                          title="Copy API Key"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">
+                            {copied === key.id ? "check" : "content_copy"}
+                          </span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <p className="text-xs text-text-muted mt-1">
                     Created {new Date(key.createdAt).toLocaleDateString()}
                   </p>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2 overflow-hidden">
-                    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                  <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
+                    <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium whitespace-nowrap">
                       Usage: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) + " tokens" : "Unlimited"}
                     </span>
                     {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-gray-500/10 text-text-muted">
+                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-gray-500/10 text-text-muted whitespace-nowrap">
                         Reset: every {key.resetInterval}
                       </span>
                     )}
                     {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
                       <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
                     )}
-                    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
+                    <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium whitespace-nowrap">
                       Models: {key.allowedModels && key.allowedModels !== "*" ? key.allowedModels : "All"}
                     </span>
                     {(key.rpmLimit > 0 || key.tpmLimit > 0) && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-purple-500/10 text-purple-500 font-medium">
+                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-purple-500/10 text-purple-500 font-medium whitespace-nowrap">
                         Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
                       </span>
                     )}
                     {key.ipWhitelist && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium">
+                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium whitespace-nowrap">
                         IP Guard: Active
                       </span>
                     )}
                     {key.tokenLimit > 0 && (key.usedTokens || 0) >= key.tokenLimit && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-semibold">
+                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-semibold whitespace-nowrap">
                         Quota Exceeded
                       </span>
                     )}
                   </div>
                 </div>
-                <div className="flex-shrink-0 items-center gap-1.5">
+                <div className="flex-shrink-0 flex items-center gap-1">
                   <div
                     className="inline-flex items-center px-1"
                     title={key.isActive === false ? "Switch this key back on" : "Switch this key off"}
@@ -1494,39 +1497,39 @@ const scopedModelPatterns =
                       setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
                     }}
                     disabled={isOwnKey(key)}
-                    className={cn("p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                    className={cn("p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
                     title="Edit key settings & quota"
                   >
-                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                    <span className="material-symbols-outlined text-[17px] sm:text-[18px]">edit</span>
                   </button>
  <button
  onClick={() => handleDuplicateKey(key)}
- className={cn("p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+ className={cn("p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
  title="Duplicate key (copy settings)"
  >
- <span className="material-symbols-outlined text-[18px]">library_add</span>
+ <span className="material-symbols-outlined text-[17px] sm:text-[18px]">library_add</span>
  </button>
                   <button
                     onClick={() => handleManualResetUsage(key)}
                     disabled={isOwnKey(key)}
-                    className={cn("p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                    className={cn("p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
                     title="Reset used tokens to 0"
                   >
-                    <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+                    <span className="material-symbols-outlined text-[17px] sm:text-[18px]">restart_alt</span>
                   </button>
           <button
             onClick={() => { setShowSnippetModal(key); setSnippetLang("curl"); }}
-            className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
+            className="p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
             title="Code snippet"
           >
-            <span className="material-symbols-outlined text-[18px]">code</span>
+            <span className="material-symbols-outlined text-[17px] sm:text-[18px]">code</span>
           </button>
                   <button
                     onClick={() => handleDeleteKey(key.id)}
                     disabled={isOwnKey(key)}
-                    className={cn("p-2 hover:bg-red-500/10 rounded text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
+                    className={cn("p-1.5 sm:p-2 hover:bg-red-500/10 rounded text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
                   >
-                    <span className="material-symbols-outlined text-[18px]">delete</span>
+                    <span className="material-symbols-outlined text-[17px] sm:text-[18px]">delete</span>
                   </button>
                 </div>
               </div>

@@ -1,3 +1,14 @@
+# v0.5.212 (2026-10-18) · 1 commit
+
+- refactor(ui): the marks are drawn glyphs again, not text monograms.
+  - PluginMark is back to unique SVG paths (viewfinder, eye, narrowing plates,
+    chain graph, bolt, braces, presses, bridge, funnel) that stay legible at
+    12px and 24px; a text render stopped reading as an icon.
+  - The single-accent rule from v0.5.211 stays: no hue in the constants, the
+    caller picks the ink (theme accent on the tile, muted on a dense row).
+  - Stroke weights are explicit where the surface needs them (1.9 in
+    CapacityBadges, 2.4 on 12px model rows).
+
 # v0.5.211 (2026-10-18) · 1 commit
 
 - refactor(ui): the plugin marks are monograms in one accent instead of seven

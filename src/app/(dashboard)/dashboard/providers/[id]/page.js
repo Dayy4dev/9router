@@ -2006,7 +2006,7 @@ export default function ProviderDetailPage() {
             })()}
           </div>
 
-          {isTestingAll && testAllProgress && (
+          {!isCompatible && isTestingAll && testAllProgress && (
             <div className="w-full bg-border/40 rounded-full h-1.5 overflow-hidden -mt-1 mb-1">
               <div
                 className="bg-primary h-full transition-all duration-300 rounded-full"

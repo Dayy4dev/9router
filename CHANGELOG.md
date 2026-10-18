@@ -1,3 +1,11 @@
+# v0.5.218 (2026-10-18) · 3 commits
+
+## What Was Added / Fixed  (ported from upstream decolua/9router: PRs #4988, #4999, #4989)
+
+- **A flagged proxy egress no longer hard-blocks OpenCode free-tier (#4988 / issue #4983)**: the free-tier gate answers `403 FreeTierError` when the request leaves from an IP it has flagged, but the transport itself succeeded — so the existing proxy-failure fallback never fired and every retry kept leaving through the same flagged pool until a human rebound it. `proxyAwareFetch` now buffers a proxied 403, looks for the `FreeTierError` marker and replays **once** on the direct egress. Non-gate 403s pass through with their original headers, `strictProxy` still never leaves the configured path, a body already consumed by the first attempt surfaces the original 403, and this fork's `getDispatcher` + HTTP 407 proxy-auth detection is preserved underneath.
+- **Quota check for OpenAI/Anthropic compatible providers (#4999)**: a `Quota check` toggle plus a quota path field on both compatible-node modals. When enabled, `/api/usage/[connectionId]` merges the node's `baseUrl`/`quotaPath`/`nodeName` and a new `customCredits` handler reads the standard credits endpoint, so the remaining balance appears on the Quota page. Opt-in: existing compatible nodes keep `quotaEnabled: false` and behave exactly as before. This fork's `logo`/`brand` node fields and its duplicate-name/prefix guard are preserved.
+- **Human-readable model display names (#4989)**: routed slugs (`claude-opus-5-5`, `oc/space-bunny-free`, `cmc/z-ai/glm-5.3-flash`) now publish a readable `name` from `/v1/models`, `/v1beta/models` and `/api/models`, and the CLI writers (`9router connect`, cli-tools settings) write that name into client configs. An operator-set name is never rewritten; ids are untouched and `name` is purely additive. This fork's operator `owned_by` label is preserved on both custom-model paths.
+
 # v0.5.217 (2026-10-18) · 3 commits
 
 ## What Was Added / Fixed  (ported from upstream decolua/9router: PRs #5009, #5003, #5006)

@@ -14,6 +14,7 @@ import {
   CardSkeleton,
 } from "@/shared/components";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
+import { usePrdStore } from "@/store";
 import { PROVIDER_ID_TO_ALIAS } from "@/shared/constants/models";
 import { getPricingForModel, calculateCostFromTokens, formatCost } from "open-sse/providers/pricing.js";
 import { describeEmptyResponse } from "@/shared/utils/modelResponse";
@@ -125,51 +126,72 @@ export default function PrdWriterPage() {
 }
 
 function PrdContent() {
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [brief, setBrief] = useState("");
-  const [template, setTemplate] = useState("product");
-  const [depth, setDepth] = useState("deep");
-  const [language, setLanguage] = useState("en");
-  const [maxTokens, setMaxTokens] = useState("");
-  const [includeAppendix, setIncludeAppendix] = useState(true);
-  const [qualityPass, setQualityPass] = useState(true);
-  const [sectionsOn, setSectionsOn] = useState(() => resolveSections("product").map((s) => s.id));
-  const [showDetails, setShowDetails] = useState(false);
+  const {
+    form,
+    brief,
+    template,
+    depth,
+    language,
+    maxTokens,
+    includeAppendix,
+    qualityPass,
+    sectionsOn,
+    showDetails,
+    model,
+    reviewerModel,
+    activeProviders,
+    modelAliases,
+    studioTargets,
+    markdown,
+    critique,
+    stage,
+    error,
+    errorDetail,
+    usage,
+    cost,
+    elapsed,
+    view,
+    savedId,
+    saving,
+    docs,
+    showPrompt,
+    showTasks,
+    taskSource,
+    taskModelText,
+    taskStage,
+    taskError,
 
-  const [model, setModel] = useState("");
-  const [reviewerModel, setReviewerModel] = useState("");
+    setFormField,
+    setBrief,
+    setTemplate,
+    setDepth,
+    setLanguage,
+    setMaxTokens,
+    setIncludeAppendix,
+    setQualityPass,
+    setSectionsOn,
+    setShowDetails,
+    setModel,
+    setReviewerModel,
+    setView,
+    setShowPrompt,
+    setShowTasks,
+    setTaskSource,
+    loadInputs,
+    loadDocs,
+    openDoc,
+    deleteDoc,
+    saveDoc,
+    generatePrd,
+    stopGeneration,
+    askModelTasks,
+    stopTaskModel,
+  } = usePrdStore();
+
   const [pickerFor, setPickerFor] = useState(null);
-  const [activeProviders, setActiveProviders] = useState([]);
-  const [modelAliases, setModelAliases] = useState({});
-  const [studioTargets, setStudioTargets] = useState({});
-  const [activeApiKey, setActiveApiKey] = useState("");
-
-  const [markdown, setMarkdown] = useState("");
-  const [critique, setCritique] = useState("");
-  const [stage, setStage] = useState("idle");
-  const [error, setError] = useState("");
-  const [errorDetail, setErrorDetail] = useState("");
-  const [usage, setUsage] = useState(null);
-  const [cost, setCost] = useState(null);
-  const [elapsed, setElapsed] = useState(0);
-  const [view, setView] = useState("preview");
-  const [savedId, setSavedId] = useState("");
-  const [saving, setSaving] = useState(false);
-  const [docs, setDocs] = useState([]);
-  const [showPrompt, setShowPrompt] = useState(false);
-  const [showTasks, setShowTasks] = useState(false);
-  const [taskSource, setTaskSource] = useState("plan");
-  const [taskModelText, setTaskModelText] = useState("");
-  const [taskStage, setTaskStage] = useState("idle");
-  const [taskError, setTaskError] = useState("");
   const { copied, copy } = useCopyToClipboard(2000);
 
-  const abortRef = useRef(null);
-  const timerRef = useRef(null);
   const outputRef = useRef(null);
-  const draftRef = useRef("");
-  const taskAbortRef = useRef(null);
-  const taskDraftRef = useRef("");
   const taskListRef = useRef(null);
 
   const outline = useMemo(() => resolveSections(template), [template]);
@@ -181,194 +203,15 @@ function PrdContent() {
   const canGenerate = !!model && (!!brief.trim() || !!form.product.trim()) && !running;
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [providersRes, aliasesRes, studioRes, keysRes, docsRes] = await Promise.all([
-          fetch("/api/providers").then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
-          fetch("/api/models/alias").then((r) => (r.ok ? r.json() : { aliases: {} })).catch(() => ({ aliases: {} })),
-          fetch("/api/model-editor").then((r) => (r.ok ? r.json() : { models: [] })).catch(() => ({ models: [] })),
-          fetch("/api/keys").then((r) => (r.ok ? r.json() : { keys: [] })).catch(() => ({ keys: [] })),
-          fetch("/api/prd").then((r) => (r.ok ? r.json() : { docs: [] })).catch(() => ({ docs: [] })),
-        ]);
-        setActiveProviders(providersRes.connections || []);
-        setModelAliases(aliasesRes.aliases || {});
-        const map = {};
-        for (const studio of studioRes.models || []) map[studio.callName] = studio.targetModel;
-        setStudioTargets(map);
-        const firstActive = (keysRes.keys || []).find((k) => k.isActive !== false);
-        if (firstActive?.key) setActiveApiKey(firstActive.key);
-        setDocs(docsRes.docs || []);
-      } catch (err) {
-        console.error("Error loading PRD writer inputs:", err);
-      }
-    };
-    load();
-  }, []);
+    loadInputs();
+  }, [loadInputs]);
 
-  // Keep the section selection valid when the document profile changes.
-  useEffect(() => {
-    setSectionsOn(outline.map((s) => s.id));
-  }, [outline]);
+  const setField = (key, value) => setFormField(key, value);
+  const docTitle = form.product.trim() || brief.trim().split("\n")[0].slice(0, 70) || "Untitled PRD";
 
-  useEffect(() => {
-    if (!running) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = null;
-      return undefined;
-    }
-    const started = Date.now() - elapsed;
-    timerRef.current = setInterval(() => setElapsed(Date.now() - started), 500);
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running]);
-
-  const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
-
-  const loadDocs = useCallback(async () => {
-    try {
-      const res = await fetch("/api/prd");
-      if (res.ok) setDocs((await res.json()).docs || []);
-    } catch {
-      /* the list refresh is best-effort */
-    }
-  }, []);
-
-  const streamChat = useCallback(
-    async ({ callModel, messages, signal, onDelta }) => {
-      const answer = await streamChatCompletion({
-        model: callModel,
-        messages,
-        signal,
-        onDelta,
-        apiKey: activeApiKey,
-        maxTokens,
-      });
-      if (answer.kind === "empty") {
-        throw new Error(describeEmptyResponse({ finishReason: answer.finishReason, usage: answer.usage }));
-      }
-      return { text: answer.kind === "thinking" ? answer.thinking : answer.text, usage: answer.usage };
-    },
-    [activeApiKey, maxTokens]
-  );
-
-  const appendDelta = useCallback((chunk) => {
-    draftRef.current += chunk;
-    setMarkdown((prev) => prev + chunk);
-  }, []);
-
-  const handleGenerate = useCallback(async () => {
-    if (!canGenerate) return;
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setError("");
-    setErrorDetail("");
-    setCritique("");
-    setUsage(null);
-    setCost(null);
-    setSavedId("");
-    setElapsed(0);
-    setMarkdown("");
-    draftRef.current = "";
-    taskDraftRef.current = "";
-    setTaskModelText("");
-    setTaskStage("idle");
-    setTaskError("");
-    setView("markdown");
-    setStage("drafting");
-
-    try {
-      const messages = buildPrdMessages({
-        brief,
-        fields: form,
-        template,
-        depth,
-        language,
-        sections: sectionsOn,
-        includeAppendix,
-      });
-      const draft = await streamChat({
-        callModel: model,
-        messages,
-        signal: controller.signal,
-        onDelta: appendDelta,
-      });
-      let finalText = draft.text;
-      let finalUsage = draft.usage;
-
-      if (qualityPass && !controller.signal.aborted) {
-        setStage("reviewing");
-        setMarkdown("");
-        draftRef.current = "";
-        const audit = auditSections(finalText, activeSections);
-        const review = await streamChat({
-          callModel: reviewerModel || model,
-          messages: buildReviewMessages({
-            draft: finalText,
-            template,
-            language,
-            missing: audit.missing,
-          }),
-          signal: controller.signal,
-          onDelta: appendDelta,
-        });
-        const parsed = splitReviewOutput(review.text);
-        if (parsed.markdown) {
-          finalText = parsed.markdown;
-          setMarkdown(parsed.markdown);
-        } else {
-          setCritique(review.text);
-          setMarkdown(finalText);
-        }
-        if (parsed.critique) setCritique(parsed.critique);
-        finalUsage = review.usage || draft.usage;
-      }
-
-      if (!finalText.trim()) {
-        setError(describeEmptyResponse({ usage: finalUsage }));
-        setStage("error");
-        return;
-      }
-      setMarkdown(finalText);
-      setUsage(finalUsage || null);
-      setCost(estimateCost(model, finalUsage, studioTargets));
-      setView("preview");
-      setStage("done");
-    } catch (err) {
-      if (err?.name === "AbortError") {
-        setStage(draftRef.current ? "done" : "idle");
-      } else {
-        setError(err?.message || "Generation failed");
-        setErrorDetail(err?.detail || "");
-        setStage("error");
-      }
-    } finally {
-      abortRef.current = null;
-      if (timerRef.current) clearInterval(timerRef.current);
-    }
-  }, [
-    canGenerate,
-    brief,
-    form,
-    template,
-    depth,
-    language,
-    sectionsOn,
-    includeAppendix,
-    qualityPass,
-    model,
-    reviewerModel,
-    streamChat,
-    appendDelta,
-    activeSections,
-    studioTargets,
-  ]);
-
-  const handleStop = () => {
-    if (abortRef.current) abortRef.current.abort();
-    setStage(markdown ? "done" : "idle");
-  };
+  const handleGenerate = () => generatePrd();
+  const handleStop = () => stopGeneration();
+  const handleSave = () => saveDoc(docTitle, activeSections);
 
   const audit = useMemo(() => auditSections(markdown, activeSections), [markdown, activeSections]);
   const html = useMemo(
@@ -381,44 +224,6 @@ function PrdContent() {
       outputRef.current.scrollTop = outputRef.current.scrollHeight;
     }
   }, [markdown, view, running]);
-
-  const docTitle = form.product.trim() || brief.trim().split("\n")[0].slice(0, 70) || "Untitled PRD";
-
-  const handleSave = async () => {
-    if (!markdown.trim()) return;
-    setSaving(true);
-    try {
-      const res = await fetch("/api/prd", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: savedId || undefined,
-          title: docTitle,
-          brief: [form.product, form.problem, brief].filter(Boolean).join("\n").slice(0, 6000),
-          markdown,
-          model,
-          reviewerModel: qualityPass ? reviewerModel || model : "",
-          template,
-          depth,
-          language,
-          sections: activeSections.map((s) => s.heading),
-          tokensIn: usage?.prompt_tokens || usage?.input_tokens || 0,
-          tokensOut: usage?.completion_tokens || usage?.output_tokens || 0,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error || "Failed to save PRD");
-        return;
-      }
-      setSavedId(data.doc?.id || "");
-      loadDocs();
-    } catch (err) {
-      setError(err?.message || "Failed to save PRD");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   const handleDownload = () => {
     if (!markdown.trim()) return;
@@ -458,98 +263,23 @@ function PrdContent() {
   };
 
   const openTaskList = useCallback(() => {
-    setTaskError("");
+    usePrdStore.getState().setTaskError("");
     setShowTasks(true);
-  }, []);
+  }, [setShowTasks]);
 
   const closeTaskList = useCallback(() => {
-    if (taskAbortRef.current) {
-      taskAbortRef.current.abort();
-      taskAbortRef.current = null;
-    }
-    setTaskStage("idle");
-    setTaskError("");
+    stopTaskModel();
+    usePrdStore.getState().setTaskError("");
     setShowTasks(false);
-  }, []);
+  }, [stopTaskModel, setShowTasks]);
 
   const stopTaskRequest = useCallback(() => {
-    if (taskAbortRef.current) taskAbortRef.current.abort();
-    setTaskStage(taskDraftRef.current.trim() ? "done" : "idle");
-  }, []);
+    stopTaskModel();
+  }, [stopTaskModel]);
 
-  const handleAskModel = useCallback(async () => {
-    if (!model || running || taskRunning || !markdown.trim()) return;
-    const controller = new AbortController();
-    taskAbortRef.current = controller;
-    taskDraftRef.current = "";
-    setTaskModelText("");
-    setTaskError("");
-    setTaskStage("running");
-    try {
-      const answer = await streamChat({
-        callModel: model,
-        messages: buildPlanExtractionMessages(markdown),
-        signal: controller.signal,
-        onDelta: (chunk) => {
-          taskDraftRef.current += chunk;
-          setTaskModelText(taskDraftRef.current);
-        },
-      });
-      const text = cleanModelChecklist(answer?.text || taskDraftRef.current);
-      taskDraftRef.current = text;
-      setTaskModelText(text);
-      setTaskStage(text.trim() ? "done" : "error");
-      if (!text.trim()) setTaskError("The model answered with nothing usable, so ask it again.");
-    } catch (err) {
-      if (err?.name === "AbortError") {
-        const partial = cleanModelChecklist(taskDraftRef.current);
-        taskDraftRef.current = partial;
-        setTaskModelText(partial);
-        setTaskStage(partial.trim() ? "done" : "idle");
-      } else {
-        setTaskError(err?.message || "The task list request failed.");
-        setTaskStage("error");
-      }
-    } finally {
-      if (taskAbortRef.current === controller) taskAbortRef.current = null;
-    }
-  }, [model, running, taskRunning, markdown, streamChat]);
-
-  const openDoc = async (id) => {
-    try {
-      const res = await fetch(`/api/prd?id=${encodeURIComponent(id)}`);
-      if (!res.ok) return;
-      const { doc } = await res.json();
-      if (!doc) return;
-      setMarkdown(doc.markdown || "");
-      setSavedId(doc.id);
-      setStage("done");
-      setError("");
-      setCritique("");
-      taskDraftRef.current = "";
-      setTaskModelText("");
-      setTaskStage("idle");
-      setUsage(null);
-      setCost(null);
-      setView("preview");
-      setModel(doc.model || model);
-      setTemplate(PRD_TEMPLATES.some((t) => t.value === doc.template) ? doc.template : template);
-      setDepth(PRD_DEPTHS.some((d) => d.value === doc.depth) ? doc.depth : depth);
-      setLanguage(PRD_LANGUAGES.some((l) => l.value === doc.language) ? doc.language : language);
-    } catch {
-      /* opening a saved doc is best-effort */
-    }
-  };
-
-  const deleteDoc = async (id) => {
-    try {
-      await fetch(`/api/prd?id=${encodeURIComponent(id)}`, { method: "DELETE" });
-      if (id === savedId) setSavedId("");
-      loadDocs();
-    } catch {
-      /* the list refresh reports failures */
-    }
-  };
+  const handleAskModel = useCallback(() => {
+    askModelTasks();
+  }, [askModelTasks]);
 
   const promptPreview = useMemo(
     () =>

@@ -1,7 +1,10 @@
-# v0.5.215 (2026-10-18) · 6 commits
+# v0.5.215 (2026-10-18) · 8 commits
 
 ## Features & Improvements
 
+- **PRD Builder Background Generation & Persistence**: Moved PRD generation state and streaming lifecycle into global Zustand store (`usePrdStore`) so generating documents and extracting task lists continue seamlessly across page navigation without losing progress or streaming buffers.
+- **PRD Generation Progress in Notification Bell**: Direct integration with `taskStore` displaying live drafting/reviewing progress, character counter, and cancel control in the notification bell menu.
+- **Change Log Accent Branding**: Updated Dayy4dev tab styling to vibrant blue (`#3b82f6`) and differentiated Serenhope tab to emerald green (`#10b981`).
 - **Global Model Test Store**: Persist model testing progress, latency, and status badges across page navigation and SPA route switching (`useModelTestStore`).
 - **Live Model Testing Progress in Notification Bell**: Direct integration with `taskStore` showing dynamic percentage and real-time pass/fail counters.
 - **Single Progress Bar per View**: Cleaned up duplicated progress bar rendering in provider detail pages.

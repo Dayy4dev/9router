@@ -15,9 +15,9 @@ export const DAYY4DEV_SOURCE = {
   label: "Dayy4dev",
   heading: "Contributed by Dayy4dev",
   accent: {
-    color: "#a855f7",
-    border: "rgba(168,85,247,0.35)",
-    bg: "rgba(168,85,247,0.06)",
+    color: "#3b82f6",
+    border: "rgba(59,130,246,0.35)",
+    bg: "rgba(59,130,246,0.06)",
     icon: "code",
   },
 };
@@ -27,9 +27,9 @@ export const SERENHOPE_SOURCE = {
   label: "Serenhope",
   heading: "Contributed by Serenhope",
   accent: {
-    color: "#60a5fa",
-    border: "rgba(96,165,250,0.35)",
-    bg: "rgba(96,165,250,0.06)",
+    color: "#10b981",
+    border: "rgba(16,185,129,0.35)",
+    bg: "rgba(16,185,129,0.06)",
     icon: "star",
   },
 };

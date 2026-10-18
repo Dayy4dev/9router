@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import PropTypes from "prop-types";
 import { Button } from "@/shared/components";
 import { useTaskStore } from "@/store/taskStore";
+import { useModelTestStore } from "@/store/modelTestStore";
 import { getProviderCustomModelRows } from "@/shared/utils/providerCustomModels";
 function CompatibleModelRow({ modelId, fullModel, copied, onCopy, onDeleteAlias, onTest, testStatus, latencyMs, isTesting }) {
   const borderColor = testStatus === "ok"
@@ -95,111 +96,28 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [deletingFailed, setDeletingFailed] = useState(false);
-  const [testingModelId, setTestingModelId] = useState(null);
-  const [isTestingAll, setIsTestingAll] = useState(false);
-  const [testAllProgress, setTestAllProgress] = useState(null);
-  const [modelTestResults, setModelTestResults] = useState({});
-  const [modelTestLatencies, setModelTestLatencies] = useState({});
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [modelStatusFilter, setModelStatusFilter] = useState("all");
 
-  const handleTestModel = async (modelId) => {
-    if (testingModelId === modelId) return;
-    setTestingModelId(modelId);
-    const start = Date.now();
-    try {
-      const res = await fetch("/api/models/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: `${providerStorageAlias}/${modelId}` }),
-      });
-      const data = await res.json();
-      const latency = Number.isFinite(data.latencyMs) ? data.latencyMs : (Date.now() - start);
-      setModelTestResults((prev) => ({ ...prev, [modelId]: data.ok ? "ok" : "error" }));
-      setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
-    } catch {
-      const latency = Date.now() - start;
-      setModelTestResults((prev) => ({ ...prev, [modelId]: "error" }));
-      setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
-    } finally {
-      setTestingModelId(null);
-    }
+  const providerKey = providerStorageAlias;
+  const testState = useModelTestStore((s) => s.tests[providerKey]);
+  const isTestingAll = !!testState?.isTestingAll;
+  const testAllProgress = testState?.progress || null;
+  const modelTestResults = testState?.results || {};
+  const modelTestLatencies = testState?.latencies || {};
+  const testingModelIds = useMemo(() => new Set(testState?.testingModelIds || []), [testState?.testingModelIds]);
+
+  const handleTestModel = (modelId) => {
+    return useModelTestStore.getState().testSingleModel(providerKey, modelId);
   };
 
-  const handleTestAllModels = async (modelsToTest) => {
-    if (isTestingAll || !modelsToTest?.length) return;
-    setIsTestingAll(true);
-    const taskId = `test-models-${providerStorageAlias}`;
-    const total = modelsToTest.length;
-    let completed = 0;
-    let passed = 0;
-    let failed = 0;
-    let cancelled = false;
-
-    setTestAllProgress({ current: 0, total, passed: 0, failed: 0 });
-
-    useTaskStore.getState().start({
-      id: taskId,
-      title: `Testing ${providerDisplayAlias || "provider"} models`,
-      message: `Testing models: 0/${total}`,
-      progress: 0,
-      href: typeof window !== "undefined" ? window.location.pathname : "/dashboard/providers",
-      onCancel: () => {
-        cancelled = true;
-      },
+  const handleTestAllModels = (modelsToTest) => {
+    return useModelTestStore.getState().testAllModels({
+      providerKey,
+      targetIds: modelsToTest,
+      providerTitle: providerDisplayAlias || "provider",
+      href: typeof window !== "undefined" ? window.location.pathname : `/dashboard/providers/${providerKey}`,
     });
-
-    const queue = [...modelsToTest];
-    const workerCount = Math.min(4, queue.length);
-
-    const worker = async () => {
-      while (queue.length > 0) {
-        if (cancelled) break;
-        const m = queue.shift();
-        if (!m?.id) break;
-        setTestingModelId(m.id);
-        const start = Date.now();
-        let ok = false;
-        try {
-          const res = await fetch("/api/models/test", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ model: `${providerStorageAlias}/${m.id}` }),
-          });
-          const data = await res.json();
-          ok = !!data.ok;
-          const latency = Number.isFinite(data.latencyMs) ? data.latencyMs : (Date.now() - start);
-          setModelTestResults((prev) => ({ ...prev, [m.id]: ok ? "ok" : "error" }));
-          setModelTestLatencies((prev) => ({ ...prev, [m.id]: latency }));
-        } catch {
-          const latency = Date.now() - start;
-          setModelTestResults((prev) => ({ ...prev, [m.id]: "error" }));
-          setModelTestLatencies((prev) => ({ ...prev, [m.id]: latency }));
-        }
-        completed++;
-        if (ok) passed++;
-        else failed++;
-        const pct = Math.min(100, Math.round((completed / total) * 100));
-        setTestAllProgress({ current: completed, total, passed, failed });
-        useTaskStore.getState().update(taskId, {
-          progress: pct,
-          message: `Testing models: ${completed}/${total} (${passed} passed, ${failed} failed)`,
-        });
-      }
-    };
-
-    try {
-      await Promise.all(Array.from({ length: workerCount }, () => worker()));
-    } finally {
-      setTestingModelId(null);
-      setIsTestingAll(false);
-      setTestAllProgress(null);
-      useTaskStore.getState().update(taskId, {
-        progress: 100,
-        message: `Completed: ${passed}/${total} passed${failed > 0 ? `, ${failed} failed` : ""}`,
-      });
-      useTaskStore.getState().finish(taskId);
-    }
   };
 
   const handleDeleteFailedModels = async (failedModels) => {
@@ -470,7 +388,7 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
               onTest={connections.length > 0 ? () => handleTestModel(id) : undefined}
               testStatus={modelTestResults[id]}
               latencyMs={modelTestLatencies[id]}
-              isTesting={testingModelId === id}
+              isTesting={testingModelIds.has(id)}
             />
           ))}
         </div>

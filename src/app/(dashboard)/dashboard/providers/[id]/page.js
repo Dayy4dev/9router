@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,6 +13,7 @@ import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
 import { getThinkingLevels } from "open-sse/providers/thinkingLevels.js";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { useTaskStore } from "@/store/taskStore";
+import { useModelTestStore } from "@/store/modelTestStore";
 import { useModelCaps } from "@/shared/hooks/useModelCaps";
 import { translate } from "@/i18n/runtime";
 import { fetchSuggestedModels } from "@/shared/utils/providerModelsFetcher";
@@ -65,10 +66,6 @@ export default function ProviderDetailPage() {
   const [customModels, setCustomModels] = useState([]);
   const [studioModels, setStudioModels] = useState([]);
   const [headerImgError, setHeaderImgError] = useState(false);
-  const [modelTestResults, setModelTestResults] = useState({});
-  const [modelTestLatencies, setModelTestLatencies] = useState({});
-  const [modelsTestError, setModelsTestError] = useState("");
-  const [testingModelIds, setTestingModelIds] = useState(() => new Set());
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [modelStatusFilter, setModelStatusFilter] = useState("all"); // "all" | "ok" | "error" | "untested"
   const [showAddCustomModel, setShowAddCustomModel] = useState(false);
@@ -195,6 +192,14 @@ export default function ProviderDetailPage() {
     return levels && levels.includes(thinkingMode) ? thinkingMode : null;
   };
   const providerStorageAlias = isCompatible ? providerId : providerAlias;
+  const providerKey = providerStorageAlias || providerId;
+  const testState = useModelTestStore((s) => s.tests[providerKey]);
+  const isTestingAll = !!testState?.isTestingAll;
+  const testAllProgress = testState?.progress || null;
+  const modelTestResults = testState?.results || {};
+  const modelTestLatencies = testState?.latencies || {};
+  const modelsTestError = testState?.error || "";
+  const testingModelIds = useMemo(() => new Set(testState?.testingModelIds || []), [testState?.testingModelIds]);
   // Studio names replace the model they point at: those models leave the list below.
   const studioTargetIndex = buildStudioTargetIndex(studioModels);
   // Union of levels across this provider's reasoning models - drives the level picker options.
@@ -1239,95 +1244,17 @@ export default function ProviderDetailPage() {
     </Modal>
   );
 
-  const handleTestModel = async (modelId) => {
-    if (testingModelIds.has(modelId)) return false;
-    setTestingModelIds((prev) => new Set(prev).add(modelId));
-    const start = Date.now();
-    try {
-      const res = await fetch("/api/models/test", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: `${providerStorageAlias}/${modelId}` }),
-      });
-      const data = await res.json();
-      const latency = Number.isFinite(data.latencyMs) ? data.latencyMs : (Date.now() - start);
-      const isOk = !!data.ok;
-      setModelTestResults((prev) => ({ ...prev, [modelId]: isOk ? "ok" : "error" }));
-      setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
-      setModelsTestError(isOk ? "" : (data.error || "Model not reachable"));
-      return isOk;
-    } catch {
-      const latency = Date.now() - start;
-      setModelTestResults((prev) => ({ ...prev, [modelId]: "error" }));
-      setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
-      setModelsTestError("Network error");
-      return false;
-    } finally {
-      setTestingModelIds((prev) => { const n = new Set(prev); n.delete(modelId); return n; });
-    }
+  const handleTestModel = (modelId) => {
+    return useModelTestStore.getState().testSingleModel(providerKey, modelId);
   };
 
-  const [isTestingAll, setIsTestingAll] = useState(false);
-  const [testAllProgress, setTestAllProgress] = useState(null);
-
-  const handleTestAllModels = async (targetIds) => {
-    if (isTestingAll || !targetIds?.length) return;
-    setIsTestingAll(true);
-    setModelsTestError("");
-
-    const taskId = `test-models-${providerStorageAlias || providerId}`;
-    const total = targetIds.length;
-    let completed = 0;
-    let passed = 0;
-    let failed = 0;
-    let cancelled = false;
-
-    setTestAllProgress({ current: 0, total, passed: 0, failed: 0 });
-
-    useTaskStore.getState().start({
-      id: taskId,
-      title: `Testing ${providerInfo?.name || providerDisplayAlias || "provider"} models`,
-      message: `Testing models: 0/${total}`,
-      progress: 0,
-      href: typeof window !== "undefined" ? window.location.pathname : "/dashboard/providers",
-      onCancel: () => {
-        cancelled = true;
-      },
+  const handleTestAllModels = (targetIds) => {
+    return useModelTestStore.getState().testAllModels({
+      providerKey,
+      targetIds,
+      providerTitle: providerInfo?.name || providerDisplayAlias || "provider",
+      href: typeof window !== "undefined" ? window.location.pathname : `/dashboard/providers/${providerKey}`,
     });
-
-    // Pool of workers to run tests concurrently (max 4 concurrent)
-    const queue = [...targetIds];
-    const workerCount = Math.min(4, queue.length);
-
-    const worker = async () => {
-      while (queue.length > 0) {
-        if (cancelled) break;
-        const modelId = queue.shift();
-        if (!modelId) break;
-        const isOk = await handleTestModel(modelId);
-        completed++;
-        if (isOk) passed++;
-        else failed++;
-        const pct = Math.min(100, Math.round((completed / total) * 100));
-        setTestAllProgress({ current: completed, total, passed, failed });
-        useTaskStore.getState().update(taskId, {
-          progress: pct,
-          message: `Testing models: ${completed}/${total} (${passed} passed, ${failed} failed)`,
-        });
-      }
-    };
-
-    try {
-      await Promise.all(Array.from({ length: workerCount }, () => worker()));
-    } finally {
-      setIsTestingAll(false);
-      setTestAllProgress(null);
-      useTaskStore.getState().update(taskId, {
-        progress: 100,
-        message: `Completed: ${passed}/${total} passed${failed > 0 ? `, ${failed} failed` : ""}`,
-      });
-      useTaskStore.getState().finish(taskId);
-    }
   };
 
   const renderModelsSection = () => {

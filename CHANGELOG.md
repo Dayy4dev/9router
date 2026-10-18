@@ -1,3 +1,27 @@
+# v0.5.209 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **API-key quota card no longer under-reports after log cleanup**: `/api/usage/api-keys` summed `usageHistory` only, so a key at 20.65M/100M showed 6.4M (6%) once history rows were pruned by export/import cycles. The card now shows `max(apiKeys.usedTokens column, window sum)` — the column is what `validateApiKey` enforces, the log stays a fallback that still wins right after a window rollover.
+
+# v0.5.208 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **Invalid API-key logins now count toward the lockout**, same as wrong passwords: `POST /api/auth/login` with an unknown/disabled/expired/IP-locked key replies `Invalid API key. N attempt(s) left before lockout.`, burns the same `recordFail` counter via `loginLimiter`, and reaches the same 429 `Too many failed attempts` lock after the limit. Quota-exhausted keys still sign in (v0.5.207). Audit event now carries the remaining attempts.
+
+# v0.5.207 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **Exhausted API keys can still sign in to the dashboard**: `POST /api/auth/login` previously rejected `QUOTA_EXCEEDED` with 401, so a key at its token limit (e.g. 100M/100M) could never open the dashboard to see its own usage bar. The login route now lets a quota-exhausted key through (session + audit event `apikey_login_quota`); request-side enforcement is unchanged — `/v1/*` still fails because the SSE handler validates the key again. Disabled/expired/IP-locked keys are still rejected at login.
+
+# v0.5.206 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **Relay deploy jobs no longer fail with `Cannot find module '@/app/api/proxy-pools/cloudflare-deploy/route'`**: `deploy-relay` resolved its route with `await import(modPath)` from a variable map, which webpack cannot trace (it emitted `Critical dependency: the request of a dependency is an expression`), so at runtime Node saw the raw `@/` alias and threw. The map now holds static importer functions (`() => import("@/app/api/proxy-pools/<provider>-deploy/route")`), so every route is a literal webpack bundles. `health-check`, which already used a literal, was unaffected.
+
 # v0.5.205 (2026-10-18) · 2 commits
 
 ## What Was Fixed

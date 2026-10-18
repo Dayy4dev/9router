@@ -1548,7 +1548,7 @@ const scopedModelPatterns =
                       type="button"
                       onClick={() => handleDeleteKey(key.id)}
                       disabled={isOwnKey(key)}
-                      className={cn("p-1.5 sm:p-2 hover:bg-red-500/10 rounded-md text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
+                      className={cn("p-1.5 sm:p-2 hover:bg-red-500/10 rounded-md text-red-500 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
                       title="Delete API key"
                     >
                       <span className="material-symbols-outlined text-[18px]">delete</span>

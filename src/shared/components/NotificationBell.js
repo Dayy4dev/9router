@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import ChangelogModal from "./ChangelogModal";
 import BellMenu from "./BellMenu";
 import NotifToast, { mergeLiveTasks } from "./NotifToast";
@@ -27,6 +28,7 @@ const SEVERITY_STYLE = {
  * visible while this menu is open, and the badge says the rest of the time.
  */
 export default function NotificationBell() {
+  const router = useRouter();
   const role = useSessionStore((state) => state.role);
   const isAdmin = role !== "apikey";
   const [open, setOpen] = useState(false);
@@ -197,8 +199,36 @@ export default function NotificationBell() {
   // page that owns the run.
   const handlePick = (task) => {
     setOpen(false);
-    if (task.href && typeof window !== "undefined") {
-      window.location.assign(task.href);
+    if (!task?.href || typeof window === "undefined") return;
+
+    try {
+      const currentPath = window.location.pathname;
+      const targetUrl = new URL(task.href, window.location.origin);
+
+      // If already on the target page, do NOT reload or re-navigate.
+      // This prevents interrupting in-flight async background tasks (e.g. model testing).
+      if (targetUrl.pathname === currentPath) {
+        if (targetUrl.hash) {
+          const el = document.querySelector(targetUrl.hash);
+          el?.scrollIntoView({ behavior: "smooth" });
+        }
+        return;
+      }
+
+      // Use client-side router navigation instead of hard page reload
+      if (router && typeof router.push === "function") {
+        router.push(task.href);
+      } else {
+        window.location.assign(task.href);
+      }
+    } catch {
+      if (window.location.pathname !== task.href) {
+        if (router && typeof router.push === "function") {
+          router.push(task.href);
+        } else {
+          window.location.assign(task.href);
+        }
+      }
     }
   };
 

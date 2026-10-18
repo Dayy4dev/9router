@@ -355,6 +355,24 @@ export async function buildModelsList(kindFilter, options = {}) {
 
   const models = [];
 
+  // Zero-Config Auto-Routing Virtual Models (`auto`, `auto/coding`, `auto/fast`, `auto/cheap`, `auto/offline`)
+  if (!kindFilter || kindFilter.includes(LLM_KIND)) {
+    const { AUTO_MODEL_VARIANTS } = await import("@/sse/services/autoRouter.js");
+    for (const v of AUTO_MODEL_VARIANTS) {
+      models.push({
+        id: v.id,
+        object: "model",
+        created: 1700000000,
+        owned_by: "system",
+        context_length: 128000,
+        max_completion_tokens: 8192,
+        name: v.name,
+        description: v.desc,
+        isAuto: true,
+      });
+    }
+  }
+
   // Lookup map so aggregateComboCapabilities can recursively resolve nested combos
   const comboByName = Object.fromEntries(combos.map((c) => [c.name, c.models]));
 

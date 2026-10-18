@@ -362,6 +362,56 @@ export default function CombosPage() {
 
   return (
     <div className="flex min-w-0 flex-col gap-6 px-1 sm:px-0">
+      {/* Zero-Config Auto-Routing Status Banner */}
+      <Card>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[22px]">auto_awesome</span>
+              <div>
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  Zero-Config Auto-Routing
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    Active & Ready
+                  </span>
+                </h3>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Virtual routing engine dynamically evaluates healthy providers with sub-millisecond in-memory scoring. Zero manual setup needed.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
+            {[
+              { id: "auto", label: "auto", tag: "Balanced LKGP", desc: "Auto-routes to last known healthy provider" },
+              { id: "auto/coding", label: "auto/coding", tag: "Coding Specialist", desc: "Prioritizes Claude, Codex, Qwen & DeepSeek" },
+              { id: "auto/fast", label: "auto/fast", tag: "Low Latency", desc: "Prioritizes fastest responsive models" },
+              { id: "auto/cheap", label: "auto/cheap", tag: "Free & Cheap", desc: "Prefers free tiers & low cost providers" },
+              { id: "auto/offline", label: "auto/offline", tag: "Max Quota / Local", desc: "Prefers local or non-exhausted accounts" },
+            ].map((v) => (
+              <div
+                key={v.id}
+                onClick={() => copy(v.id)}
+                className="group flex flex-col justify-between p-2.5 rounded-lg border border-border hover:border-primary/50 hover:bg-surface-2 transition-all cursor-pointer relative"
+                title="Click to copy model name"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono text-xs font-semibold text-primary">{v.label}</span>
+                    <span className="material-symbols-outlined text-xs text-text-muted group-hover:text-primary">
+                      {copied === v.id ? "check" : "content_copy"}
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-medium text-emerald-500 block mt-1">{v.tag}</span>
+                  <p className="text-[11px] text-text-muted mt-1 leading-tight">{v.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Card>
+
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">

@@ -27,6 +27,24 @@ import * as log from "../utils/logger.js";
 import { updateProviderCredentials, checkAndRefreshToken } from "../services/tokenRefresh.js";
 import { getProjectIdForConnection } from "open-sse/services/projectId.js";
 import { stripModelContextMarker } from "open-sse/utils/modelMarkers.js";
+import {
+  isAutoModel,
+  resolveAutoModelChain,
+  recordAutoMetrics,
+  invalidateAutoSession,
+} from "../services/autoRouter.js";
+
+function deriveAutoSessionKey(request, apiKey) {
+  if (apiKey) return `key_${apiKey.slice(0, 16)}`;
+  const headers = request?.headers;
+  const conversationId =
+    headers?.get("x-conversation-id") ||
+    headers?.get("x-session-id") ||
+    headers?.get("conversation_id") ||
+    headers?.get("session-id");
+  if (conversationId) return `conv_${conversationId}`;
+  return `ip_${getClientIp(request)}`;
+}
 
 
 /**
@@ -150,6 +168,45 @@ export async function handleChat(request, clientRawRequest = null) {
     } catch { /* studio lookup is best-effort; fall through to the raw name */ }
   }
   const comboModels = await getComboModels(comboEntryName);
+
+  // Zero-Config Auto-Routing: virtual models `auto`, `auto/coding`, `auto/fast`,
+  // `auto/cheap`, `auto/offline`. Resolves a dynamic fallback chain from live
+  // connection health (in-memory scoring engine) and reuses the existing combo
+  // fallback machinery, so manual combos are untouched.
+  if (isAutoModel(modelStr)) {
+    const sessionKey = deriveAutoSessionKey(request, apiKey);
+    const autoChain = await resolveAutoModelChain(modelStr, {
+      sessionKey,
+      requiredCapabilities,
+    });
+    if (autoChain.length === 0) {
+      return errorResponse(HTTP_STATUS.SERVICE_UNAVAILABLE, `No active provider connections available for ${modelStr}`);
+    }
+    log.info("AUTO", `${modelStr} → [${autoChain.slice(0, 5).join(", ")}${autoChain.length > 5 ? `, +${autoChain.length - 5} more` : ""}]`);
+
+    const autoSettings = settings;
+    const comboStickyLimit = autoSettings.comboStickyRoundRobinLimit;
+    const handleSingleWithMetrics = async (b, m) => {
+      const startedAt = Date.now();
+      const res = await handleSingleModelChat(b, m, clientRawRequest, request, apiKey);
+      const latencyMs = Date.now() - startedAt;
+      const success = !!res?.ok;
+      recordAutoMetrics(m, { latencyMs, success, status: res?.status || 200 });
+      if (!success) invalidateAutoSession(sessionKey, m);
+      return res;
+    };
+
+    return handleComboChat({
+      body,
+      models: autoChain,
+      handleSingleModel: handleSingleWithMetrics,
+      log,
+      comboName: modelStr,
+      comboStrategy: "fallback",
+      comboStickyLimit,
+      autoSwitch: false,
+    });
+  }
 
   // Apply Gateway Prompt Injections for Combo or Model
   try {

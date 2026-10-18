@@ -238,8 +238,28 @@ export async function GET() {
       combos = await getCombos();
     } catch {
       combos = [];
-    }
-    const comboByName = {};
+      }
+
+      // Include Zero-Config Auto-Routing Virtual Models in dashboard models list
+      try {
+        const { AUTO_MODEL_VARIANTS } = await import("@/sse/services/autoRouter.js");
+        for (const v of AUTO_MODEL_VARIANTS) {
+          models.push({
+            provider: "auto",
+            model: v.id,
+            name: v.name,
+            fullModel: v.id,
+            routedModel: v.id,
+            alias: v.id,
+            caps: { chat: true, vision: true, reasoning: true, tools: true, contextLength: 128000, maxOutput: 8192 },
+            pluginMarks: ["auto"],
+            isAuto: true,
+            description: v.desc,
+          });
+        }
+      } catch { /* fail open */ }
+
+      const comboByName = {};
     for (const combo of combos) {
       if (Array.isArray(combo.models) && combo.models.length) comboByName[combo.name] = combo.models;
     }

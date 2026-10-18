@@ -1,3 +1,11 @@
+# v0.5.217 (2026-10-18) · 3 commits
+
+## What Was Added / Fixed  (ported from upstream decolua/9router: PRs #5009, #5003, #5006)
+
+- **Usage table opens on most recently used** (#5009): the by-model / account / API-key / endpoint tables defaulted to an alphabetical `rawModel` sort, so the rows that just moved were buried mid-list. The default sort is now `lastUsed` descending; clicking any column header still overrides it through the URL params.
+- **`opencode/glm-5.3-flash-free` accepts reasoning again** (#5003): the id had no exact capability entry, so it resolved through the `*glm-5.3*` pattern and emitted z.ai's native `thinking:{type:"enabled"}` — which OpenCode's own inference service (a strict validator, not z.ai) answers with `400 json: unknown field "thinking"`. An exact-id `MODEL_CAPABILITIES` entry now sets `thinkingFormat:"openai"`, so these requests carry `reasoning_effort` and stream. Mirrors the existing `opencode-go` override for the paid twin.
+- **CommandCode cache reads are recorded and the session id is stable** (#5006): the usage mapper dropped `cachedInputTokens`, so CommandCode traffic showed 0 cached on 4.7B prompt tokens while the same combo's OpenCode-Go leg showed 94%; the cache split is now mapped through to `prompt_tokens_details.cached_tokens` for both the client and the dashboard. Session identity now mints one conversation-scoped id shared by the `x-session-id` header and the envelope `threadId` (it used to mint two uncorrelated UUIDs per request).
+
 # v0.5.216 (2026-10-18) · 1 commit
 
 ## What Was Added

@@ -1,3 +1,9 @@
+# v0.5.209 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **API-key quota card no longer under-reports after log cleanup**: `/api/usage/api-keys` summed `usageHistory` only, so a key at 20.65M/100M showed 6.4M (6%) once history rows were pruned by export/import cycles. The card now shows `max(apiKeys.usedTokens column, window sum)` — the column is what `validateApiKey` enforces, the log stays a fallback that still wins right after a window rollover.
+
 # v0.5.208 (2026-10-18) · 2 commits
 
 ## What Was Fixed

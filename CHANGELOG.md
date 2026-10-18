@@ -1,3 +1,9 @@
+# v0.5.210 (2026-10-18) · 2 commits
+
+## What Was Removed
+
+- **Prompt Injection feature and menu deleted**: the dashboard page (`/dashboard/prompt-injection`), its API (`/api/prompt-injection`), the `promptInjectionRepo`, the chat-handler call sites (combo/model and provider/model), the sidebar entry, the guard's protected-path entry, the permission rules, and the DB backup/restore carrying of the `promptInjections` kv scope are all gone; the feature's test suite is removed with it. Existing `promptInjections` kv rows are left in place (forward-only, no destructive migration) but nothing reads or writes them any more.
+
 # v0.5.209 (2026-10-18) · 2 commits
 
 ## What Was Fixed

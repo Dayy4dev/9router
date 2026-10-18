@@ -1,3 +1,59 @@
+# v0.5.214 (2026-10-18) · 1 commit
+
+- refactor(ui): plugin marks are literal objects chosen by the user.
+  - Direction locked via sequential prompts: symbols must depict the
+    familiar thing (mountain-in-frame, eye, brain+arrow, torn brain,
+    rocket, shield+check, scissors, wrench, broom) instead of an
+    abstraction that is hard to guess.
+  - PluginMark redrawn on the same single-outline grammar: uniform 2px
+    round-cap stroke, caller-owned ink, at most one accent dot where the
+    action lands.
+
+# v0.5.213 (2026-10-18) · 1 commit
+
+- refactor(ui): the nine plugin/capability marks are redrawn as one gridded,
+  single-outline family.
+  - All marks share the same 2.0 round-cap stroke, live in the same 17-unit box
+    and use at most two gridded primitives; the hand-drawn arcs, the 14% plates
+    and the mixed fill/outline grammar are gone.
+  - One filled accent per mark, only on the thing being acted on: the pupil,
+    the payload tread, the active node, the crossing at the apex. JSON Guard
+    drops its payload dot - braces already say code, and the dot collided with
+    Image Vision's frame-dot at 12px.
+  - Think Deeper is a descending staircase with a filled tread (it used to read
+    as a sort/filter bar set and tangled with the funnel), and Context Squeezer
+    is a single bar pressed by two chevrons.
+
+# v0.5.212 (2026-10-18) · 1 commit
+
+- refactor(ui): the marks are drawn glyphs again, not text monograms.
+  - PluginMark is back to unique SVG paths (viewfinder, eye, narrowing plates,
+    chain graph, bolt, braces, presses, bridge, funnel) that stay legible at
+    12px and 24px; a text render stopped reading as an icon.
+  - The single-accent rule from v0.5.211 stays: no hue in the constants, the
+    caller picks the ink (theme accent on the tile, muted on a dense row).
+  - Stroke weights are explicit where the surface needs them (1.9 in
+    CapacityBadges, 2.4 on 12px model rows).
+
+# v0.5.211 (2026-10-18) · 1 commit
+
+- refactor(ui): the plugin marks are monograms in one accent instead of seven
+  pictograms in seven saturated hues.
+  - PluginMark draws two letters (IV, TD, SM, JG, CS, OB, AS) in the caller's
+    ink; native vision and reasoning get EY and RN so they cannot collide with
+    Image Vision's IV on a shared model row.
+  - Colour left the constants: CAPACITY_META and PLUGIN_MARK_META carry no hue,
+    so a plugin tile is themed with the primary accent and a dense row stays
+    muted from the same component.
+  - The plugin card tile now states its own state - accent tint plus ring when
+    on, flat neutral when off - instead of colouring the glyph.
+
+# v0.5.210 (2026-10-18) · 2 commits
+
+## What Was Removed
+
+- **Prompt Injection feature and menu deleted**: the dashboard page (`/dashboard/prompt-injection`), its API (`/api/prompt-injection`), the `promptInjectionRepo`, the chat-handler call sites (combo/model and provider/model), the sidebar entry, the guard's protected-path entry, the permission rules, and the DB backup/restore carrying of the `promptInjections` kv scope are all gone; the feature's test suite is removed with it. Existing `promptInjections` kv rows are left in place (forward-only, no destructive migration) but nothing reads or writes them any more.
+
 # v0.5.209 (2026-10-18) · 2 commits
 
 ## What Was Fixed

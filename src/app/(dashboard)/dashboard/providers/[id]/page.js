@@ -273,6 +273,27 @@ export default function ProviderDetailPage() {
     });
   };
 
+  const handleDisableFailed = async (ids) => {
+    if (!ids || !ids.length) return;
+    setConfirmState({
+      title: "Disable Failed Models",
+      message: `Disable ${ids.length} failed model(s)?`,
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          const res = await fetch("/api/models/disabled", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ providerAlias: providerStorageAlias, ids }),
+          });
+          if (res.ok) await fetchDisabledModels();
+        } catch (error) {
+          console.log("Error disabling failed models:", error);
+        }
+      }
+    });
+  };
+
   const handleEnableAll = async () => {
     try {
       const res = await fetch(`/api/models/disabled?providerAlias=${encodeURIComponent(providerStorageAlias)}`, { method: "DELETE" });
@@ -1929,9 +1950,10 @@ export default function ProviderDetailPage() {
               ]));
 
               const activeIds = allIds.filter((id) => !disabledModelIds.includes(id));
+              const failedActiveIds = activeIds.filter((id) => modelTestResults[id] === "error");
               const canTest = connections.length > 0 || isFreeNoAuth;
               return (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   {canTest && activeIds.length > 0 && (
                     <Button
                       size="sm"
@@ -1941,6 +1963,18 @@ export default function ProviderDetailPage() {
                       onClick={() => handleTestAllModels(activeIds)}
                     >
                       {isTestingAll ? translate("Testing...") : translate("Test All")}
+                    </Button>
+                  )}
+                  {failedActiveIds.length > 0 && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon="block"
+                      onClick={() => handleDisableFailed(failedActiveIds)}
+                      className="text-amber-500 hover:text-amber-400 hover:border-amber-500/30"
+                      title="Disable only models that failed test"
+                    >
+                      {`Disable Failed (${failedActiveIds.length})`}
                     </Button>
                   )}
                   {disabledModelIds.length > 0 && (

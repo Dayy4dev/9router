@@ -94,6 +94,7 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   const [newModel, setNewModel] = useState("");
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [deletingFailed, setDeletingFailed] = useState(false);
   const [testingModelId, setTestingModelId] = useState(null);
   const [isTestingAll, setIsTestingAll] = useState(false);
   const [modelTestResults, setModelTestResults] = useState({});
@@ -159,6 +160,23 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
     } finally {
       setTestingModelId(null);
       setIsTestingAll(false);
+    }
+  };
+
+  const handleDeleteFailedModels = async (failedModels) => {
+    if (!failedModels?.length || deletingFailed) return;
+    if (!window.confirm(`Delete/remove ${failedModels.length} failed model(s)?`)) return;
+    setDeletingFailed(true);
+    try {
+      for (const m of failedModels) {
+        if (m.source === "custom") {
+          await onDeleteCustomModel(m.id);
+        } else if (m.alias) {
+          await onDeleteAlias(m.alias);
+        }
+      }
+    } finally {
+      setDeletingFailed(false);
     }
   };
 
@@ -320,6 +338,23 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
             {isTestingAll ? "Testing..." : "Test All"}
           </Button>
         )}
+        {(() => {
+          const failedModels = allModels.filter((m) => modelTestResults[m.id] === "error");
+          if (!failedModels.length) return null;
+          return (
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="delete_sweep"
+              onClick={() => handleDeleteFailedModels(failedModels)}
+              disabled={isTestingAll || deletingFailed || importing}
+              className="text-amber-500 hover:text-amber-400 hover:border-amber-500/30"
+              title="Remove models that failed the ping test"
+            >
+              {deletingFailed ? "Removing..." : `Delete Failed (${failedModels.length})`}
+            </Button>
+          );
+        })()}
       </div>
 
       {allModels.length > 0 && (

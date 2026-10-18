@@ -1,3 +1,9 @@
+# v0.5.207 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **Exhausted API keys can still sign in to the dashboard**: `POST /api/auth/login` previously rejected `QUOTA_EXCEEDED` with 401, so a key at its token limit (e.g. 100M/100M) could never open the dashboard to see its own usage bar. The login route now lets a quota-exhausted key through (session + audit event `apikey_login_quota`); request-side enforcement is unchanged — `/v1/*` still fails because the SSE handler validates the key again. Disabled/expired/IP-locked keys are still rejected at login.
+
 # v0.5.206 (2026-10-18) · 2 commits
 
 ## What Was Fixed

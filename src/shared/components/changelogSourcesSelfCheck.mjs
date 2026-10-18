@@ -1,13 +1,9 @@
 // Changelog source selection self-check.
 // Run: node src/shared/components/changelogSourcesSelfCheck.mjs
 // No framework, no deps.
-//
-// The switching itself is one onClick. What can actually go wrong is the empty
-// cases: upstream GitHub can be unreachable, a fork may have no changelog of its
-// own yet, and a stale selection then leaves the modal body blank with no
-// explanation. Those are the cases pinned here.
 import {
   CHANGELOG_SOURCES,
+  DAYY4DEV_SOURCE,
   SERENHOPE_SOURCE,
   DECOLUA_SOURCE,
   DEFAULT_CHANGELOG_SOURCE,
@@ -30,46 +26,52 @@ const assert = {
   no(v, msg) { if (v) throw new Error(msg || "expected falsy"); },
 };
 
-const BOTH = { serenhope: "<p>seren</p>", decolua: "<p>deco</p>" };
-const ONLY_SEREN = { serenhope: "<p>seren</p>", decolua: "" };
-const ONLY_DECO = { serenhope: "", decolua: "<p>deco</p>" };
-const NEITHER = { serenhope: "", decolua: "" };
+const ALL_THREE = { dayy4dev: "<p>dayy</p>", serenhope: "<p>seren</p>", decolua: "<p>deco</p>" };
+const ONLY_DAYY = { dayy4dev: "<p>dayy</p>", serenhope: "", decolua: "" };
+const ONLY_SEREN = { dayy4dev: "", serenhope: "<p>seren</p>", decolua: "" };
+const ONLY_DECO = { dayy4dev: "", serenhope: "", decolua: "<p>deco</p>" };
+const NEITHER = { dayy4dev: "", serenhope: "", decolua: "" };
 
-run("there are exactly two sources, fork first", () => {
-  assert.equal(CHANGELOG_SOURCES.length, 2, "two sources");
-  assert.equal(CHANGELOG_SOURCES[0].id, "serenhope", "fork listed first");
-  assert.equal(CHANGELOG_SOURCES[1].id, "decolua", "upstream second");
+run("there are three sources, dayy4dev first", () => {
+  assert.equal(CHANGELOG_SOURCES.length, 3, "three sources");
+  assert.equal(CHANGELOG_SOURCES[0].id, "dayy4dev", "dayy4dev listed first");
+  assert.equal(CHANGELOG_SOURCES[1].id, "serenhope", "serenhope second");
+  assert.equal(CHANGELOG_SOURCES[2].id, "decolua", "decolua third");
+  assert.equal(DAYY4DEV_SOURCE.id, "dayy4dev", "exported id");
   assert.equal(SERENHOPE_SOURCE.id, "serenhope", "exported id");
   assert.equal(DECOLUA_SOURCE.id, "decolua", "exported id");
 });
 
-run("both sources are offered when both have content", () => {
-  const available = availableChangelogSources(BOTH);
-  assert.equal(available.length, 2, "both offered");
-  assert.equal(available[0].id, "serenhope", "order preserved");
+run("all three sources are offered when all have content", () => {
+  const available = availableChangelogSources(ALL_THREE);
+  assert.equal(available.length, 3, "all three offered");
+  assert.equal(available[0].id, "dayy4dev", "order preserved");
+  assert.equal(available[1].id, "serenhope", "order preserved");
+  assert.equal(available[2].id, "decolua", "order preserved");
 });
 
-run("the fork opens first by default", () => {
-  assert.equal(DEFAULT_CHANGELOG_SOURCE, "serenhope", "default is the fork");
-  assert.equal(pickChangelogSource(BOTH, DEFAULT_CHANGELOG_SOURCE), "serenhope", "default shows the fork");
+run("dayy4dev opens first by default", () => {
+  assert.equal(DEFAULT_CHANGELOG_SOURCE, "dayy4dev", "default is dayy4dev");
+  assert.equal(pickChangelogSource(ALL_THREE, DEFAULT_CHANGELOG_SOURCE), "dayy4dev", "default shows dayy4dev");
 });
 
-run("choosing the upstream source is honoured", () => {
-  assert.equal(pickChangelogSource(BOTH, "decolua"), "decolua", "switched");
+run("choosing serenhope or upstream source is honoured", () => {
+  assert.equal(pickChangelogSource(ALL_THREE, "serenhope"), "serenhope", "switched to serenhope");
+  assert.equal(pickChangelogSource(ALL_THREE, "decolua"), "decolua", "switched to decolua");
 });
 
 run("a source with no content is not offered as a tab", () => {
+  assert.equal(availableChangelogSources(ONLY_DAYY).length, 1, "one tab");
+  assert.equal(availableChangelogSources(ONLY_DAYY)[0].id, "dayy4dev", "the one with content");
   assert.equal(availableChangelogSources(ONLY_SEREN).length, 1, "one tab");
   assert.equal(availableChangelogSources(ONLY_SEREN)[0].id, "serenhope", "the one with content");
   assert.equal(availableChangelogSources(ONLY_DECO)[0].id, "decolua", "same the other way");
-  assert.equal(availableChangelogSources(NEITHER).length, 0, "no tabs when neither loaded");
+  assert.equal(availableChangelogSources(NEITHER).length, 0, "no tabs when none loaded");
 });
 
 run("a selection pointing at an empty source falls back to what exists", () => {
-  // The realistic case: the user picks Decolua, then upstream goes down and a
-  // reload brings back only the fork. Without the fallback the body is blank.
-  assert.equal(pickChangelogSource(ONLY_SEREN, "decolua"), "serenhope", "falls back to the fork");
-  assert.equal(pickChangelogSource(ONLY_DECO, "serenhope"), "decolua", "falls back to upstream");
+  assert.equal(pickChangelogSource(ONLY_SEREN, "dayy4dev"), "serenhope", "falls back to serenhope");
+  assert.equal(pickChangelogSource(ONLY_DECO, "dayy4dev"), "decolua", "falls back to decolua");
 });
 
 run("with nothing loaded at all it still names a source", () => {
@@ -80,16 +82,17 @@ run("with nothing loaded at all it still names a source", () => {
 });
 
 run("an unknown source id is not trusted", () => {
-  assert.equal(pickChangelogSource(BOTH, "someone-else"), "serenhope", "falls back rather than rendering nothing");
+  assert.equal(pickChangelogSource(ALL_THREE, "someone-else"), "dayy4dev", "falls back rather than rendering nothing");
 });
 
 run("whitespace-only content counts as empty", () => {
-  assert.equal(availableChangelogSources({ serenhope: "   ", decolua: "<p>x</p>" }).length, 1, "blank ignored");
+  assert.equal(availableChangelogSources({ dayy4dev: "   ", serenhope: "   ", decolua: "<p>x</p>" }).length, 1, "blank ignored");
 });
 
 const failed = results.filter((r) => !r.ok);
 for (const r of results) {
   console.log(`${r.ok ? "  ok  " : "  FAIL"} ${r.name}${r.err ? ` - ${r.err}` : ""}`);
 }
+
 console.log(`\n${results.length - failed.length}/${results.length} passed`);
 process.exit(failed.length === 0 ? 0 : 1);

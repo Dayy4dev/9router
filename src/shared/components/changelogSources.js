@@ -10,6 +10,18 @@
  * No imports, so changelogSourcesSelfCheck.mjs can run it under plain node.
  */
 
+export const DAYY4DEV_SOURCE = {
+  id: "dayy4dev",
+  label: "Dayy4dev",
+  heading: "Contributed by Dayy4dev",
+  accent: {
+    color: "#a855f7",
+    border: "rgba(168,85,247,0.35)",
+    bg: "rgba(168,85,247,0.06)",
+    icon: "code",
+  },
+};
+
 export const SERENHOPE_SOURCE = {
   id: "serenhope",
   label: "Serenhope",
@@ -34,11 +46,10 @@ export const DECOLUA_SOURCE = {
   },
 };
 
-// Serenhope first: this is the fork, and its own releases are what the user
-// opened the modal for.
-export const CHANGELOG_SOURCES = [SERENHOPE_SOURCE, DECOLUA_SOURCE];
+// Dayy4dev first, then Serenhope fork, then Decolua upstream.
+export const CHANGELOG_SOURCES = [DAYY4DEV_SOURCE, SERENHOPE_SOURCE, DECOLUA_SOURCE];
 
-export const DEFAULT_CHANGELOG_SOURCE = SERENHOPE_SOURCE.id;
+export const DEFAULT_CHANGELOG_SOURCE = DAYY4DEV_SOURCE.id;
 
 /** Sources that actually have rendered content, in display order. */
 export function availableChangelogSources(htmlBySource) {

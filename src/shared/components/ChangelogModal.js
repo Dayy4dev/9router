@@ -4,12 +4,20 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import { marked } from "marked";
-import { SERENHOPE_SOURCE, DECOLUA_SOURCE, DEFAULT_CHANGELOG_SOURCE, availableChangelogSources, pickChangelogSource } from "./changelogSources.js";
+import {
+  DAYY4DEV_SOURCE,
+  SERENHOPE_SOURCE,
+  DECOLUA_SOURCE,
+  DEFAULT_CHANGELOG_SOURCE,
+  availableChangelogSources,
+  pickChangelogSource,
+} from "./changelogSources.js";
 
 marked.setOptions({ gfm: true, breaks: true });
 
 const DECOLUA_URL = "https://raw.githubusercontent.com/decolua/9router/refs/heads/master/CHANGELOG.md";
 const SERENHOPE_URL = "https://raw.githubusercontent.com/serenhope/9router/refs/heads/master/CHANGELOG.md";
+const DAYY4DEV_URL = "https://raw.githubusercontent.com/Dayy4dev/9router/refs/heads/dev/CHANGELOG_DAYY4DEV.md";
 const CHANGELOG_API_URL = "/api/changelog";
 
 function asMarkdown(value) {
@@ -40,15 +48,15 @@ async function fetchText(url) {
 // Local endpoint first (works offline and before any push), raw GitHub only for what it lacks.
 async function loadChangelogs() {
   const local = await fetchJson(CHANGELOG_API_URL);
-  let decoluaMd = asMarkdown(local?.official);
-  let serenhopeMd = asMarkdown(local?.custom);
+  let dayy4devMd = asMarkdown(local?.dayy4dev);
+  let serenhopeMd = asMarkdown(local?.serenhope || local?.custom);
+  let decoluaMd = asMarkdown(local?.decolua || local?.official);
 
-  if (!decoluaMd && !serenhopeMd) {
-    return Promise.all([fetchText(DECOLUA_URL), fetchText(SERENHOPE_URL)]);
-  }
-  if (!decoluaMd) decoluaMd = await fetchText(DECOLUA_URL);
+  if (!dayy4devMd) dayy4devMd = await fetchText(DAYY4DEV_URL);
   if (!serenhopeMd) serenhopeMd = await fetchText(SERENHOPE_URL);
-  return [decoluaMd, serenhopeMd];
+  if (!decoluaMd) decoluaMd = await fetchText(DECOLUA_URL);
+
+  return { dayy4dev: dayy4devMd, serenhope: serenhopeMd, decolua: decoluaMd };
 }
 
 function escapeHtml(s) {
@@ -462,7 +470,7 @@ ${cards}`;
 }
 
 export default function ChangelogModal({ isOpen, onClose }) {
-  const [htmlBySource, setHtmlBySource] = useState({ serenhope: "", decolua: "" });
+  const [htmlBySource, setHtmlBySource] = useState({ dayy4dev: "", serenhope: "", decolua: "" });
   const [loaded, setLoaded] = useState(false);
   const [activeSource, setActiveSource] = useState(DEFAULT_CHANGELOG_SOURCE);
   const [loading, setLoading] = useState(false);
@@ -476,11 +484,12 @@ export default function ChangelogModal({ isOpen, onClose }) {
     setError("");
 
     loadChangelogs()
-      .then(([decoluaMd, serenhopeMd]) => {
+      .then(({ dayy4dev, serenhope, decolua }) => {
         if (cancelled) return;
         setHtmlBySource({
-          serenhope: buildSection(serenhopeMd, SERENHOPE_SOURCE),
-          decolua: buildSection(decoluaMd, DECOLUA_SOURCE),
+          dayy4dev: buildSection(dayy4dev, DAYY4DEV_SOURCE),
+          serenhope: buildSection(serenhope, SERENHOPE_SOURCE),
+          decolua: buildSection(decolua, DECOLUA_SOURCE),
         });
       })
       .catch((err) => {
@@ -512,7 +521,7 @@ export default function ChangelogModal({ isOpen, onClose }) {
   // Reset content when modal closes
   useEffect(() => {
     if (isOpen) return;
-    setHtmlBySource({ serenhope: "", decolua: "" });
+    setHtmlBySource({ dayy4dev: "", serenhope: "", decolua: "" });
     setLoaded(false);
     setActiveSource(DEFAULT_CHANGELOG_SOURCE);
   }, [isOpen]);

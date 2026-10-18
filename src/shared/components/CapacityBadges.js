@@ -42,7 +42,7 @@ export default function CapacityBadges({ caps, marks, className = "", colorOverr
               className={`inline-flex items-center justify-center cursor-help ${tone}`}
               style={{ width: `${size}px`, height: `${size}px` }}
             >
-              <PluginMark name={meta.mark} size={size} />
+              <PluginMark name={meta.mark} size={size} strokeWidth={1.9} />
             </span>
           </Tooltip>
         );
@@ -56,7 +56,7 @@ export default function CapacityBadges({ caps, marks, className = "", colorOverr
               className={`inline-flex items-center justify-center cursor-help ${tone}`}
               style={{ width: `${size}px`, height: `${size}px` }}
             >
-              <PluginMark name={key} size={size} />
+              <PluginMark name={key} size={size} strokeWidth={1.9} />
             </span>
           </Tooltip>
         );

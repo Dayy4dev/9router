@@ -280,7 +280,7 @@ export default function PluginsPage() {
                         : "bg-surface text-text-muted"
                     }`}
                   >
-                    <PluginMark name={plugin.key} size={24} />
+                    <PluginMark name={plugin.key} size={24} strokeWidth={2} />
                   </div>
                   <h3 className="font-semibold text-base text-text-main">
                     {plugin.title}

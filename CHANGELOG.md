@@ -1,3 +1,9 @@
+# v0.5.208 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **Invalid API-key logins now count toward the lockout**, same as wrong passwords: `POST /api/auth/login` with an unknown/disabled/expired/IP-locked key replies `Invalid API key. N attempt(s) left before lockout.`, burns the same `recordFail` counter via `loginLimiter`, and reaches the same 429 `Too many failed attempts` lock after the limit. Quota-exhausted keys still sign in (v0.5.207). Audit event now carries the remaining attempts.
+
 # v0.5.207 (2026-10-18) · 2 commits
 
 ## What Was Fixed

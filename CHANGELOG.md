@@ -1,3 +1,16 @@
+# v0.5.211 (2026-10-18) · 1 commit
+
+- refactor(ui): the plugin marks are monograms in one accent instead of seven
+  pictograms in seven saturated hues.
+  - PluginMark draws two letters (IV, TD, SM, JG, CS, OB, AS) in the caller's
+    ink; native vision and reasoning get EY and RN so they cannot collide with
+    Image Vision's IV on a shared model row.
+  - Colour left the constants: CAPACITY_META and PLUGIN_MARK_META carry no hue,
+    so a plugin tile is themed with the primary accent and a dense row stays
+    muted from the same component.
+  - The plugin card tile now states its own state - accent tint plus ring when
+    on, flat neutral when off - instead of colouring the glyph.
+
 # v0.5.210 (2026-10-18) · 2 commits
 
 ## What Was Removed

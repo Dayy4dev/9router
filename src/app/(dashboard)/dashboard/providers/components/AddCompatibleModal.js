@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Badge, Button, Input, Modal, Select } from "@/shared/components";
 import ProviderLogoField from "@/shared/components/ProviderLogoField";
 import { Badge, Button, Input, Modal, Select, Toggle } from "@/shared/components";
 

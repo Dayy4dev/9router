@@ -1,3 +1,9 @@
+# v0.5.206 (2026-10-18) · 2 commits
+
+## What Was Fixed
+
+- **Relay deploy jobs no longer fail with `Cannot find module '@/app/api/proxy-pools/cloudflare-deploy/route'`**: `deploy-relay` resolved its route with `await import(modPath)` from a variable map, which webpack cannot trace (it emitted `Critical dependency: the request of a dependency is an expression`), so at runtime Node saw the raw `@/` alias and threw. The map now holds static importer functions (`() => import("@/app/api/proxy-pools/<provider>-deploy/route")`), so every route is a literal webpack bundles. `health-check`, which already used a literal, was unaffected.
+
 # v0.5.205 (2026-10-18) · 2 commits
 
 ## What Was Fixed

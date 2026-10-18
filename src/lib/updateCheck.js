@@ -1,7 +1,7 @@
 // Update detection for the running install. Two independent signals, because the
 // app is deployed in ways that break one of them:
 //
-//   1. git: how many commits is this checkout behind serenhope/9router master.
+//   1. git: how many commits is this checkout behind Dayy4dev/9router dev.
 //      Only works when the deploy ships git history.
 //   2. release: the newest version heading in the repository changelog compared
 //      with the version this build was made from. Works everywhere, including
@@ -172,12 +172,17 @@ function readLocalRelease() {
     return cache.localRelease;
   }
   let found = null;
-  try {
-    const text = readFileSync(path.join(process.cwd(), "CHANGELOG.md"), "utf8");
-    const heading = text.match(/^#\s+(v[0-9][^\s(]*)/m);
-    if (heading) found = heading[1].trim();
-  } catch {
-    // No changelog next to the running app: the release signal stays unknown.
+  for (const filename of ["CHANGELOG_DAYY4DEV.md", "CHANGELOG.md"]) {
+    try {
+      const text = readFileSync(path.join(process.cwd(), filename), "utf8");
+      const heading = text.match(/^#\s+(v[0-9][^\s(]*)/m);
+      if (heading) {
+        found = heading[1].trim();
+        break;
+      }
+    } catch {
+      // No changelog next to the running app: the release signal stays unknown.
+    }
   }
   cache.localRelease = found;
   return found;

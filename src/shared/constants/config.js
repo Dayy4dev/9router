@@ -9,7 +9,7 @@ export const APP_CONFIG = {
 
 // GitHub configuration
 export const GITHUB_CONFIG = {
-  changelogUrl: "https://raw.githubusercontent.com/Dayy4dev/9router/refs/heads/dev/CHANGELOG.md",
+  changelogUrl: "https://raw.githubusercontent.com/Dayy4dev/9router/refs/heads/dev/CHANGELOG_DAYY4DEV.md",
   donateUrl: "https://9router.com/api/donate",
   repoUrl: "https://github.com/Dayy4dev/9router",
   apiRepo: "Dayy4dev/9router", // update checks compare the running checkout with this

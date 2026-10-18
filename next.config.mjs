@@ -150,7 +150,10 @@ function stampBuild() {
     // Built outside a checkout: the release heading is the only anchor left.
   }
   try {
-    const changelog = readFileSync(join(projectRoot, "CHANGELOG.md"), "utf8");
+    const changelogPath = fs.existsSync(join(projectRoot, "CHANGELOG_DAYY4DEV.md"))
+      ? join(projectRoot, "CHANGELOG_DAYY4DEV.md")
+      : join(projectRoot, "CHANGELOG.md");
+    const changelog = readFileSync(changelogPath, "utf8");
     const heading = changelog.match(/^#\s+(v[0-9][^\s(]*)/m);
     if (heading) stamp.APP_RELEASE = process.env.APP_RELEASE || heading[1].trim();
   } catch {

@@ -308,7 +308,7 @@ export default function UpdateBanner({ pollMs = POLL_MS }) {
 function summaryFor(info) {
   const behind = Number.isFinite(info.behindBy) ? info.behindBy : null;
   if (behind !== null && behind > 0) {
-    return `This install is ${behind} commit${behind > 1 ? "s" : ""} behind master.`;
+    return `This install is ${behind} commit${behind > 1 ? "s" : ""} behind ${GITHUB_CONFIG.branch || "dev"}.`;
   }
   if (info.currentRelease) {
     return `${info.currentRelease} is installed and ${info.latestVersion} is published.`;

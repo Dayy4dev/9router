@@ -9,7 +9,7 @@ import { getProviderModels } from "open-sse/config/providerModels.js";
 import { getCapabilitiesForModel } from "open-sse/providers/capabilities.js";
 import { getPricingForModel, isFreeModel } from "open-sse/providers/pricing.js";
 import { resolveProviderAlias } from "open-sse/services/model.js";
-import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider, getProviderAlias } from "@/shared/constants/providers.js";
+import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider, getProviderAlias } from "../../shared/constants/providers.js";
 
 // Canonical auto model variants
 export const AUTO_MODEL_VARIANTS = [

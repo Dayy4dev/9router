@@ -3,11 +3,13 @@
  * Provides < 1ms hot-path decision making for virtual model prefix: `auto`, `auto/*`
  */
 
-import { getProviderConnections } from "../../lib/localDb.js";
+import { getProviderConnections, getCustomModels } from "../../lib/localDb.js";
+import { getDisabledModels } from "../../lib/disabledModelsDb.js";
 import { getProviderModels } from "open-sse/config/providerModels.js";
 import { getCapabilitiesForModel } from "open-sse/providers/capabilities.js";
 import { getPricingForModel, isFreeModel } from "open-sse/providers/pricing.js";
 import { resolveProviderAlias } from "open-sse/services/model.js";
+import { isOpenAICompatibleProvider, isAnthropicCompatibleProvider, getProviderAlias } from "@/shared/constants/providers.js";
 
 // Canonical auto model variants
 export const AUTO_MODEL_VARIANTS = [
@@ -185,95 +187,130 @@ export async function resolveAutoModelChain(autoModel = "auto", options = {}) {
   // If local ollama exists or free providers exist, ensure they're included
   activeProviders.add("opencode");
 
-  // Collect candidate models from active providers
+  // Load disabled models to exclude retired / operator-disabled models
+  let disabledByAlias = {};
+  try {
+    disabledByAlias = await getDisabledModels();
+  } catch { /* fail open */ }
+  const isModelDisabled = (pAlias, mId) => {
+    return Array.isArray(disabledByAlias[pAlias]) && disabledByAlias[pAlias].includes(mId);
+  };
+
+  // Collect candidate models from active providers and custom providers
   const candidates = [];
   const seenCandidates = new Set();
+
+  const evaluateCandidate = (provider, modelId) => {
+    if (!modelId || !provider) return;
+    const fullModel = `${provider}/${modelId}`;
+    if (seenCandidates.has(fullModel)) return;
+    if (isModelDisabled(provider, modelId)) return;
+    seenCandidates.add(fullModel);
+
+    // Check required capabilities if requested
+    if (requiredCapabilities && requiredCapabilities.size > 0) {
+      const caps = getCapabilitiesForModel(provider, modelId);
+      for (const req of requiredCapabilities) {
+        if (!caps[req]) return;
+      }
+    }
+
+    const metrics = metricsMap.get(fullModel) || {
+      latencyAvg: 1200,
+      samples: 0,
+      lastSuccessAt: 0,
+      lastErrorAt: 0,
+      cooldownUntil: 0,
+      consecutiveErrors: 0,
+    };
+
+    // In cooldown?
+    const isCoolingDown = metrics.cooldownUntil > now;
+
+    // Base score calculation (higher is better)
+    let score = 1000;
+
+    // Penalize cooldown heavily
+    if (isCoolingDown) score -= 5000;
+
+    // Penalize consecutive errors
+    score -= (metrics.consecutiveErrors * 500);
+
+    // Reward LKGP (Last Known Good Provider)
+    if (metrics.lastSuccessAt > 0 && now - metrics.lastSuccessAt < 3600000) {
+      score += 300;
+    }
+
+    // Latency penalty: 1ms = 0.2 points
+    const lat = metrics.latencyAvg || 1000;
+    score -= Math.min(800, lat * 0.2);
+
+    // Variant specific weights
+    if (variant === "auto/coding") {
+      if (isCodingSpecialist(provider, modelId)) score += 600;
+      else score -= 400;
+    } else if (variant === "auto/fast") {
+      score -= (lat * 0.5);
+      if (lat < 800) score += 400;
+    } else if (variant === "auto/cheap") {
+      const tier = getPricingTier(provider, modelId);
+      if (tier === 0) score += 800; // Free
+      else if (tier === 1) score += 400; // Cheap
+      else score -= 500;
+    } else if (variant === "auto/offline") {
+      const p = provider.toLowerCase();
+      if (p.includes("ollama") || p.includes("local")) score += 1000;
+      else score += 100;
+    } else {
+      const tier = getPricingTier(provider, modelId);
+      if (tier === 0) score += 150;
+      if (isCodingSpecialist(provider, modelId)) score += 100;
+    }
+
+    candidates.push({
+      fullModel,
+      provider,
+      modelId,
+      score,
+      isCoolingDown,
+    });
+  };
 
   for (const provider of activeProviders) {
     const provModels = getProviderModels(provider);
     if (!Array.isArray(provModels) || provModels.length === 0) continue;
 
-    // Pick top useful LLM models per provider
     for (const m of provModels) {
       const modelId = typeof m === "string" ? m : m.id;
-      if (!modelId) continue;
-      const fullModel = `${provider}/${modelId}`;
-      if (seenCandidates.has(fullModel)) continue;
-      seenCandidates.add(fullModel);
-
-      // Check required capabilities if requested
-      if (requiredCapabilities && requiredCapabilities.size > 0) {
-        const caps = getCapabilitiesForModel(provider, modelId);
-        let match = true;
-        for (const req of requiredCapabilities) {
-          if (!caps[req]) { match = false; break; }
-        }
-        if (!match) continue;
-      }
-
-      const metrics = metricsMap.get(fullModel) || {
-        latencyAvg: 1200,
-        samples: 0,
-        lastSuccessAt: 0,
-        lastErrorAt: 0,
-        cooldownUntil: 0,
-        consecutiveErrors: 0,
-      };
-
-      // In cooldown?
-      const isCoolingDown = metrics.cooldownUntil > now;
-
-      // Base score calculation (higher is better)
-      let score = 1000;
-
-      // Penalize cooldown heavily
-      if (isCoolingDown) score -= 5000;
-
-      // Penalize consecutive errors
-      score -= (metrics.consecutiveErrors * 500);
-
-      // Reward LKGP (Last Known Good Provider)
-      if (metrics.lastSuccessAt > 0 && now - metrics.lastSuccessAt < 3600000) {
-        score += 300;
-      }
-
-      // Latency penalty: 1ms = 0.2 points
-      const lat = metrics.latencyAvg || 1000;
-      score -= Math.min(800, lat * 0.2);
-
-      // Variant specific weights
-      if (variant === "auto/coding") {
-        if (isCodingSpecialist(provider, modelId)) score += 600;
-        else score -= 400;
-      } else if (variant === "auto/fast") {
-        // Double latency sensitivity
-        score -= (lat * 0.5);
-        if (lat < 800) score += 400;
-      } else if (variant === "auto/cheap") {
-        const tier = getPricingTier(provider, modelId);
-        if (tier === 0) score += 800; // Free
-        else if (tier === 1) score += 400; // Cheap
-        else score -= 500;
-      } else if (variant === "auto/offline") {
-        const p = provider.toLowerCase();
-        if (p.includes("ollama") || p.includes("local")) score += 1000;
-        else score += 100;
-      } else {
-        // Balanced LKGP default
-        const tier = getPricingTier(provider, modelId);
-        if (tier === 0) score += 150;
-        if (isCodingSpecialist(provider, modelId)) score += 100;
-      }
-
-      candidates.push({
-        fullModel,
-        provider,
-        modelId,
-        score,
-        isCoolingDown,
-      });
+      evaluateCandidate(provider, modelId);
     }
   }
+
+  // Include Custom Providers & their enabled models
+  for (const conn of connections) {
+    const rawProvider = conn.provider;
+    if (isOpenAICompatibleProvider(rawProvider) || isAnthropicCompatibleProvider(rawProvider)) {
+      const alias = (conn.providerSpecificData?.prefix || getProviderAlias(rawProvider) || rawProvider).trim();
+      const enabled = conn.providerSpecificData?.enabledModels;
+      if (Array.isArray(enabled)) {
+        for (const mId of enabled) {
+          evaluateCandidate(alias, mId);
+        }
+      }
+    }
+  }
+
+  // Include Custom Models saved in DB
+  try {
+    const customModels = await getCustomModels();
+    if (Array.isArray(customModels)) {
+      for (const cm of customModels) {
+        if (cm?.providerAlias && cm?.id && (!cm.type || cm.type === "llm")) {
+          evaluateCandidate(cm.providerAlias, cm.id);
+        }
+      }
+    }
+  } catch { /* fail open */ }
 
   // Sort candidates by score descending
   candidates.sort((a, b) => b.score - a.score);

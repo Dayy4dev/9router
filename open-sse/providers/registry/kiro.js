@@ -72,7 +72,6 @@ export default {
     // Non-Anthropic
     { id: "deepseek-3.2", name: "DeepSeek 3.2", strip: ["image","audio"] },
     { id: "qwen3-coder-next", name: "Qwen3 Coder Next", strip: ["image","audio"] },
-    { id: "glm-5", name: "GLM 5" },
     { id: "MiniMax-M2.5", name: "MiniMax M2.5" },
     { id: "gpt-5.6-sol", name: "GPT 5.6 Sol", contextLength: 272000, rateMultiplier: 2.4, upstreamModelId: "gpt-5.6-sol", description: "Experimental preview of OpenAI GPT 5.6 Sol with 272k context window" },
     { id: "gpt-5.6-terra", name: "GPT 5.6 Terra", contextLength: 272000, rateMultiplier: 1.2, upstreamModelId: "gpt-5.6-terra", description: "Experimental preview of OpenAI GPT 5.6 Terra with 272k context window" },

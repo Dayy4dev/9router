@@ -19,9 +19,15 @@ describe("checkFallbackError - request-scoped vs account-scoped failures", () =>
   });
 
   it("still falls back for account-scoped statuses", () => {
-    for (const status of [401, 402, 403, 404, 429]) {
+    for (const status of [401, 402, 403, 404, 410, 429]) {
       expect(checkFallbackError(status, "nope").shouldFallback).toBe(true);
     }
+  });
+
+  it("treats retired / deprecated model messages as fallback with permanent cooldown", () => {
+    const retiredErr = checkFallbackError(410, "glm-5 was retired on July 15, 2026.");
+    expect(retiredErr.shouldFallback).toBe(true);
+    expect(retiredErr.cooldownMs).toBeGreaterThanOrEqual(30 * 24 * 60 * 60 * 1000);
   });
 
   it("still honours rate-limit / quota wording on any 4xx", () => {

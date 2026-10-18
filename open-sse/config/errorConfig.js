@@ -45,6 +45,7 @@ export const MAX_RATE_LIMIT_COOLDOWN_MS = 30 * 60 * 1000;
 const COOLDOWN = {
   long: 2 * 60 * 1000,
   short: 5 * 1000,
+  permanent: 30 * 24 * 60 * 60 * 1000, // 30 days for retired/deprecated models
 };
 
 /**
@@ -63,6 +64,10 @@ export const ERROR_RULES = [
   { text: "no credentials",           cooldownMs: COOLDOWN.long },
   { text: "request not allowed",      cooldownMs: COOLDOWN.short },
   { text: "improperly formed request", cooldownMs: COOLDOWN.long },
+  { text: "was retired",              cooldownMs: COOLDOWN.permanent },
+  { text: "has been retired",         cooldownMs: COOLDOWN.permanent },
+  { text: "is deprecated",            cooldownMs: COOLDOWN.permanent },
+  { text: "no longer available",      cooldownMs: COOLDOWN.permanent },
   { text: "rate limit",               backoff: true },
   { text: "too many requests",        backoff: true },
   { text: "quota exceeded",           backoff: true },
@@ -83,6 +88,7 @@ export const ERROR_RULES = [
   { status: 402, cooldownMs: COOLDOWN.long },
   { status: 403, cooldownMs: COOLDOWN.long },
   { status: 404, cooldownMs: COOLDOWN.long },
+  { status: 410, cooldownMs: COOLDOWN.permanent },
   { status: 429, backoff: true },
 
   // --- Client mistakes, checked last so any signal above still wins ---

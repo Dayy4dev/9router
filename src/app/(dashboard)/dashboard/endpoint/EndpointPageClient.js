@@ -1374,163 +1374,186 @@ const scopedModelPatterns =
             </Button>
           </div>
         ) : (
-          <div className="flex flex-col">
+          <div className="flex flex-col divide-y divide-border/60">
             {keys.map((key) => (
               <div
                 key={key.id}
-                className={`group flex flex-wrap items-start justify-between gap-3 py-3 border-b border-black/[0.03] dark:border-white/[0.03] last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
+                className={`group flex flex-col sm:flex-row sm:items-start justify-between gap-3.5 py-4 ${key.isActive === false ? "opacity-60" : ""}`}
               >
-                {!isApiKeyUser && (
-                  <input
-                    type="checkbox"
-                    checked={selectedKeyIds.has(key.id)}
-                    onChange={() => {
-                      setSelectedKeyIds((prev) => {
-                        const next = new Set(prev);
-                        if (next.has(key.id)) next.delete(key.id);
-                        else next.add(key.id);
-                        return next;
-                      });
-                    }}
-                    className="size-4 accent-brand-500 shrink-0 mt-0.5"
-                    aria-label={`Select ${key.name}`}
-                  />
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate min-w-0">{key.name}</p>
-                  {creatorLabelFor(key) && (
-                    <p className="text-xs text-text-muted truncate min-w-0">{creatorLabelFor(key)}</p>
+                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                  {!isApiKeyUser && (
+                    <input
+                      type="checkbox"
+                      checked={selectedKeyIds.has(key.id)}
+                      onChange={() => {
+                        setSelectedKeyIds((prev) => {
+                          const next = new Set(prev);
+                          if (next.has(key.id)) next.delete(key.id);
+                          else next.add(key.id);
+                          return next;
+                        });
+                      }}
+                      className="size-4 accent-brand-500 shrink-0 mt-1 cursor-pointer"
+                      aria-label={`Select ${key.name}`}
+                    />
                   )}
-                  <div className="flex flex-wrap items-center gap-1.5 mt-1 min-w-0">
-                    <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-surface-2 border border-border/60 max-w-full">
-                      <code className="text-xs text-text-muted font-mono whitespace-nowrap overflow-hidden text-ellipsis max-w-[170px] sm:max-w-xs select-all">
+
+                  <div className="min-w-0 flex-1 flex flex-col gap-2">
+                    {/* Key Name & Creator */}
+                    <div className="flex items-center justify-between sm:justify-start gap-2">
+                      <p className="text-sm font-semibold text-text-main truncate min-w-0">{key.name}</p>
+                      {creatorLabelFor(key) && (
+                        <span className="text-[11px] text-text-muted px-1.5 py-0.5 rounded bg-surface-2 truncate">
+                          {creatorLabelFor(key)}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Key Token Box */}
+                    <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-border/80 w-full sm:w-fit sm:max-w-md">
+                      <code className="text-xs text-text-muted font-mono tracking-wide truncate select-all flex-1 min-w-0 mr-2">
                         {visibleKeys.has(key.id) ? key.key : maskKey(key.key)}
                       </code>
-                      <div className="flex items-center gap-0.5 shrink-0 border-l border-border/40 pl-1">
+                      <div className="flex items-center gap-1 shrink-0 border-l border-border/50 pl-2">
                         <button
+                          type="button"
                           onClick={() => toggleKeyVisibility(key.id)}
-                          className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all cursor-pointer"
+                          className="p-1 hover:bg-surface rounded text-text-muted hover:text-primary transition-all cursor-pointer"
                           title={visibleKeys.has(key.id) ? "Hide key" : "Show key"}
                         >
-                          <span className="material-symbols-outlined text-[15px]">
+                          <span className="material-symbols-outlined text-[16px]">
                             {visibleKeys.has(key.id) ? "visibility_off" : "visibility"}
                           </span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => copy(key.key, key.id)}
-                          className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all cursor-pointer"
+                          className="p-1 hover:bg-surface rounded text-text-muted hover:text-primary transition-all cursor-pointer"
                           title="Copy API Key"
                         >
-                          <span className="material-symbols-outlined text-[15px]">
+                          <span className="material-symbols-outlined text-[16px]">
                             {copied === key.id ? "check" : "content_copy"}
                           </span>
                         </button>
                       </div>
                     </div>
-                  </div>
-                  <p className="text-xs text-text-muted mt-1">
-                    Created {new Date(key.createdAt).toLocaleDateString()}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
-                    <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-primary/10 text-primary font-medium whitespace-nowrap">
-                      Usage: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) + " tokens" : "Unlimited"}
-                    </span>
-                    {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-gray-500/10 text-text-muted whitespace-nowrap">
-                        Reset: every {key.resetInterval}
+
+                    {/* Metadata & Badges */}
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      <span className="text-[11px] text-text-muted mr-1">
+                        {new Date(key.createdAt).toLocaleDateString()}
                       </span>
-                    )}
-                    {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                      <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
-                    )}
-                    <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium whitespace-nowrap">
-                      Models: {key.allowedModels && key.allowedModels !== "*" ? key.allowedModels : "All"}
-                    </span>
-                    {(key.rpmLimit > 0 || key.tpmLimit > 0) && (
-                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-purple-500/10 text-purple-500 font-medium whitespace-nowrap">
-                        Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
+                      <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium whitespace-nowrap">
+                        Usage: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) : "Unlimited"}
                       </span>
-                    )}
-                    {key.ipWhitelist && (
-                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium whitespace-nowrap">
-                        IP Guard: Active
+                      {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
+                        <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-gray-500/10 text-text-muted whitespace-nowrap">
+                          Reset: every {key.resetInterval}
+                        </span>
+                      )}
+                      {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
+                        <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
+                      )}
+                      <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-medium whitespace-nowrap">
+                        Models: {key.allowedModels && key.allowedModels !== "*" ? key.allowedModels : "All"}
                       </span>
-                    )}
-                    {key.tokenLimit > 0 && (key.usedTokens || 0) >= key.tokenLimit && (
-                      <span className="text-xs shrink-0 px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-semibold whitespace-nowrap">
-                        Quota Exceeded
-                      </span>
-                    )}
+                      {(key.rpmLimit > 0 || key.tpmLimit > 0) && (
+                        <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-500 font-medium whitespace-nowrap">
+                          Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
+                        </span>
+                      )}
+                      {key.ipWhitelist && (
+                        <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-500 font-medium whitespace-nowrap">
+                          IP Guard: Active
+                        </span>
+                      )}
+                      {key.tokenLimit > 0 && (key.usedTokens || 0) >= key.tokenLimit && (
+                        <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-red-500/10 text-red-500 font-semibold whitespace-nowrap">
+                          Quota Exceeded
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-                <div className="flex-shrink-0 flex items-center gap-1">
+
+                {/* Actions Toolbar */}
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 pl-6 sm:pl-0 pt-2 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0">
                   <div
                     className="inline-flex items-center px-1"
                     title={key.isActive === false ? "Switch this key back on" : "Switch this key off"}
                   >
-                  <Toggle
-                    size="sm"
-                    checked={key.isActive !== false}
-                    disabled={isOwnKey(key)}
-                    onChange={(nextActive) => handleToggleKeyActive(key, nextActive)}
-                  />
+                    <Toggle
+                      size="sm"
+                      checked={key.isActive !== false}
+                      disabled={isOwnKey(key)}
+                      onChange={(nextActive) => handleToggleKeyActive(key, nextActive)}
+                    />
                   </div>
-                <button
-                  onClick={() => {
-                    setEditingKey(key);
-                      setEditName(key.name || "");
-                      const lim = key.tokenLimit ? String(key.tokenLimit) : "";
-                      setEditLimit(lim);
-                      const resVal = key.resetInterval || "never";
-                      if (["never", "5h", "7d", "14d", "30d"].includes(resVal)) {
-                        setEditReset(resVal);
-                        setEditCustomReset("");
-                      } else {
-                        setEditReset("custom");
-                        setEditCustomReset(resVal);
-                      }
-                      setEditAllowedModels(key.allowedModels || "*");
-                      setEditRpm(key.rpmLimit ? String(key.rpmLimit) : "");
-                      setEditTpm(key.tpmLimit ? String(key.tpmLimit) : "");
-                      setEditIpWhitelist(key.ipWhitelist || "");
-                      setEditExpiresAt(key.expiresAt || "");
-                      setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
-                    }}
-                    disabled={isOwnKey(key)}
-                    className={cn("p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
-                    title="Edit key settings & quota"
-                  >
-                    <span className="material-symbols-outlined text-[17px] sm:text-[18px]">edit</span>
-                  </button>
- <button
- onClick={() => handleDuplicateKey(key)}
- className={cn("p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
- title="Duplicate key (copy settings)"
- >
- <span className="material-symbols-outlined text-[17px] sm:text-[18px]">library_add</span>
- </button>
-                  <button
-                    onClick={() => handleManualResetUsage(key)}
-                    disabled={isOwnKey(key)}
-                    className={cn("p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
-                    title="Reset used tokens to 0"
-                  >
-                    <span className="material-symbols-outlined text-[17px] sm:text-[18px]">restart_alt</span>
-                  </button>
-          <button
-            onClick={() => { setShowSnippetModal(key); setSnippetLang("curl"); }}
-            className="p-1.5 sm:p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
-            title="Code snippet"
-          >
-            <span className="material-symbols-outlined text-[17px] sm:text-[18px]">code</span>
-          </button>
-                  <button
-                    onClick={() => handleDeleteKey(key.id)}
-                    disabled={isOwnKey(key)}
-                    className={cn("p-1.5 sm:p-2 hover:bg-red-500/10 rounded text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
-                  >
-                    <span className="material-symbols-outlined text-[17px] sm:text-[18px]">delete</span>
-                  </button>
+
+                  <div className="flex items-center gap-0.5 bg-surface-2/60 sm:bg-transparent rounded-lg p-0.5 sm:p-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingKey(key);
+                        setEditName(key.name || "");
+                        const lim = key.tokenLimit ? String(key.tokenLimit) : "";
+                        setEditLimit(lim);
+                        const resVal = key.resetInterval || "never";
+                        if (["never", "5h", "7d", "14d", "30d"].includes(resVal)) {
+                          setEditReset(resVal);
+                          setEditCustomReset("");
+                        } else {
+                          setEditReset("custom");
+                          setEditCustomReset(resVal);
+                        }
+                        setEditAllowedModels(key.allowedModels || "*");
+                        setEditRpm(key.rpmLimit ? String(key.rpmLimit) : "");
+                        setEditTpm(key.tpmLimit ? String(key.tpmLimit) : "");
+                        setEditIpWhitelist(key.ipWhitelist || "");
+                        setEditExpiresAt(key.expiresAt || "");
+                        setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
+                      }}
+                      disabled={isOwnKey(key)}
+                      className={cn("p-1.5 sm:p-2 hover:bg-surface rounded-md text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                      title="Edit key settings & quota"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">edit</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDuplicateKey(key)}
+                      className={cn("p-1.5 sm:p-2 hover:bg-surface rounded-md text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                      title="Duplicate key (copy settings)"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">library_add</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleManualResetUsage(key)}
+                      disabled={isOwnKey(key)}
+                      className={cn("p-1.5 sm:p-2 hover:bg-surface rounded-md text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                      title="Reset used tokens to 0"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setShowSnippetModal(key); setSnippetLang("curl"); }}
+                      className="p-1.5 sm:p-2 hover:bg-surface rounded-md text-text-muted hover:text-primary transition-all"
+                      title="Code snippet"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">code</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteKey(key.id)}
+                      disabled={isOwnKey(key)}
+                      className={cn("p-1.5 sm:p-2 hover:bg-red-500/10 rounded-md text-red-500 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
+                      title="Delete API key"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">delete</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

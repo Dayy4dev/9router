@@ -1,3 +1,14 @@
+# v0.5.214 (2026-10-18) · 1 commit
+
+- refactor(ui): plugin marks are literal objects chosen by the user.
+  - Direction locked via sequential prompts: symbols must depict the
+    familiar thing (mountain-in-frame, eye, brain+arrow, torn brain,
+    rocket, shield+check, scissors, wrench, broom) instead of an
+    abstraction that is hard to guess.
+  - PluginMark redrawn on the same single-outline grammar: uniform 2px
+    round-cap stroke, caller-owned ink, at most one accent dot where the
+    action lands.
+
 # v0.5.213 (2026-10-18) · 1 commit
 
 - refactor(ui): the nine plugin/capability marks are redrawn as one gridded,

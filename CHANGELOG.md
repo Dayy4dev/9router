@@ -1,3 +1,9 @@
+# v0.5.215 (2026-10-18) · 1 commit
+
+## What Was Fixed
+
+- **Qoder and Cline model imports report progress in the notification bell**: the two batch import handlers on a provider page only disabled their button and spun an inline icon, so a 200-model import gave no progress and the operator had to stay on the page watching a spinner. Both now `start` a task in `taskStore` (the same store the backup, key, proxy-pool and account imports already use), `update` it per model with the model id and an `i/n` count, and `finish` it on every exit path — success, nothing-new, empty list, fetch error and exception alike. The bell announces the finished run like the other imports, and no floating progress UI is reintroduced.
+
 # v0.5.214 (2026-10-18) · 1 commit
 
 - refactor(ui): plugin marks are literal objects chosen by the user.

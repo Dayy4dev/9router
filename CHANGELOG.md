@@ -1,3 +1,11 @@
+# v0.5.219 (2026-10-18) · 2 commits
+
+## What Was Fixed  (port of this fork's PR #13, credit its-benjamin)
+
+- **`npm run build && npm start` (and the `bun run build:bun` / `bun run start:bun` path) no longer answers 503 `guard unavailable`**: Next.js output-file tracing only copies modules that reached the webpack page/API graph, so the modules `custom-server.js` loads **by absolute path** — `scripts/auth-guard-hooks.mjs`, `src/dashboardGuard.js`, `src/lib/db/repos/securityLogRepo.js`, `src/lib/auth/dashboardSession.js`, `src/shared/services/telegramBackup.js`, `src/sse/services/backgroundTokenRefresh.js` — were absent from `.next/standalone/`. `getGuardModule()` correctly failed closed with 503 instead of serving. Only `assemble.sh` staged that tree, so anything that did not run it (the `npm`/`bun` scripts) started a server that refused every request. `scripts/copy-standalone-assets.mjs` (the `postbuild` hook) now stages `src/` and `scripts/` into the standalone tree the same way, and a unit test pins it. The guard is not weakened: the modules are present, so the auth and peer checks actually run.
+- **`custom-server.js` resolves the app root instead of assuming `__dirname`**: a new `APP_ROOT`/`appPath()` pair probes `__dirname`, then two levels up, then one level up, and falls back to `__dirname`. Repo checkout and the systemd standalone layout (where `src/` sits beside the wrapper) resolve to the same directory as before; a packaged layout with the wrapper nested one level down now finds its source tree instead of silently failing the guard. `server.js` next to the wrapper is still looked up relative to the wrapper, which is correct for every layout.
+- **Duplicate component imports removed** in `EditCompatibleNodeModal.js` and `AddCompatibleModal.js`: the #4999 quota-check merge kept the previous `@/shared/components` import alongside the new one that added `Toggle`, and webpack failed the whole build with `the name \`Button\` is defined multiple times`. Both files now import the single superset.
+
 # v0.5.218 (2026-10-18) · 3 commits
 
 ## What Was Added / Fixed  (ported from upstream decolua/9router: PRs #4988, #4999, #4989)

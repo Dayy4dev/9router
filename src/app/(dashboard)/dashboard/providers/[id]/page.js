@@ -1240,7 +1240,7 @@ export default function ProviderDetailPage() {
   );
 
   const handleTestModel = async (modelId) => {
-    if (testingModelIds.has(modelId)) return;
+    if (testingModelIds.has(modelId)) return false;
     setTestingModelIds((prev) => new Set(prev).add(modelId));
     const start = Date.now();
     try {
@@ -1251,25 +1251,49 @@ export default function ProviderDetailPage() {
       });
       const data = await res.json();
       const latency = Number.isFinite(data.latencyMs) ? data.latencyMs : (Date.now() - start);
-      setModelTestResults((prev) => ({ ...prev, [modelId]: data.ok ? "ok" : "error" }));
+      const isOk = !!data.ok;
+      setModelTestResults((prev) => ({ ...prev, [modelId]: isOk ? "ok" : "error" }));
       setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
-      setModelsTestError(data.ok ? "" : (data.error || "Model not reachable"));
+      setModelsTestError(isOk ? "" : (data.error || "Model not reachable"));
+      return isOk;
     } catch {
       const latency = Date.now() - start;
       setModelTestResults((prev) => ({ ...prev, [modelId]: "error" }));
       setModelTestLatencies((prev) => ({ ...prev, [modelId]: latency }));
       setModelsTestError("Network error");
+      return false;
     } finally {
       setTestingModelIds((prev) => { const n = new Set(prev); n.delete(modelId); return n; });
     }
   };
 
   const [isTestingAll, setIsTestingAll] = useState(false);
+  const [testAllProgress, setTestAllProgress] = useState(null);
 
   const handleTestAllModels = async (targetIds) => {
     if (isTestingAll || !targetIds?.length) return;
     setIsTestingAll(true);
     setModelsTestError("");
+
+    const taskId = `test-models-${providerStorageAlias || providerId}`;
+    const total = targetIds.length;
+    let completed = 0;
+    let passed = 0;
+    let failed = 0;
+    let cancelled = false;
+
+    setTestAllProgress({ current: 0, total, passed: 0, failed: 0 });
+
+    useTaskStore.getState().start({
+      id: taskId,
+      title: `Testing ${providerInfo?.name || providerDisplayAlias || "provider"} models`,
+      message: `Testing models: 0/${total}`,
+      progress: 0,
+      href: typeof window !== "undefined" ? window.location.pathname : "/dashboard/providers",
+      onCancel: () => {
+        cancelled = true;
+      },
+    });
 
     // Pool of workers to run tests concurrently (max 4 concurrent)
     const queue = [...targetIds];
@@ -1277,9 +1301,19 @@ export default function ProviderDetailPage() {
 
     const worker = async () => {
       while (queue.length > 0) {
+        if (cancelled) break;
         const modelId = queue.shift();
         if (!modelId) break;
-        await handleTestModel(modelId);
+        const isOk = await handleTestModel(modelId);
+        completed++;
+        if (isOk) passed++;
+        else failed++;
+        const pct = Math.min(100, Math.round((completed / total) * 100));
+        setTestAllProgress({ current: completed, total, passed, failed });
+        useTaskStore.getState().update(taskId, {
+          progress: pct,
+          message: `Testing models: ${completed}/${total} (${passed} passed, ${failed} failed)`,
+        });
       }
     };
 
@@ -1287,6 +1321,12 @@ export default function ProviderDetailPage() {
       await Promise.all(Array.from({ length: workerCount }, () => worker()));
     } finally {
       setIsTestingAll(false);
+      setTestAllProgress(null);
+      useTaskStore.getState().update(taskId, {
+        progress: 100,
+        message: `Completed: ${passed}/${total} passed${failed > 0 ? `, ${failed} failed` : ""}`,
+      });
+      useTaskStore.getState().finish(taskId);
     }
   };
 
@@ -2007,7 +2047,9 @@ export default function ProviderDetailPage() {
                       disabled={isTestingAll}
                       onClick={() => handleTestAllModels(activeIds)}
                     >
-                      {isTestingAll ? translate("Testing...") : translate("Test All")}
+                      {isTestingAll
+                        ? `${translate("Testing...")} ${testAllProgress ? `(${testAllProgress.current}/${testAllProgress.total})` : ""}`
+                        : translate("Test All")}
                     </Button>
                   )}
                   {failedActiveIds.length > 0 && (
@@ -2036,6 +2078,17 @@ export default function ProviderDetailPage() {
               );
             })()}
           </div>
+
+          {isTestingAll && testAllProgress && (
+            <div className="w-full bg-border/40 rounded-full h-1.5 overflow-hidden -mt-1 mb-1">
+              <div
+                className="bg-primary h-full transition-all duration-300 rounded-full"
+                style={{
+                  width: `${Math.min(100, Math.round((testAllProgress.current / (testAllProgress.total || 1)) * 100))}%`,
+                }}
+              />
+            </div>
+          )}
 
           {!isCompatible && (
             <div className="flex flex-col sm:flex-row gap-2 items-center">

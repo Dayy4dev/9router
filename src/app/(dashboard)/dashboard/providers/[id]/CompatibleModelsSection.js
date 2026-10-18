@@ -97,6 +97,7 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   const [deletingFailed, setDeletingFailed] = useState(false);
   const [testingModelId, setTestingModelId] = useState(null);
   const [isTestingAll, setIsTestingAll] = useState(false);
+  const [testAllProgress, setTestAllProgress] = useState(null);
   const [modelTestResults, setModelTestResults] = useState({});
   const [modelTestLatencies, setModelTestLatencies] = useState({});
   const [modelSearchQuery, setModelSearchQuery] = useState("");
@@ -128,15 +129,37 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
   const handleTestAllModels = async (modelsToTest) => {
     if (isTestingAll || !modelsToTest?.length) return;
     setIsTestingAll(true);
+    const taskId = `test-models-${providerStorageAlias}`;
+    const total = modelsToTest.length;
+    let completed = 0;
+    let passed = 0;
+    let failed = 0;
+    let cancelled = false;
+
+    setTestAllProgress({ current: 0, total, passed: 0, failed: 0 });
+
+    useTaskStore.getState().start({
+      id: taskId,
+      title: `Testing ${providerDisplayAlias || "provider"} models`,
+      message: `Testing models: 0/${total}`,
+      progress: 0,
+      href: typeof window !== "undefined" ? window.location.pathname : "/dashboard/providers",
+      onCancel: () => {
+        cancelled = true;
+      },
+    });
+
     const queue = [...modelsToTest];
     const workerCount = Math.min(4, queue.length);
 
     const worker = async () => {
       while (queue.length > 0) {
+        if (cancelled) break;
         const m = queue.shift();
         if (!m?.id) break;
         setTestingModelId(m.id);
         const start = Date.now();
+        let ok = false;
         try {
           const res = await fetch("/api/models/test", {
             method: "POST",
@@ -144,14 +167,24 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
             body: JSON.stringify({ model: `${providerStorageAlias}/${m.id}` }),
           });
           const data = await res.json();
+          ok = !!data.ok;
           const latency = Number.isFinite(data.latencyMs) ? data.latencyMs : (Date.now() - start);
-          setModelTestResults((prev) => ({ ...prev, [m.id]: data.ok ? "ok" : "error" }));
+          setModelTestResults((prev) => ({ ...prev, [m.id]: ok ? "ok" : "error" }));
           setModelTestLatencies((prev) => ({ ...prev, [m.id]: latency }));
         } catch {
           const latency = Date.now() - start;
           setModelTestResults((prev) => ({ ...prev, [m.id]: "error" }));
           setModelTestLatencies((prev) => ({ ...prev, [m.id]: latency }));
         }
+        completed++;
+        if (ok) passed++;
+        else failed++;
+        const pct = Math.min(100, Math.round((completed / total) * 100));
+        setTestAllProgress({ current: completed, total, passed, failed });
+        useTaskStore.getState().update(taskId, {
+          progress: pct,
+          message: `Testing models: ${completed}/${total} (${passed} passed, ${failed} failed)`,
+        });
       }
     };
 
@@ -160,6 +193,12 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
     } finally {
       setTestingModelId(null);
       setIsTestingAll(false);
+      setTestAllProgress(null);
+      useTaskStore.getState().update(taskId, {
+        progress: 100,
+        message: `Completed: ${passed}/${total} passed${failed > 0 ? `, ${failed} failed` : ""}`,
+      });
+      useTaskStore.getState().finish(taskId);
     }
   };
 
@@ -335,7 +374,9 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
             onClick={() => handleTestAllModels(allModels)}
             disabled={isTestingAll || importing}
           >
-            {isTestingAll ? "Testing..." : "Test All"}
+            {isTestingAll
+              ? `Testing... ${testAllProgress ? `(${testAllProgress.current}/${testAllProgress.total})` : ""}`
+              : "Test All"}
           </Button>
         )}
         {(() => {
@@ -356,6 +397,17 @@ export default function CompatibleModelsSection({ providerStorageAlias, provider
           );
         })()}
       </div>
+
+      {isTestingAll && testAllProgress && (
+        <div className="w-full bg-border/40 rounded-full h-1.5 overflow-hidden -mt-1 mb-1">
+          <div
+            className="bg-primary h-full transition-all duration-300 rounded-full"
+            style={{
+              width: `${Math.min(100, Math.round((testAllProgress.current / (testAllProgress.total || 1)) * 100))}%`,
+            }}
+          />
+        </div>
+      )}
 
       {allModels.length > 0 && (
         <div className="flex flex-col sm:flex-row gap-2 items-center">

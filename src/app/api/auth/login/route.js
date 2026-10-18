@@ -84,14 +84,33 @@ export async function POST(request) {
         if (valid === "KEY_DISABLED") msg = "API key is disabled";
         else if (valid === "KEY_EXPIRED") msg = "API key is expired";
         else if (valid === "IP_NOT_ALLOWED") msg = "Client IP not allowed for this API key";
+        // Wrong keys burn the same attempt counter as a wrong password, so
+        // guessing costs the same either way and both show what is left.
+        const { remainingBeforeLock } = recordFail(ip);
+        const postLock = checkLock(ip);
+        if (postLock.locked) {
+          await audit(request, ip, {
+            type: "apikey_login_locked",
+            severity: "warn",
+            detail: `Locked out after repeated failures; retry allowed in ${postLock.retryAfter}s`,
+            actor: keyStr.slice(0, 8) + "…",
+          });
+          return NextResponse.json(
+            { error: `Too many failed attempts. Try again in ${postLock.retryAfter}s. ${RESET_HINT}`, retryAfter: postLock.retryAfter, resetHint: RESET_HINT },
+            { status: 429, headers: { "Retry-After": String(postLock.retryAfter) } }
+          );
+        }
         await audit(request, ip, {
           type: "apikey_login_failed",
           severity: "warn",
           // The reason, never the key: this table is readable in the dashboard.
-          detail: msg,
+          detail: `${msg}. ${remainingBeforeLock} attempt(s) left before lockout`,
           actor: keyStr.slice(0, 8) + "…",
         });
-        return NextResponse.json({ error: msg }, { status: 401 });
+        return NextResponse.json(
+          { error: `${msg}. ${remainingBeforeLock} attempt(s) left before lockout.`, remainingBeforeLock },
+          { status: 401 }
+        );
       }
       if (quotaExhausted) {
         await audit(request, ip, {

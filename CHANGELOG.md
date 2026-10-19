@@ -1,3 +1,9 @@
+# v0.5.221 (2026-10-19) · 1 commit
+
+## What Was Fixed
+
+- **Changelog categories no longer fall back to gray**: `canonicalCategory()` looked a heading up verbatim in `CATEGORY_ALIAS`, so a heading written without a trailing question mark never matched its spelled-with-punctuation sibling (`What Was Added` vs `what was added?`) and fell through to the unknown-category style — muted slate text, `help` icon, gray pill. The lookup now strips trailing `?`/`!`/`.` and probes the bare form first, so both spellings resolve to the same category and keep its real color (green for Features, amber for Fixes, and so on). `what was added` and `what was added / fixed` are also registered in the alias map, since those are the spellings this fork's own release notes use. Verified against every heading in `CHANGELOG.md`: zero gray categories remain (was 4), and the changelog self-checks pass.
+
 # v0.5.220 (2026-10-19) · 2 commits
 
 ## What Was Added

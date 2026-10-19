@@ -1,3 +1,10 @@
+# v0.5.225 (2026-10-19) · 2 commits
+
+## What Was Fixed
+- Fix proxy egress falling back to direct host IP on 403 FreeTierError or proxy failures, preventing host main IP leaks to upstream abuse detection gates.
+
+---
+
 # v0.5.224 (2026-10-19) · 1 commit
 
 ## What Was Fixed

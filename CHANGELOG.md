@@ -1,3 +1,12 @@
+# v0.5.220 (2026-10-19) · 2 commits
+
+## What Was Added (port of upstream PR #4949)
+
+- **Port upstream PR #4949 (WorkBuddy AI intl headers and conversation id family)**:
+  - Updated `codebuddy-intl` (`cbai`) registry to target `https://www.workbuddy.ai/v2/chat/completions` and usage endpoints, aligning UA to `WorkBuddy/5.8.4 workbuddy-ai/5.8.4 CLI/2.161.0` and adding strict identity headers (`X-IDE-Type`, `X-IDE-Version`, `X-Private-Data`, `X-Agent-Intent`, `X-Agent-Purpose`, `X-Agent-Type`, `X-Domain`).
+  - Added `buildHeaders()` in `CodeBuddyIntlExecutor` generating the complete conversation ID and trace header family (`X-Conversation-ID` as UUIDv7, `X-Conversation-Request-ID`, `X-Root-Request-ID`, `X-Conversation-Message-ID`, `X-Request-ID`, `X-Trace-ID`, `traceparent`, `b3`, `X-B3-TraceId`, `X-B3-SpanId`, `X-B3-Sampled`) to eliminate `400 / code 11-128` channel verification failures (`conversation id missing`).
+  - Added unit test `tests/unit/codebuddy-intl-identity-4946.test.js` (11 tests, all passing).
+
 # v0.5.219 (2026-10-18) · 2 commits
 
 ## What Was Fixed  (port of this fork's PR #13, credit its-benjamin)

@@ -1,3 +1,9 @@
+# v0.5.222 (2026-10-19) · 1 commit
+
+## What Was Fixed
+
+- **A dashboard-only API key no longer sees the whole menu while signing in**: `Sidebar` fell back to a full-admin permission object whenever `permissions` was still `null` — that is, for the whole duration of the `/api/auth/status` fetch — and every filter took the `if (!isApiKeyUser) return true` shortcut, so all admin entries rendered. On a phone connection the fetch takes long enough to read as a real grant: a key with only `viewUsage` showed Providers, Combos, Quota, CLI Tools, Plugins, Proxy Pools and Settings, and only narrowed down after the response landed. The session store already tracked `loaded`; nothing read it. The sidebar is now deny-by-default: a module-level `NO_PERMISSIONS` object replaces the all-true fallback, `sessionReady` is derived from `loaded`, and each of the four menu filters, the media accordion, the settings link and the API-key badge are gated on it, so an unresolved session renders an empty menu rather than an admin one. The settings fetch is also held until the role is known, instead of firing for a session that may turn out to be a key. A password session is unaffected — once `loaded` flips, the admin shortcut applies exactly as before. `tests/unit/sidebar-permission-gate.test.js` (7 tests) pins the behavior; it fails against the previous sidebar on all 7.
+
 # v0.5.221 (2026-10-19) · 1 commit
 
 ## What Was Fixed

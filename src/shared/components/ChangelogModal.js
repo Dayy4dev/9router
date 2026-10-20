@@ -167,6 +167,7 @@ const CATEGORY_ALIAS = {
   "what's new?": "Features",
   "what's new": "Features",
   "what changed": "Changed",
+  "what was changed": "Changed",
   "what was fixed": "Fixes",
   "what was removed": "Removed",
   "what was undone?": "Undone",

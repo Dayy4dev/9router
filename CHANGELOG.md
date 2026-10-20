@@ -1,3 +1,11 @@
+# v0.5.231 (2026-10-20) · 1 commit
+
+## What Was Added
+
+- **One budget per key, and the operator picks which unit it is measured in**: the cost cap shipped beside the token cap, so a key could carry two budgets that both applied and switching a key to money meant zeroing the token limit by hand; nothing could limit a key by request count at all. `limitKind` now names the single budget a key is measured by — `tokens` (the default, so existing rows keep their behaviour), `cost`, or `requests`. All three numbers stay stored so switching back does not lose them, but `validateApiKey()` enforces only the selected one, which is why a stale, exhausted token cap no longer blocks a key that was switched to requests. Requests get a `usedRequests` counter written in the same transaction as the usage row and reset by the same `resetInterval` window as tokens; cost keeps its UTC-day stamp, so a new day replaces the counter without any reset job. `REQUEST_LIMIT_EXCEEDED` and `COST_LIMIT_EXCEEDED` both answer **429** through the gate rather than the `401 Invalid API key` an unknown reason falls back to. The key editor is now one "Limit Type" selector plus a single value field whose label and placeholder follow the kind (and the reset-interval picker hides for cost, which is always daily), and the key list shows one badge for the active budget — `Usage: 12K / 100K tokens`, `Spent: $0.42 / $2.50`, `Usage: 12 / 1,000 req` — that turns red at the cap. The per-key usage card measures the same kind, and backup/restore carries the kind plus all three caps. `tests/unit/api-key-cost-guard.test.js` grew to 9 tests: cost accumulation and refusal, unlimited, day rollover, request counting and refusal, a stale token cap staying ignored while requests is selected, switching kind moving the enforced budget, and the 429 mapping.
+
+---
+
 # v0.5.230 (2026-10-20) · 1 commit
 
 ## What Was Added

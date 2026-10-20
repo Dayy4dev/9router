@@ -1,3 +1,12 @@
+# v0.5.227 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **The standalone build can serve again — the auth guard had no `next/server` to import**: `next build` traces only what reaches the webpack graph, and `src/dashboardGuard.js` is copied into `.next/standalone/` *after* the build because `custom-server.js` loads it by absolute path. Its runtime `import "next/server"` was therefore never traced, so the standalone tree carried a partial `next` package and every request answered `503 guard unavailable` with `ENOENT node_modules/next/server.js`. `scripts/copy-standalone-assets.mjs` now mirrors `node_modules/next` into the standalone tree — the same thing `assemble.sh` has always done for the systemd unit — so `npm run build && npm start` and the bundle CI uploads are servable. `tests/unit/standalone-assets.test.js` covers the mirror (including that it replaces the traced directory instead of merging into it), and the CI bundle check now fails when `node_modules/next/server.js` is missing.
+- **CI's nested install no longer crashes on the runner's npm**: npm 10.9.9 aborts `npm install` inside `tests/` with `Cannot read properties of null (reading 'edgesOut')` when the directory resolves inside a project that has its own tree. The test job installs npm 12 first, which is what the local setup already runs.
+
+---
+
 # v0.5.226 (2026-10-20) · 1 commit
 
 ## What Was Added

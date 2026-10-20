@@ -1,3 +1,11 @@
+# v0.5.230 (2026-10-20) · 1 commit
+
+## What Was Added
+
+- **An API key can now be given a daily spend cap in dollars**: token, RPM and TPM limits bound volume, not money — the same token count costs a cent on `gpt-4o-mini` and dollars on a frontier model, so a key could burn any amount per day and the owner only found out on the provider invoice. Each key carries `dailyCostLimit` (USD, `0` = unlimited), a `costSpent` counter and the UTC `costDay` that counter belongs to; `saveRequestUsage()` writes the counter inside the same transaction as the usage row, and because the stamp *is* the day, a new day replaces the counter instead of needing a reset job. Counting `usageHistory` instead would have been wrong: that table is pruned, so spend would read lower than it was and the key would silently overspend. `validateApiKey()` refuses with `COST_LIMIT_EXCEEDED` once today's spend reaches the cap, which `keyGate` answers as **429** (an unrecognised reason would have fallen back to `401 Invalid API key`, blaming the credential for a budget decision). A sub-key cannot be given a larger cap than its creator, on create or on edit, and the cap survives backup/restore — an older backup that predates the column leaves the live counter intact rather than zeroing it. The key editor gained a "Daily Cost Limit in USD" field beside the RPM/TPM limits, the endpoint list shows a `Cost: $x / $y today` badge that turns red at the cap, and the per-key usage card shows spend against it. `tests/unit/api-key-cost-guard.test.js` (6 tests, real SQLite adapter) covers accumulation from a logged request, refusal at the cap, passage below it, the unlimited case, the day rollover through the usage writer, and the 429 mapping. Spec: `docs/superpowers/specs/2026-10-20-api-key-daily-cost-limit-design.md`.
+
+---
+
 # v0.5.229 (2026-10-20) · 1 commit
 
 ## What Was Fixed

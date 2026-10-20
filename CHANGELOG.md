@@ -1,3 +1,12 @@
+# v0.5.244 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **`Error fetching models: e is not a function` — the models list died for anyone with a combo**: `aggregateComboCapabilities` gained a `resolveCaps` callback in its third position, but the two server routes still called it with their old arguments, so the recursion depth `0` landed in the callback slot and `0?.(id)` threw a `TypeError`. Both `/api/models` and `/api/v1/models` answered 500 before they could list anything. The routes now pass `null` for the resolver and the combo's own window in the last slot, and the aggregator ignores a resolver that is not a function, so a stale caller can never take the list down again.
+- **A combo reports its widest member's window again, and its own window wins**: the same merge had reverted the aggregator to `Math.min` and dropped the per-combo `contextWindow` override, so a combo built on a 1M model published 256k and clients compacted far too early. Both behaviours are restored and covered by `tests/unit/combo-capabilities.test.js`, whose four previously catalogued failures now pass (the entries were pruned from the baseline).
+
+---
+
 # v0.5.243 (2026-10-20) · 1 commit
 
 ## What Was Changed

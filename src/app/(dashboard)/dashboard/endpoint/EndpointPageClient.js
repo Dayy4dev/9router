@@ -76,9 +76,25 @@ function formatLimitValue(kind, value) {
 }
 
 function limitFieldLabel(kind) {
-  if (kind === "cost") return "Cost Limit in USD (0: unlimited)";
-  if (kind === "requests") return "Request Limit (0: unlimited)";
-  return "Token Limit (0: unlimited)";
+  if (kind === "cost") return "Cost Limit (USD)";
+  if (kind === "requests") return "Request Limit";
+  return "Token Limit";
+}
+
+// One number whose meaning changes with the kind, so the hint has to state the unit's
+// own rule instead of a generic "0 means unlimited": a token cap and a request cap are
+// counted per window, while a cost cap is counted per UTC day and priced per request.
+function limitHint(kind, creatorTokenLimit = 0) {
+  if (kind === "cost") {
+    return "Priced per request at the model's rate; the key answers 429 once today's spend reaches this cap. The counter starts again at 00:00 UTC. 0 = unlimited.";
+  }
+  if (kind === "requests") {
+    return "Counted once per request that gets logged, whichever model it hits; the key answers 429 at the cap. 0 = unlimited.";
+  }
+  const base = "Counted in prompt + completion tokens, added up over the reset window; the key answers 429 at the cap. 0 = unlimited.";
+  return creatorTokenLimit > 0
+    ? `${base} Your maximum is ${creatorTokenLimit.toLocaleString()} tokens.`
+    : base;
 }
 
 function limitPlaceholder(kind) {
@@ -1697,13 +1713,7 @@ const scopedModelPatterns =
                 value={newKeyLimit}
                 onChange={(e) => setNewKeyLimit(e.target.value)}
                 placeholder={limitPlaceholder(newKeyLimitKind)}
-                hint={
-                  newKeyLimitKind === "cost"
-                    ? "Refused with 429 once today's spend reaches this amount (resets at 00:00 UTC)"
-                    : newKeyLimitKind === "tokens" && creatorTokenLimit > 0
-                      ? `Your maximum is ${creatorTokenLimit.toLocaleString()}`
-                      : "0 or leave empty for unlimited"
-                }
+                hint={limitHint(newKeyLimitKind, creatorTokenLimit)}
               />
             </div>
             {newKeyLimitKind !== "cost" && Number(newKeyLimit) > 0 && (
@@ -1734,20 +1744,20 @@ const scopedModelPatterns =
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="RPM Limit (0: unlimited)"
+                label="RPM Limit"
                 type="number"
                 value={newKeyRpm}
                 onChange={(e) => setNewKeyRpm(e.target.value)}
                 placeholder="0"
-                hint="Max requests/min"
+                hint="Max requests per minute; 0 = unlimited"
               />
               <Input
-                label="TPM Limit (0: unlimited)"
+                label="TPM Limit"
                 type="number"
                 value={newKeyTpm}
                 onChange={(e) => setNewKeyTpm(e.target.value)}
                 placeholder="0"
-                hint="Max tokens/min"
+                hint="Max tokens per minute; 0 = unlimited"
               />
             </div>
           </FormSection>
@@ -1869,6 +1879,7 @@ const scopedModelPatterns =
                 value={editLimit}
                 onChange={(e) => setEditLimit(e.target.value)}
                 placeholder={limitPlaceholder(editLimitKind)}
+                hint={limitHint(editLimitKind, creatorTokenLimit)}
               />
             </div>
             {editLimitKind !== "cost" && Number(editLimit) > 0 && (
@@ -1899,20 +1910,20 @@ const scopedModelPatterns =
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input
-                label="RPM Limit (0: unlimited)"
+                label="RPM Limit"
                 type="number"
                 value={editRpm}
                 onChange={(e) => setEditRpm(e.target.value)}
                 placeholder="0"
-                hint="Max requests/min"
+                hint="Max requests per minute; 0 = unlimited"
               />
               <Input
-                label="TPM Limit (0: unlimited)"
+                label="TPM Limit"
                 type="number"
                 value={editTpm}
                 onChange={(e) => setEditTpm(e.target.value)}
                 placeholder="0"
-                hint="Max tokens/min"
+                hint="Max tokens per minute; 0 = unlimited"
               />
             </div>
           </FormSection>

@@ -1,3 +1,11 @@
+# v0.5.234 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The limit field explains the unit it is set to, instead of saying "0 or leave empty for unlimited"**: the field is one number whose meaning depends on `Limit Type`, and the old hint was the one sentence that carried no information about any of the three. `limitHint(kind)` now answers per kind — tokens are counted in prompt + completion tokens added up over the reset window and the key answers 429 at the cap; cost is priced per request at the model's rate, rolls over at 00:00 UTC and answers 429 at the cap; requests are counted once per logged call whichever model it hits. Every variant ends with `0 = unlimited`, so the only unit-agnostic rule survives. The token variant still appends the creator's ceiling (`Your maximum is 88,000,000 tokens`) because that is a real constraint when a sub-key is minted, and the hint is now shown in the edit modal too, which had none. Labels dropped their duplicated `(0: unlimited)` suffix — the hint states it now — so the three fields read `Token Limit`, `Cost Limit (USD)` and `Request Limit`, and the rate-limit pair reads `RPM Limit` / `TPM Limit` with `0 = unlimited` moved into their hints. `tests/unit/api-key-limit-hint.test.js` asserts each kind's sentence, the shared unlimited rule, the creator ceiling appearing on tokens only, both modals rendering the helper, and the generic line being gone.
+
+---
+
 # v0.5.233 (2026-10-20) · 1 commit
 
 ## What Was Fixed

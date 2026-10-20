@@ -16,24 +16,35 @@ const slice = page.slice(
 );
 const limitHint = new Function(slice + "\nreturn limitHint;")();
 
-describe("key editor: the limit hint explains the selected unit", () => {
-  it("explains the token window and its counter", () => {
-    expect(limitHint("tokens")).toMatch(/prompt \+ completion tokens/);
-    expect(limitHint("tokens")).toMatch(/reset window/);
-    expect(limitHint("tokens")).toMatch(/429/);
+describe("key editor: each limit kind explains itself, not the shared boilerplate", () => {
+  it("says tokens add up and a long conversation costs more", () => {
+    expect(limitHint("tokens")).toMatch(/prompt and completion tokens/);
+    expect(limitHint("tokens")).toMatch(/long conversation costs more/);
   });
 
-  it("explains that cost is priced per request and rolls over at midnight UTC", () => {
-    expect(limitHint("cost")).toMatch(/per request/);
+  it("says requests count calls, not size", () => {
+    expect(limitHint("requests")).toMatch(/Counts calls, not size/);
+    expect(limitHint("requests")).toMatch(/one call is one request/);
+    expect(limitHint("requests")).toMatch(/huge prompt counts the same as a tiny one/);
+  });
+
+  it("says cost is money priced per model, not volume", () => {
+    expect(limitHint("cost")).toMatch(/in USD/);
+    expect(limitHint("cost")).toMatch(/expensive model/);
     expect(limitHint("cost")).toMatch(/00:00 UTC/);
   });
 
-  it("explains that a request is counted once per logged call", () => {
-    expect(limitHint("requests")).toMatch(/once per request/);
-    expect(limitHint("requests")).toMatch(/whichever model/);
+  it("does not read like the same paragraph three times", () => {
+    const hints = ["tokens", "cost", "requests"].map((k) => limitHint(k));
+    expect(new Set(hints).size).toBe(3);
+
+    // The opening sentence is what a reader actually compares, so it must differ.
+    const openings = hints.map((h) => h.split(". ")[0]);
+    expect(new Set(openings).size).toBe(3);
+    expect(openings.some((o) => o.startsWith("Counted"))).toBe(false);
   });
 
-  it("keeps the only unit-agnostic sentence: zero means unlimited", () => {
+  it("keeps one sentence in common: zero means unlimited", () => {
     for (const kind of ["tokens", "cost", "requests"]) {
       expect(limitHint(kind)).toMatch(/0 = unlimited/);
     }

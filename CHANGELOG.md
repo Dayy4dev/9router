@@ -1,3 +1,11 @@
+# v0.5.235 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **Each limit kind now explains its own rule instead of sharing a template**: the three hints opened the same way (`Counted …`) and closed with the same `the key answers 429 at the cap. 0 = unlimited.`, so Requests read like Tokens with a swapped noun — the difference a reader needs is *what gets counted and why it costs what it costs*, not the refusal code. Tokens now say they add up prompt and completion tokens across the reset window, so a long conversation costs more than a short one. Requests say they count calls and not size — one call is one request however many tokens it spends, so a huge prompt counts the same as a tiny one. Cost says every call is charged at the model's price in USD, so the same amount of text costs more on an expensive model, and the total rolls over at 00:00 UTC. The only shared sentence left is `0 = unlimited`, which is true of all three. `tests/unit/api-key-limit-hint.test.js` now also asserts the three paragraphs and their opening sentences are distinct, not merely present.
+
+---
+
 # v0.5.234 (2026-10-20) · 1 commit
 
 ## What Was Changed

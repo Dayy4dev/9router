@@ -86,12 +86,12 @@ function limitFieldLabel(kind) {
 // counted per window, while a cost cap is counted per UTC day and priced per request.
 function limitHint(kind, creatorTokenLimit = 0) {
   if (kind === "cost") {
-    return "Priced per request at the model's rate; the key answers 429 once today's spend reaches this cap. The counter starts again at 00:00 UTC. 0 = unlimited.";
+    return "Charges every call at the model's price and adds it up in USD, so the same amount of text costs more on an expensive model. Once today's total (UTC) passes this amount the key answers 429 until 00:00 UTC. 0 = unlimited.";
   }
   if (kind === "requests") {
-    return "Counted once per request that gets logged, whichever model it hits; the key answers 429 at the cap. 0 = unlimited.";
+    return "Counts calls, not size: one call is one request however many tokens it spends, so a huge prompt counts the same as a tiny one. Once the count is reached the key answers 429 until the window resets. 0 = unlimited.";
   }
-  const base = "Counted in prompt + completion tokens, added up over the reset window; the key answers 429 at the cap. 0 = unlimited.";
+  const base = "Adds up prompt and completion tokens across the reset window, so a long conversation costs more than a short one. When the total is used up the key answers 429 until the window resets. 0 = unlimited.";
   return creatorTokenLimit > 0
     ? `${base} Your maximum is ${creatorTokenLimit.toLocaleString()} tokens.`
     : base;

@@ -1,3 +1,11 @@
+# v0.5.242 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The limit cards stopped quoting a sample amount**: each row carried an invented example next to its name (`100,000 tokens`, `$2.50 per day`, `1,000 calls`), which read as a value the key already had rather than an illustration. The rows now hold only the unit, an icon and the sentence that explains how it is counted; the number lives in the field the row reveals.
+
+---
+
 # v0.5.241 (2026-10-20) · 1 commit
 
 ## What Was Changed

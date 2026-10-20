@@ -55,7 +55,7 @@ const LIMIT_KIND_OPTIONS = [
     value: "tokens",
     label: "Tokens",
     blurb: "Adds up prompt and completion tokens, so a long conversation costs more than a short one.",
-    example: "100K tokens",
+    example: "100,000 tokens",
     icon: "data_usage",
     tone: "text-sky-400",
     tint: "bg-sky-500/10",
@@ -67,7 +67,7 @@ const LIMIT_KIND_OPTIONS = [
     value: "cost",
     label: "Cost",
     blurb: "Charges every call at the model's price in USD and starts over at midnight UTC.",
-    example: "$2.50 / day",
+    example: "$2.50 per day",
     icon: "payments",
     tone: "text-emerald-400",
     tint: "bg-emerald-500/10",
@@ -115,6 +115,7 @@ function LimitKindPicker({ value, onChange }) {
             >
               <span className="flex items-center gap-2">
                 <span
+                  aria-hidden="true"
                   className={cn(
                     "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]",
                     opt.chip,
@@ -131,7 +132,7 @@ function LimitKindPicker({ value, onChange }) {
                   aria-hidden="true"
                   className={cn(
                     "ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
-                    selected ? `${opt.border} ${opt.tone}` : "border-border/70 text-transparent"
+                    selected ? `${opt.border} ${opt.tone}` : "border-text-muted/50 text-transparent"
                   )}
                 >
                   <span className={cn("h-2 w-2 rounded-full", selected ? "bg-current" : "bg-transparent")} />
@@ -141,7 +142,9 @@ function LimitKindPicker({ value, onChange }) {
               <span
                 className={cn(
                   "mt-auto inline-flex w-fit items-center rounded-md px-1.5 py-0.5 font-mono text-[11px]",
-                  selected ? `${opt.chip} ${opt.tone}` : "bg-black/5 text-text-muted dark:bg-white/5"
+                  opt.chip,
+                  opt.tone,
+                  selected ? "opacity-100" : "opacity-75"
                 )}
               >
                 {opt.example}

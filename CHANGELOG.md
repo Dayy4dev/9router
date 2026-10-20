@@ -1,3 +1,14 @@
+# v0.5.240 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The key editor fits the screen again**: the dialog body was capped with a magic `calc(85vh-100px)` while the header and footer added their own height on top, so a long form pushed the footer past the bottom of the window and the last permission row slid underneath it. `Modal` now caps the panel at `85vh`, lays it out as a column, and lets only the body scroll, so the footer is always reachable and no row is hidden behind it.
+- **The unselected limit cards show their radio ring**: an empty 1px `#333` circle on a `surface-2` card was invisible, so the two cards that were not chosen looked like static panels rather than options. The ring now uses `text-muted/50` and the value chips share one treatment across all three cards, differing only in opacity.
+- **Examples use one number convention**: `100K tokens` / `$2.50 / day` / `1,000 calls` became `100,000 tokens` / `$2.50 per day` / `1,000 calls`.
+- **Decorative icons are hidden from screen readers**: the material-symbols glyph text was being appended to each card's accessible name, so a radio announced itself as "data_usage Tokens Adds up prompt…".
+
+---
+
 # v0.5.239 (2026-10-20) · 1 commit
 
 ## What Was Changed

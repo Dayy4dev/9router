@@ -48,6 +48,23 @@ describe("key editor: limit type is a card picker, not a dropdown", () => {
     expect(page).toMatch(/h-2 w-2 rounded-full", selected \? "bg-current" : "bg-transparent"/);
   });
 
+  it("marks the empty radios too, so unselected cards still read as options", () => {
+    expect(page).toMatch(/: "border-text-muted\/50 text-transparent"/);
+    expect(page).not.toMatch(/border-border text-transparent/);
+  });
+
+  it("gives the value chip the same treatment in every state", () => {
+    expect(page).toMatch(/opt\.chip,\s*opt\.tone,\s*selected \? "opacity-100" : "opacity-75"/);
+  });
+
+  it("writes all three examples with the same number convention", () => {
+    expect(options.map((o) => o.example)).toEqual([
+      "100,000 tokens",
+      "$2.50 per day",
+      "1,000 calls",
+    ]);
+  });
+
   it("keeps each card's icon chip coloured while it is unselected", () => {
     expect(page).toMatch(/opt\.chip,\s*opt\.tone,\s*selected \? "opacity-100" : "opacity-70"/);
   });

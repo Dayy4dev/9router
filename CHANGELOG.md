@@ -1,3 +1,12 @@
+# v0.5.246 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **A returning condition lights the bell again**: clearing a notice is how a resolved condition gets retired, and it also marks the row read — so when the same condition came back (a key slid under its cap and then over it again, a task failed twice) the row reappeared in the feed already greyed out and the badge stayed at zero, which reads as "nothing to see" while the key is in fact refusing traffic. `notify()` now re-arms `readAt` when it revives a cleared row, and leaves a row the operator actually read alone.
+- 2 tests in `tests/unit/notification-revival.test.js` drive the real SQLite adapter: revival counts as unread and stays a single row, while a read row that merely changes its figure stays read.
+
+---
+
 # v0.5.245 (2026-10-20) · 1 commit
 
 ## What Was Added

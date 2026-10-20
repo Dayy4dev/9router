@@ -87,7 +87,9 @@ describe("quota wording names the kind instead of assuming tokens", () => {
 
   it("bodies carry the amounts in the right unit and the reset", () => {
     const cost = quotaPressure(key({ limitKind: "cost", dailyCostLimit: 2.5, costSpent: 2.4, costDay: "2026-10-20" }), NOW);
-    expect(quotaBody(cost, NOW)).toBe("$2.40 of $2.50 spend used. Resets at 00:00 UTC.");
+    expect(quotaBody(cost, NOW)).toBe("$2.40 of $2.50 spent. Resets at 00:00 UTC.");
+    // "spend used" / "spent used" read as a typo; dollars are spent, not used.
+    expect(quotaBody(cost, NOW)).not.toMatch(/spen[dt] used/);
 
     const req = quotaPressure(key({ limitKind: "requests", requestLimit: 500, usedRequests: 450 }), NOW);
     expect(quotaBody(req, NOW)).toBe("450 of 500 calls used. No automatic reset.");

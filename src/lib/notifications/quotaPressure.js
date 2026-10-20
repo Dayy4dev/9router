@@ -92,9 +92,10 @@ export function formatResetIn(resetAt, now = new Date()) {
 }
 
 const KIND_COPY = {
-  tokens: { noun: "token budget", what: "tokens" },
-  cost: { noun: "daily budget", what: "spend" },
-  requests: { noun: "request budget", what: "calls" },
+  tokens: { noun: "token budget", amount: (used, cap) => `${used} of ${cap} tokens used.` },
+  // "spent used" is not English: dollars are spent, not used.
+  cost: { noun: "daily budget", amount: (used, cap) => `${used} of ${cap} spent.` },
+  requests: { noun: "request budget", amount: (used, cap) => `${used} of ${cap} calls used.` },
 };
 
 export function quotaTitle(key, state) {
@@ -106,8 +107,10 @@ export function quotaTitle(key, state) {
 
 export function quotaBody(state, now = new Date()) {
   const { kind } = state;
-  const said = `${formatQuotaValue(kind, state.used)} of ${formatQuotaValue(kind, state.cap)}`;
-  const unit = KIND_COPY[kind].what;
+  const said = KIND_COPY[kind].amount(
+    formatQuotaValue(kind, state.used),
+    formatQuotaValue(kind, state.cap)
+  );
   const tail =
     kind === "cost"
       ? state.resetAt
@@ -117,5 +120,5 @@ export function quotaBody(state, now = new Date()) {
           const left = formatResetIn(state.resetAt, now);
           return left ? `Resets in ${left}` : "No automatic reset";
         })();
-  return tail ? `${said} ${unit} used. ${tail}.` : `${said} ${unit} used.`;
+  return tail ? `${said} ${tail}.` : said;
 }

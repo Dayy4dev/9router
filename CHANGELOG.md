@@ -1,3 +1,11 @@
+# v0.5.248 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **Wording**: the USD notice read `$2.30 of $2.50 spent used.` — dollars are spent, not used. Each kind now owns its sentence (`… tokens used.`, `… calls used.`, `… spent.`) instead of one template with a noun swapped in, and a test rejects `spen[dt] used` so the phrasing cannot come back.
+
+---
+
 # v0.5.247 (2026-10-20) · 1 commit
 
 ## What Was Fixed

@@ -36,6 +36,11 @@ describe("key editor: limit type is a card picker, not a dropdown", () => {
     expect(options.find((o) => o.value === "requests").example).toMatch(/calls/);
   });
 
+  it("stacks the options as full-width rows the 512px editor can hold", () => {
+    expect(page).toMatch(/flex w-full items-center gap-3 rounded-\[14px\] border p-3 text-left/);
+    expect(page).not.toMatch(/grid grid-cols-1 sm:grid-cols-3/);
+  });
+
   it("renders as a radiogroup whose options carry their own selected state", () => {
     expect(page).toMatch(/role="radiogroup" aria-label="Limit Type"/);
     expect(page).toMatch(/role="radio"/);

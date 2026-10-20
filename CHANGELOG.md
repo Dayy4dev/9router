@@ -1,3 +1,11 @@
+# v0.5.241 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The limit picker is a list of rows instead of three narrow cards**: the key editor is a 512px column, so a three-up grid gave each card 149px and wrapped every sentence into five short lines — the copy that was meant to explain the budget became the reason the row looked crowded. Each option is now a full-width row: coloured icon chip, name and value example on one line, one sentence underneath, radio at the end. The selected row keeps the tinted plate, accent border and glow.
+
+---
+
 # v0.5.240 (2026-10-20) · 1 commit
 
 ## What Was Changed

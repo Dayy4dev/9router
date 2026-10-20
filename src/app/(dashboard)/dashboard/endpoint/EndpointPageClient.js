@@ -93,7 +93,7 @@ function LimitKindPicker({ value, onChange }) {
   return (
     <div className="flex flex-col gap-2">
       <label className="text-sm font-medium text-text-main">Limit Type</label>
-      <div role="radiogroup" aria-label="Limit Type" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div role="radiogroup" aria-label="Limit Type" className="flex flex-col gap-2">
         {LIMIT_KIND_OPTIONS.map((opt) => {
           const selected = value === opt.value;
           return (
@@ -104,50 +104,54 @@ function LimitKindPicker({ value, onChange }) {
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
               className={cn(
-                "chrome-focus group relative flex h-full flex-col gap-2 rounded-[14px] border p-3 text-left",
+                // A full-width row, because the editor is a 512px column: three side-by-side
+                // cards squeezed each blurb into five short lines and hid the choice again.
+                "chrome-focus group flex w-full items-center gap-3 rounded-[14px] border p-3 text-left",
                 "transition-all duration-[var(--motion-fast)]",
-                // Unselected still carries its accent, faint, so the row never reads as
-                // three identical grey boxes; selecting deepens the colour already there.
+                // Unselected rows keep their accent, faint, so the list never reads as three
+                // identical grey strips; selecting deepens the colour already there.
                 selected
                   ? `${opt.tint} ${opt.border} ${opt.glow}`
                   : "border-border/50 bg-surface-2/40 hover:border-border hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
-              <span className="flex items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]",
-                    opt.chip,
-                    opt.tone,
-                    selected ? "opacity-100" : "opacity-70"
-                  )}
-                >
-                  <span className="material-symbols-outlined text-[18px] leading-none">{opt.icon}</span>
-                </span>
-                <span className={cn("text-sm font-semibold", selected ? opt.tone : "text-text-main")}>
-                  {opt.label}
-                </span>
-                <span
-                  aria-hidden="true"
-                  className={cn(
-                    "ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
-                    selected ? `${opt.border} ${opt.tone}` : "border-text-muted/50 text-transparent"
-                  )}
-                >
-                  <span className={cn("h-2 w-2 rounded-full", selected ? "bg-current" : "bg-transparent")} />
-                </span>
-              </span>
-              <span className="text-xs leading-snug text-text-muted">{opt.blurb}</span>
               <span
+                aria-hidden="true"
                 className={cn(
-                  "mt-auto inline-flex w-fit items-center rounded-md px-1.5 py-0.5 font-mono text-[11px]",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px]",
                   opt.chip,
                   opt.tone,
-                  selected ? "opacity-100" : "opacity-75"
+                  selected ? "opacity-100" : "opacity-70"
                 )}
               >
-                {opt.example}
+                <span className="material-symbols-outlined text-[19px] leading-none">{opt.icon}</span>
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className={cn("text-sm font-semibold", selected ? opt.tone : "text-text-main")}>
+                    {opt.label}
+                  </span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-md px-1.5 py-0.5 font-mono text-[11px]",
+                      opt.chip,
+                      opt.tone,
+                      selected ? "opacity-100" : "opacity-75"
+                    )}
+                  >
+                    {opt.example}
+                  </span>
+                </span>
+                <span className="mt-1 block text-xs leading-snug text-text-muted">{opt.blurb}</span>
+              </span>
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+                  selected ? `${opt.border} ${opt.tone}` : "border-text-muted/50 text-transparent"
+                )}
+              >
+                <span className={cn("h-2 w-2 rounded-full", selected ? "bg-current" : "bg-transparent")} />
               </span>
             </button>
           );

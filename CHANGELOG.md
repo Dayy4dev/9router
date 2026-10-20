@@ -1,3 +1,12 @@
+# v0.5.228 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **The CI test gate now measures this checkout instead of a stale wish**: the catalogue held 24 entries from a machine whose failures no longer match reality, so the first real Linux/Node 22 run (3 856 tests) tripped on 199 uncatalogued failures and the job could never pass. `tests/__baseline__/known-fails.txt` is regenerated from that run — 213 entries across 71 files — and its header now documents how to regenerate it. `compare-fails.mjs` also accepts a `file :: (suite)` entry, because a suite that fails to load has no test name and previously could never match, which made it a permanent failure by construction. No test was deleted or skipped to get here.
+- **What the catalogue actually contains is now written down** in `CLAUDE.md` instead of the old "~938 pass, ~64 fail": 39 failures are the guard tests not resolving a `getDashboardAuthSession` export, 16 are converter snapshot drift, 7 are `UNIQUE constraint failed: combos.name` state leaking between combo tests, 13 suites fail to load, and the rest are conversion assertions. That is a backlog, not an environment quirk.
+
+---
+
 # v0.5.227 (2026-10-20) · 1 commit
 
 ## What Was Fixed

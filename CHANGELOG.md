@@ -1,3 +1,12 @@
+# v0.5.247 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **The long progress bar inside dialogs is gone; the bell owns it**: opening *Download Backup* and starting an export dropped a full-width card ("Preparing backup / Exporting database") over the form, with a scrim, covering the fields it was supposed to sit beside — and the same run was already in the bell through the task store, so the dialog showed a second, worse copy of one job. The card is removed from `DownloadBackupModal`, `BulkImportGrokCliModal`, `BulkImportCodexModal` and `AddApiKeyModal`; progress now lives only in the bell, while each dialog keeps its own busy state on the action button (`Download Backup`, `Importing…`, `Saving…`).
+- 3 tests in `tests/unit/bell-only-progress.test.js` keep it that way: no modal renders `ProgressCard`, every one of them still reports to the task store, and no empty conditional wrapper is left behind.
+
+---
+
 # v0.5.246 (2026-10-20) · 1 commit
 
 ## What Was Fixed

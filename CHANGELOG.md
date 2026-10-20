@@ -1,3 +1,14 @@
+# v0.5.249 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **Anti Slop is now the skill, not a summary of it**: the plugin used to inject a hand-condensed prompt of ~3.7k characters — about 6% of upstream's text, 15 of the 38 mandatory rules, no liveliness dials, no Design Read, none of the five concern skills — so calling it "the antislop skill" oversold it. `open-sse/rtk/antislopPrompt.js` is now generated from verbatim upstream sources kept in `open-sse/rtk/antislop-src/` (`core.md` plus `ui`, `copywriting`, `human`, `layoutmobile`, `code`). `full` is the core text verbatim (42,557 chars, ~10.6k tokens) and `ultra` is the core plus all five concern skills (130,512 chars, ~33k tokens). `lite` stays the 913-char condensation for cheap always-on filtering.
+- **Only the repo-editing half is dropped**: the install wizard, the self-update section and the mode-resolution section tell an agent to write pointer blocks into `AGENTS.md` and to ask which mode to use — wrong for a prompt injected on every request. A one-line runtime note replaces them (the plugin's level is the mode), and the tests fail if any of that text leaks back in.
+- **The level picker states the cost** instead of describing intensity in the abstract: each option now reads its token count straight from `ANTISLOP_LEVEL_CHARS`, so re-syncing the sources moves the number with it.
+- `scripts/generateAntislopPrompt.mjs` regenerates the module and `--check` fails when it drifts; `tests/unit/antislop-prompt-parity.test.js` (9 cases) asserts every core section is present verbatim, that all 38 rules survive, that ULTRA carries the five concern skills, that the dropped sections stay out, and that an unknown level still falls back to `full`.
+
+---
+
 # v0.5.248 (2026-10-20) · 1 commit
 
 ## What Was Fixed

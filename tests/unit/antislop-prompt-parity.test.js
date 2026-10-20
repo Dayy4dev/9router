@@ -82,14 +82,27 @@ describe("Anti Slop reproduces the skill, it does not summarise it", () => {
     expect(ultra.length).toBeGreaterThan(full.length * 2);
   });
 
-  it("matches the checked-in upstream sources line for line", () => {
+  it("matches the checked-in upstream sources byte for byte", () => {
+    // Not a sample and not a set of headings: the whole document, character for character. Any
+    // paraphrase, reformat or dropped paragraph fails here.
     const core = fs.readFileSync(path.join(ROOT, "open-sse/rtk/antislop-src/core.md"), "utf8");
-    const body = core.slice(core.indexOf("## What This Is")).trim().split("\n");
-    // Sample the middle of the document: paraphrase would break here even when headings match.
-    for (const line of [body[10], body[120], body[Math.floor(body.length / 2)], body[body.length - 3]]) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.length < 20) continue;
-      expect(full).toContain(trimmed);
+    const body = core.slice(core.indexOf("## What This Is")).trim();
+    expect(full.includes(body), "core text is not verbatim in FULL").toBe(true);
+
+    const stripFrontmatter = (md) => {
+      const end = md.indexOf("\n---", 3);
+      return (end > 0 ? md.slice(end + 4).replace(/^\s*\n/, "") : md).trim();
+    };
+    for (const [file, title] of [
+      ["ui.md", "# antislop-ui"],
+      ["copywriting.md", "# antislop-copywriting"],
+      ["human.md", "# antislop-human"],
+      ["layoutmobile.md", "# antislop-layoutmobile"],
+      ["code.md", "# antislop-code"],
+    ]) {
+      const md = fs.readFileSync(path.join(ROOT, "open-sse/rtk/antislop-src", file), "utf8");
+      const skill = `${title}\n\n${stripFrontmatter(md)}`;
+      expect(ultra.includes(skill), `${file} is not verbatim in ULTRA`).toBe(true);
     }
   });
 

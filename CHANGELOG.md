@@ -1,3 +1,11 @@
+# v0.5.250 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **Parity is now asserted byte for byte, not by headings.** The previous test sampled a few lines from the middle of the core, which a careful paraphrase could still slip past. `tests/unit/antislop-prompt-parity.test.js` now asserts that `full` contains the entire core document (everything from `## What This Is` onward) character for character, and that `ultra` contains each of the five concern skills verbatim after its title — so a reformat, a dropped paragraph or a "tidied" sentence fails the suite.
+
+---
+
 # v0.5.249 (2026-10-20) · 1 commit
 
 ## What Was Changed

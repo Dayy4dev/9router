@@ -3,7 +3,7 @@
 // pre-change safety backup in migrate.js: when the stored version is lower,
 // one lightweight DB backup is taken before applying schema changes. Forgetting
 // to bump only skips that backup - it does NOT break the additive auto-sync.
-export const SCHEMA_VERSION = 13;
+export const SCHEMA_VERSION = 14;
 
 export const PRAGMA_SQL = `
 PRAGMA journal_mode = WAL;
@@ -95,6 +95,13 @@ export const TABLES = {
       systemPrompt: "TEXT DEFAULT ''",
       permissions: "TEXT DEFAULT ''",
       createdBy: "TEXT DEFAULT ''",
+      // Money is a different budget from tokens: one cheap model can burn millions of
+      // tokens for a cent while one expensive one costs dollars on a handful. The
+      // counter is stamped with the UTC day it belongs to, so a new day rolls over by
+      // replacing the value instead of requiring a scheduled reset.
+      dailyCostLimit: "REAL DEFAULT 0",
+      costSpent: "REAL DEFAULT 0",
+      costDay: "TEXT DEFAULT ''",
     },
     indexes: ["CREATE INDEX IF NOT EXISTS idx_ak_key ON apiKeys(key)"],
   },

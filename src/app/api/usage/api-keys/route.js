@@ -117,6 +117,7 @@ export async function GET() {
       else row.errors += r.count;
     }
 
+    const todayKey = new Date().toISOString().slice(0, 10);
     const result = keys.map((k) => {
       const t = totals[k.key] || {};
       const promptTokens = t.promptTokens || 0;
@@ -154,6 +155,13 @@ export async function GET() {
         completionTokens,
         totalTokens: promptTokens + completionTokens,
         cost: t.cost || 0,
+        // Today's spend comes from the same counter validateApiKey enforces, not from
+        // the pruned usage log, so the page and the 429 can never disagree.
+        dailyCostLimit: k.dailyCostLimit || 0,
+        costSpentToday: k.costDay === todayKey ? Number(k.costSpent) || 0 : 0,
+        costPercent: k.dailyCostLimit > 0
+          ? Math.min(100, ((k.costDay === todayKey ? Number(k.costSpent) || 0 : 0) / k.dailyCostLimit) * 100)
+          : null,
         lastUsed: t.lastUsed || null,
         okRequests: st.ok,
         errorRequests: st.errors,

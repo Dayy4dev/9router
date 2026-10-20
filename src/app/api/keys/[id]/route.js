@@ -116,6 +116,19 @@ export async function PUT(request, { params }) {
     if (body.resetInterval !== undefined) updateData.resetInterval = body.resetInterval;
     if (body.rpmLimit !== undefined) updateData.rpmLimit = Number(body.rpmLimit);
     if (body.tpmLimit !== undefined) updateData.tpmLimit = Number(body.tpmLimit);
+    if (body.dailyCostLimit !== undefined) {
+      const costLimit = Number(body.dailyCostLimit) || 0;
+      const creatorCostLimit = Number(ctx.session?.dailyCostLimit) || 0;
+      // Same sub-key rule as creation: a key-authenticated session cannot raise the
+      // cap past the budget it was handed, otherwise editing is a way around it.
+      if (ctx.session?.role === "apikey" && creatorCostLimit > 0 && costLimit > creatorCostLimit) {
+        return NextResponse.json({
+          error: `Daily cost limit cannot exceed your maximum ($${creatorCostLimit}).`,
+          creatorMax: creatorCostLimit,
+        }, { status: 400 });
+      }
+      updateData.dailyCostLimit = costLimit;
+    }
     if (body.ipWhitelist !== undefined) updateData.ipWhitelist = body.ipWhitelist;
     if (body.expiresAt !== undefined) updateData.expiresAt = body.expiresAt || null;
 

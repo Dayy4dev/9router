@@ -36,6 +36,13 @@ function formatTokensNumber(num) {
   return num.toLocaleString();
 }
 
+// The cost counter is stamped with the UTC day it belongs to, so a stale stamp means
+// zero spent today — showing the raw counter would keep yesterday's total on screen.
+function spentTodayOf(key) {
+  const today = new Date().toISOString().slice(0, 10);
+  return key?.costDay === today ? Number(key.costSpent) || 0 : 0;
+}
+
 const RESET_INTERVAL_OPTIONS = [
   { value: "never", label: "Never reset" },
   { value: "5h", label: "Every 5 Hours (5h)" },
@@ -164,6 +171,7 @@ export default function APIPageClient({ machineId }) {
   const [newKeyAllowedModels, setNewKeyAllowedModels] = useState("*");
   const [newKeyRpm, setNewKeyRpm] = useState("");
   const [newKeyTpm, setNewKeyTpm] = useState("");
+  const [newKeyCostLimit, setNewKeyCostLimit] = useState("");
   const [newKeyIpWhitelist, setNewKeyIpWhitelist] = useState("");
   const [newKeyExpiresAt, setNewKeyExpiresAt] = useState("");
   const [editingKey, setEditingKey] = useState(null);
@@ -174,6 +182,7 @@ export default function APIPageClient({ machineId }) {
   const [editAllowedModels, setEditAllowedModels] = useState("*");
   const [editRpm, setEditRpm] = useState("");
   const [editTpm, setEditTpm] = useState("");
+  const [editCostLimit, setEditCostLimit] = useState("");
   const [editIpWhitelist, setEditIpWhitelist] = useState("");
   const [editExpiresAt, setEditExpiresAt] = useState("");
   const [activeProviders, setActiveProviders] = useState([]);
@@ -905,6 +914,7 @@ const scopedModelPatterns =
           allowedModels: newKeyAllowedModels.trim() || "*",
           rpmLimit: newKeyRpm ? Number(newKeyRpm) : 0,
           tpmLimit: newKeyTpm ? Number(newKeyTpm) : 0,
+          dailyCostLimit: newKeyCostLimit ? Number(newKeyCostLimit) : 0,
           ipWhitelist: newKeyIpWhitelist.trim(),
           expiresAt: newKeyExpiresAt || null,
           permissions: permissionsToSave(newKeyPermissions),
@@ -922,6 +932,7 @@ const scopedModelPatterns =
         setNewKeyAllowedModels("*");
         setNewKeyRpm("");
         setNewKeyTpm("");
+        setNewKeyCostLimit("");
         setNewKeyIpWhitelist("");
         setShowAddModal(false);
         setNewKeyExpiresAt("");
@@ -956,6 +967,7 @@ const scopedModelPatterns =
  setNewKeyAllowedModels(sourceKey.allowedModels || "*");
  setNewKeyRpm(sourceKey.rpmLimit ? String(sourceKey.rpmLimit) : "");
  setNewKeyTpm(sourceKey.tpmLimit ? String(sourceKey.tpmLimit) : "");
+ setNewKeyCostLimit(sourceKey.dailyCostLimit ? String(sourceKey.dailyCostLimit) : "");
  setNewKeyIpWhitelist(sourceKey.ipWhitelist || "");
  setNewKeyExpiresAt(sourceKey.expiresAt || "");
  setNewKeyPermissions(sourceKey.permissions || EMPTY_PERMISSIONS);
@@ -1448,6 +1460,19 @@ const scopedModelPatterns =
                         Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
                       </span>
                     )}
+                    {key.dailyCostLimit > 0 && (
+                      <span
+                        className={cn(
+                          "text-xs max-w-full truncate px-2 py-0.5 rounded font-medium",
+                          spentTodayOf(key) >= key.dailyCostLimit
+                            ? "bg-red-500/10 text-red-500"
+                            : "bg-amber-500/10 text-amber-600"
+                        )}
+                        title="Spent today (UTC) against this key's daily cost limit"
+                      >
+                        Cost: ${spentTodayOf(key).toFixed(2)} / ${Number(key.dailyCostLimit).toFixed(2)} today
+                      </span>
+                    )}
                     {key.ipWhitelist && (
                       <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium">
                         IP Guard: Active
@@ -1489,6 +1514,7 @@ const scopedModelPatterns =
                       setEditAllowedModels(key.allowedModels || "*");
                       setEditRpm(key.rpmLimit ? String(key.rpmLimit) : "");
                       setEditTpm(key.tpmLimit ? String(key.tpmLimit) : "");
+                      setEditCostLimit(key.dailyCostLimit ? String(key.dailyCostLimit) : "");
                       setEditIpWhitelist(key.ipWhitelist || "");
                       setEditExpiresAt(key.expiresAt || "");
                       setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
@@ -1593,6 +1619,16 @@ const scopedModelPatterns =
               hint="Max tokens/min"
             />
           </div>
+          <Input
+            label="Daily Cost Limit in USD (0: unlimited)"
+            type="number"
+            step="0.01"
+            min="0"
+            value={newKeyCostLimit}
+            onChange={(e) => setNewKeyCostLimit(e.target.value)}
+            placeholder="0"
+            hint="Requests are refused with 429 once the key has spent this much in one UTC day"
+          />
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-text-main">
@@ -1730,6 +1766,16 @@ const scopedModelPatterns =
               hint="Max tokens/min"
             />
           </div>
+          <Input
+            label="Daily Cost Limit in USD (0: unlimited)"
+            type="number"
+            step="0.01"
+            min="0"
+            value={editCostLimit}
+            onChange={(e) => setEditCostLimit(e.target.value)}
+            placeholder="0"
+            hint="Requests are refused with 429 once the key has spent this much in one UTC day"
+          />
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-text-main">
@@ -1811,6 +1857,7 @@ const scopedModelPatterns =
                   allowedModels: editAllowedModels.trim() || "*",
                   rpmLimit: editRpm ? Number(editRpm) : 0,
                   tpmLimit: editTpm ? Number(editTpm) : 0,
+                  dailyCostLimit: editCostLimit ? Number(editCostLimit) : 0,
                   ipWhitelist: editIpWhitelist.trim(),
                   expiresAt: editExpiresAt || null,
                   permissions: permissionsToSave(editPermissions),

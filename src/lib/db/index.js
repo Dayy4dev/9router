@@ -112,6 +112,11 @@ export async function exportDb(options = null) {
       allowedModels: r.allowedModels,
       rpmLimit: r.rpmLimit,
       tpmLimit: r.tpmLimit,
+      // The cap is configuration and belongs in a backup; the counter beside it is
+      // runtime state, carried along so a restore does not silently reset spend.
+      dailyCostLimit: Number(r.dailyCostLimit) || 0,
+      costSpent: Number(r.costSpent) || 0,
+      costDay: r.costDay || "",
       ipWhitelist: r.ipWhitelist,
       expiresAt: r.expiresAt || null,
       systemPrompt: r.systemPrompt || "",
@@ -253,6 +258,11 @@ export async function importDb(payload) {
         const allowedModels = k.allowedModels !== undefined ? k.allowedModels : (prev.allowedModels || "*");
         const rpmLimit = k.rpmLimit !== undefined ? Number(k.rpmLimit) : (prev.rpmLimit !== undefined ? Number(prev.rpmLimit) : 0);
         const tpmLimit = k.tpmLimit !== undefined ? Number(k.tpmLimit) : (prev.tpmLimit !== undefined ? Number(prev.tpmLimit) : 0);
+        // A backup written before the cost cap existed carries none of these, so the
+        // live counter wins over an absent field instead of being zeroed by the restore.
+        const dailyCostLimit = k.dailyCostLimit !== undefined ? Number(k.dailyCostLimit) : (prev.dailyCostLimit !== undefined ? Number(prev.dailyCostLimit) : 0);
+        const costSpent = k.costSpent !== undefined ? Number(k.costSpent) : (prev.costSpent !== undefined ? Number(prev.costSpent) : 0);
+        const costDay = k.costDay !== undefined ? k.costDay : (prev.costDay || "");
         const ipWhitelist = k.ipWhitelist !== undefined ? k.ipWhitelist : (prev.ipWhitelist || "");
         const expiresAt = k.expiresAt !== undefined ? k.expiresAt : (prev.expiresAt || null);
         const systemPrompt = k.systemPrompt !== undefined ? k.systemPrompt : (prev.systemPrompt || "");
@@ -260,7 +270,7 @@ export async function importDb(payload) {
         const createdBy = k.createdBy !== undefined ? k.createdBy : (prev.createdBy || "");
 
         db.run(
-          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             k.id,
             k.key,
@@ -275,6 +285,9 @@ export async function importDb(payload) {
             allowedModels,
             rpmLimit,
             tpmLimit,
+            dailyCostLimit,
+            costSpent,
+            costDay,
             ipWhitelist,
             expiresAt,
             systemPrompt,
@@ -501,6 +514,11 @@ export async function importDbProgressive(payload, onProgress) {
         const allowedModels = k.allowedModels !== undefined ? k.allowedModels : (prev.allowedModels || "*");
         const rpmLimit = k.rpmLimit !== undefined ? Number(k.rpmLimit) : (prev.rpmLimit !== undefined ? Number(prev.rpmLimit) : 0);
         const tpmLimit = k.tpmLimit !== undefined ? Number(k.tpmLimit) : (prev.tpmLimit !== undefined ? Number(prev.tpmLimit) : 0);
+        // A backup written before the cost cap existed carries none of these, so the
+        // live counter wins over an absent field instead of being zeroed by the restore.
+        const dailyCostLimit = k.dailyCostLimit !== undefined ? Number(k.dailyCostLimit) : (prev.dailyCostLimit !== undefined ? Number(prev.dailyCostLimit) : 0);
+        const costSpent = k.costSpent !== undefined ? Number(k.costSpent) : (prev.costSpent !== undefined ? Number(prev.costSpent) : 0);
+        const costDay = k.costDay !== undefined ? k.costDay : (prev.costDay || "");
         const ipWhitelist = k.ipWhitelist !== undefined ? k.ipWhitelist : (prev.ipWhitelist || "");
         const expiresAt = k.expiresAt !== undefined ? k.expiresAt : (prev.expiresAt || null);
         const systemPrompt = k.systemPrompt !== undefined ? k.systemPrompt : (prev.systemPrompt || "");
@@ -508,7 +526,7 @@ export async function importDbProgressive(payload, onProgress) {
         const createdBy = k.createdBy !== undefined ? k.createdBy : (prev.createdBy || "");
 
         db.run(
-          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             k.id,
             k.key,
@@ -523,6 +541,9 @@ export async function importDbProgressive(payload, onProgress) {
             allowedModels,
             rpmLimit,
             tpmLimit,
+            dailyCostLimit,
+            costSpent,
+            costDay,
             ipWhitelist,
             expiresAt,
             systemPrompt,

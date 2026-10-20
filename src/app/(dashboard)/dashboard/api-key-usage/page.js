@@ -93,6 +93,11 @@ function KeyCard({ k, expanded, onToggle }) {
         <div className="rounded-lg bg-surface-2/50 p-2">
           <p className="text-[10px] uppercase tracking-wider text-text-muted">Cost</p>
           <p className="text-sm font-semibold">{formatCost(k.cost)}</p>
+          {k.dailyCostLimit > 0 && (
+            <p className={`text-[10px] mt-0.5 ${(k.costPercent ?? 0) >= 100 ? "text-red-500 font-semibold" : "text-text-muted"}`}>
+              today {formatCost(k.costSpentToday)} / {formatCost(k.dailyCostLimit)}
+            </p>
+          )}
         </div>
         <div className="rounded-lg bg-surface-2/50 p-2">
           <p className="text-[10px] uppercase tracking-wider text-text-muted">Errors</p>

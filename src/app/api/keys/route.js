@@ -42,7 +42,7 @@ export async function POST(request) {
     const body = await request.json();
     let {
       name, tokenLimit, resetInterval, allowedModels,
-      rpmLimit, tpmLimit, ipWhitelist, expiresAt, systemPrompt,
+      rpmLimit, tpmLimit, dailyCostLimit, ipWhitelist, expiresAt, systemPrompt,
       permissions: requestedPermissions,
     } = body;
 
@@ -75,6 +75,18 @@ export async function POST(request) {
         }, { status: 400 });
       }
 
+      // Cost cap follows the same rule as the token cap: a sub-key may only be
+      // cheaper than its creator, otherwise minting keys would be a way to spend
+      // past the budget the creator was given.
+      const creatorCostLimit = Number(ctx.session.dailyCostLimit) || 0;
+      const requestedCostLimit = Number(dailyCostLimit) || 0;
+      if (creatorCostLimit > 0 && requestedCostLimit > creatorCostLimit) {
+        return NextResponse.json({
+          error: `Daily cost limit cannot exceed your maximum ($${creatorCostLimit}).`,
+          creatorMax: creatorCostLimit,
+        }, { status: 400 });
+      }
+
       // Allowed models: sub-key can only use a subset of creator's models.
       // Match against both the bare model id and the provider-qualified value,
       // so a custom model entered by its bare id is not silently dropped.
@@ -103,6 +115,7 @@ export async function POST(request) {
       allowedModels: allowedModels || "*",
       rpmLimit: rpmLimit !== undefined ? Number(rpmLimit) : 0,
       tpmLimit: tpmLimit !== undefined ? Number(tpmLimit) : 0,
+      dailyCostLimit: dailyCostLimit !== undefined ? Number(dailyCostLimit) : 0,
       ipWhitelist: ipWhitelist || "",
       expiresAt: expiresAt || null,
       systemPrompt: systemPrompt || "",
@@ -140,6 +153,7 @@ export async function POST(request) {
       allowedModels: apiKey.allowedModels,
       rpmLimit: apiKey.rpmLimit,
       tpmLimit: apiKey.tpmLimit,
+      dailyCostLimit: apiKey.dailyCostLimit,
       ipWhitelist: apiKey.ipWhitelist,
       permissions: apiKey.permissions,
       // The raw creator key is a secret and never leaves the server; the client

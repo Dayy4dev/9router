@@ -19,6 +19,11 @@ export function parsePermissions(permStr) {
   }
 }
 
+/** UTC calendar day (`YYYY-MM-DD`) — the same bucket SQLite's date('now') produces. */
+export function utcDayKey(date = new Date()) {
+  return date.toISOString().slice(0, 10);
+}
+
 function rowToKey(row) {
   if (!row) return null;
   return {
@@ -35,6 +40,9 @@ function rowToKey(row) {
     allowedModels: row.allowedModels || "*",
     rpmLimit: row.rpmLimit || 0,
     tpmLimit: row.tpmLimit || 0,
+    dailyCostLimit: Number(row.dailyCostLimit) || 0,
+    costSpent: Number(row.costSpent) || 0,
+    costDay: row.costDay || "",
     ipWhitelist: row.ipWhitelist || "",
     expiresAt: row.expiresAt || null,
     systemPrompt: row.systemPrompt || "",
@@ -81,6 +89,9 @@ export async function createApiKey(name, machineId, options = {}) {
     allowedModels: options.allowedModels || "*",
     rpmLimit: Number(options.rpmLimit) || 0,
     tpmLimit: Number(options.tpmLimit) || 0,
+    dailyCostLimit: Number(options.dailyCostLimit) || 0,
+    costSpent: Number(options.costSpent) || 0,
+    costDay: options.costDay || "",
     ipWhitelist: options.ipWhitelist || "",
     expiresAt: options.expiresAt || null,
     systemPrompt: options.systemPrompt || "",
@@ -92,7 +103,7 @@ export async function createApiKey(name, machineId, options = {}) {
   };
   const permStr = typeof options.permissions === "string" ? options.permissions : JSON.stringify(apiKey.permissions);
   db.run(
-    `INSERT INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       apiKey.id,
       apiKey.key,
@@ -107,6 +118,9 @@ export async function createApiKey(name, machineId, options = {}) {
       apiKey.allowedModels,
       apiKey.rpmLimit,
       apiKey.tpmLimit,
+      apiKey.dailyCostLimit,
+      apiKey.costSpent,
+      apiKey.costDay,
       apiKey.ipWhitelist,
       apiKey.expiresAt,
       apiKey.systemPrompt,
@@ -126,7 +140,7 @@ export async function updateApiKey(id, data) {
     const merged = { ...rowToKey(row), ...data };
     const permStr = typeof merged.permissions === "string" ? merged.permissions : JSON.stringify(merged.permissions || {});
     db.run(
-      `UPDATE apiKeys SET key = ?, name = ?, machineId = ?, isActive = ?, tokenLimit = ?, usedTokens = ?, resetInterval = ?, lastResetAt = ?, allowedModels = ?, rpmLimit = ?, tpmLimit = ?, ipWhitelist = ?, expiresAt = ?, systemPrompt = ?, permissions = ?, createdBy = ? WHERE id = ?`,
+      `UPDATE apiKeys SET key = ?, name = ?, machineId = ?, isActive = ?, tokenLimit = ?, usedTokens = ?, resetInterval = ?, lastResetAt = ?, allowedModels = ?, rpmLimit = ?, tpmLimit = ?, dailyCostLimit = ?, costSpent = ?, costDay = ?, ipWhitelist = ?, expiresAt = ?, systemPrompt = ?, permissions = ?, createdBy = ? WHERE id = ?`,
       [
         merged.key,
         merged.name,
@@ -139,6 +153,9 @@ export async function updateApiKey(id, data) {
         merged.allowedModels || "*",
         Number(merged.rpmLimit) || 0,
         Number(merged.tpmLimit) || 0,
+        Number(merged.dailyCostLimit) || 0,
+        Number(merged.costSpent) || 0,
+        merged.costDay || "",
         merged.ipWhitelist || "",
         merged.expiresAt || null,
         merged.systemPrompt || "",
@@ -285,6 +302,18 @@ export async function validateApiKey(key, requestedModel = null, clientIp = null
     if (tokenLimit > 0 && usedTokens >= tokenLimit) {
       result = "QUOTA_EXCEEDED";
       return;
+    }
+
+    // Daily money cap. The counter is stamped with the UTC day it belongs to, so a
+    // stamp from an earlier day means nothing has been spent today yet; without that
+    // check a key would stay blocked until something rewrote the row.
+    const dailyCostLimit = Number(row.dailyCostLimit) || 0;
+    if (dailyCostLimit > 0) {
+      const spentToday = row.costDay === utcDayKey() ? Number(row.costSpent) || 0 : 0;
+      if (spentToday >= dailyCostLimit) {
+        result = "COST_LIMIT_EXCEEDED";
+        return;
+      }
     }
 
     // Check allowed models

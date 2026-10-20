@@ -15,10 +15,10 @@ const options = new Function(
     "\nreturn LIMIT_KIND_OPTIONS;"
 )();
 
-describe("key editor: limit type is a coloured three-way picker, not a dropdown", () => {
+describe("key editor: limit type is a card picker, not a dropdown", () => {
   it("offers all three budgets with their own accent", () => {
     expect(options.map((o) => o.value)).toEqual(["tokens", "cost", "requests"]);
-    for (const key of ["tone", "tint", "border", "icon", "desc"]) {
+    for (const key of ["tone", "tint", "chip", "border", "glow", "icon", "blurb", "example"]) {
       expect(new Set(options.map((o) => o[key])).size).toBe(3);
     }
   });
@@ -27,19 +27,29 @@ describe("key editor: limit type is a coloured three-way picker, not a dropdown"
     expect(options.map((o) => o.icon)).toEqual(["data_usage", "payments", "bolt"]);
   });
 
+  it("carries a sentence and a concrete example per card, not just a name", () => {
+    for (const opt of options) {
+      expect(opt.blurb.length).toBeGreaterThan(40);
+      expect(opt.example.length).toBeGreaterThan(3);
+    }
+    expect(options.find((o) => o.value === "cost").example).toMatch(/\$/);
+    expect(options.find((o) => o.value === "requests").example).toMatch(/calls/);
+  });
+
   it("renders as a radiogroup whose options carry their own selected state", () => {
     expect(page).toMatch(/role="radiogroup" aria-label="Limit Type"/);
     expect(page).toMatch(/role="radio"/);
     expect(page).toMatch(/aria-checked=\{selected\}/);
   });
 
-  it("paints the selected option instead of leaving it white", () => {
-    expect(page).toMatch(/selected\s*\?\s*`\$\{opt\.tint\} \$\{opt\.border\} shadow-\[var\(--elev-2\)\] border`/);
+  it("paints the selected card, glows it, and shows a filled radio mark", () => {
+    expect(page).toMatch(/selected\s*\?\s*`\$\{opt\.tint\} \$\{opt\.border\} \$\{opt\.glow\}`/);
     expect(page).toMatch(/selected \? opt\.tone : "text-text-main"/);
+    expect(page).toMatch(/h-2 w-2 rounded-full", selected \? "bg-current" : "bg-transparent"/);
   });
 
-  it("keeps each tile's accent visible while it is unselected", () => {
-    expect(page).toMatch(/opt\.tone,\s*selected \? "opacity-100" : "opacity-60"/);
+  it("keeps each card's icon chip coloured while it is unselected", () => {
+    expect(page).toMatch(/opt\.chip,\s*opt\.tone,\s*selected \? "opacity-100" : "opacity-70"/);
   });
 
   it("replaces the dropdown in both modals", () => {

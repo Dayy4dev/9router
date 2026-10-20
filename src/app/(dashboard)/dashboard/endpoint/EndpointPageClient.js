@@ -54,35 +54,44 @@ const LIMIT_KIND_OPTIONS = [
   {
     value: "tokens",
     label: "Tokens",
-    desc: "Volume",
+    blurb: "Adds up prompt and completion tokens, so a long conversation costs more than a short one.",
+    example: "100K tokens",
     icon: "data_usage",
-    tone: "text-sky-500",
+    tone: "text-sky-400",
     tint: "bg-sky-500/10",
-    border: "border-sky-500/50",
+    chip: "bg-sky-500/15",
+    border: "border-sky-500/60",
+    glow: "shadow-[0_0_0_1px_rgba(56,189,248,0.25),0_8px_24px_-12px_rgba(56,189,248,0.55)]",
   },
   {
     value: "cost",
     label: "Cost",
-    desc: "USD per day",
+    blurb: "Charges every call at the model's price in USD and starts over at midnight UTC.",
+    example: "$2.50 / day",
     icon: "payments",
-    tone: "text-emerald-500",
+    tone: "text-emerald-400",
     tint: "bg-emerald-500/10",
-    border: "border-emerald-500/50",
+    chip: "bg-emerald-500/15",
+    border: "border-emerald-500/60",
+    glow: "shadow-[0_0_0_1px_rgba(52,211,153,0.25),0_8px_24px_-12px_rgba(52,211,153,0.55)]",
   },
   {
     value: "requests",
     label: "Requests",
-    desc: "Calls",
+    blurb: "Counts calls instead of size, so a huge prompt and a tiny one cost the same.",
+    example: "1,000 calls",
     icon: "bolt",
-    tone: "text-violet-500",
+    tone: "text-violet-400",
     tint: "bg-violet-500/10",
-    border: "border-violet-500/50",
+    chip: "bg-violet-500/15",
+    border: "border-violet-500/60",
+    glow: "shadow-[0_0_0_1px_rgba(167,139,250,0.25),0_8px_24px_-12px_rgba(167,139,250,0.55)]",
   },
 ];
 
 function LimitKindPicker({ value, onChange }) {
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       <label className="text-sm font-medium text-text-main">Limit Type</label>
       <div role="radiogroup" aria-label="Limit Type" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         {LIMIT_KIND_OPTIONS.map((opt) => {
@@ -95,29 +104,48 @@ function LimitKindPicker({ value, onChange }) {
               aria-checked={selected}
               onClick={() => onChange(opt.value)}
               className={cn(
-                "chrome-focus flex flex-col items-start gap-0.5 rounded-[var(--r-control)] border px-3 py-2 text-left transition-all duration-[var(--motion-fast)]",
-                // Every tile keeps its accent at rest, faint; selection strengthens it.
-                // Three identical grey boxes would still read as one grey row.
+                "chrome-focus group relative flex h-full flex-col gap-2 rounded-[14px] border p-3 text-left",
+                "transition-all duration-[var(--motion-fast)]",
+                // Unselected still carries its accent, faint, so the row never reads as
+                // three identical grey boxes; selecting deepens the colour already there.
                 selected
-                  ? `${opt.tint} ${opt.border} shadow-[var(--elev-2)] border`
+                  ? `${opt.tint} ${opt.border} ${opt.glow}`
                   : "border-border/50 bg-surface-2/40 hover:border-border hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-2">
                 <span
                   className={cn(
-                    "material-symbols-outlined text-[16px] leading-none",
+                    "flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px]",
+                    opt.chip,
                     opt.tone,
-                    selected ? "opacity-100" : "opacity-60"
+                    selected ? "opacity-100" : "opacity-70"
                   )}
                 >
-                  {opt.icon}
+                  <span className="material-symbols-outlined text-[18px] leading-none">{opt.icon}</span>
                 </span>
                 <span className={cn("text-sm font-semibold", selected ? opt.tone : "text-text-main")}>
                   {opt.label}
                 </span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "ml-auto flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors",
+                    selected ? `${opt.border} ${opt.tone}` : "border-border/70 text-transparent"
+                  )}
+                >
+                  <span className={cn("h-2 w-2 rounded-full", selected ? "bg-current" : "bg-transparent")} />
+                </span>
               </span>
-              <span className="text-[10px] uppercase tracking-wide text-text-muted">{opt.desc}</span>
+              <span className="text-xs leading-snug text-text-muted">{opt.blurb}</span>
+              <span
+                className={cn(
+                  "mt-auto inline-flex w-fit items-center rounded-md px-1.5 py-0.5 font-mono text-[11px]",
+                  selected ? `${opt.chip} ${opt.tone}` : "bg-black/5 text-text-muted dark:bg-white/5"
+                )}
+              >
+                {opt.example}
+              </span>
             </button>
           );
         })}
@@ -130,7 +158,6 @@ LimitKindPicker.propTypes = {
   value: PropTypes.string.isRequired,
   onChange: PropTypes.func.isRequired,
 };
-
 function limitKindOf(key) {
   return key?.limitKind === "cost" || key?.limitKind === "requests" ? key.limitKind : "tokens";
 }

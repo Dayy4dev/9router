@@ -1,3 +1,11 @@
+# v0.5.239 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The limit picker became cards that say what the budget does, not three labelled buttons**: the tiles were icon + name, which still left the reader guessing what "Cost" meters. Each card now carries a 32px tinted icon chip, the name, a filled radio mark on the selected one, a sentence explaining the rule (`Adds up prompt and completion tokens, so a long conversation costs more than a short one.`), and a monospace example of the value it expects (`100K tokens`, `$2.50 / day`, `1,000 calls`) pinned to the bottom so the three cards align. Selection adds a coloured border plus a soft accent glow around the card rather than only changing the text colour, and the unselected cards keep their chip colour at 70% so the row reads as three budgets before anything is clicked.
+
+---
+
 # v0.5.238 (2026-10-20) · 1 commit
 
 ## What Was Changed

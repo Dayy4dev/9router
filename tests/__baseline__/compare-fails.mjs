@@ -66,6 +66,8 @@ function failuresFrom(report) {
 function matchesKnown(failure, entry) {
   const [file, name] = entry.split(" :: ");
   if (file !== failure.file || !name) return false;
+  // A suite that failed to load has no test name; it is catalogued as "(suite)".
+  if (name === "(suite)") return !failure.name;
   return failure.name === name || failure.title === name || failure.name.endsWith(` ${name}`);
 }
 

@@ -104,6 +104,16 @@ describe("CI baseline comparison: only uncatalogued failures fail the job", () =
     expect(code).toBe(1);
     expect(stdout).toContain("NEW tests/unit/example.test.js :: (suite)");
   });
+
+  it("accepts a catalogued suite that failed to load", () => {
+    const report = {
+      numTotalTests: 0,
+      success: false,
+      testResults: [{ name: FILE, status: "failed", message: "No test suite found", assertionResults: [] }],
+    };
+
+    expect(compare(report, [`tests/unit/example.test.js :: (suite)`]).code).toBe(0);
+  });
 });
 
 describe("CI workflow wiring", () => {

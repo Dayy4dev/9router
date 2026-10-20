@@ -1,3 +1,11 @@
+# v0.5.229 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **`next build` no longer kills itself on the database it is writing**: `/api/auth/saml/start` had no `dynamic` export, so the build prerendered it, and prerendering calls `getSettings()` — a SQLite read issued from the build process while the prerender workers were still writing. The read came back `SqliteError: database is locked`, Next reported `Error occurred prerendering page "/api/auth/saml/start"` and the export failed, which is why a build could pass on one commit and fail on the next with no code difference between them. The route now declares `dynamic = "force-dynamic"` like the other settings-reading GETs: it reads the request cookies and redirects, so there was never anything static to render. `tests/unit/saml-start-prerender.test.js` pins both the export and the redirect behaviour.
+
+---
+
 # v0.5.228 (2026-10-20) · 1 commit
 
 ## What Was Fixed

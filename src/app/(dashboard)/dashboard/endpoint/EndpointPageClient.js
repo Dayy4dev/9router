@@ -96,13 +96,21 @@ function LimitKindPicker({ value, onChange }) {
               onClick={() => onChange(opt.value)}
               className={cn(
                 "chrome-focus flex flex-col items-start gap-0.5 rounded-[var(--r-control)] border px-3 py-2 text-left transition-all duration-[var(--motion-fast)]",
+                // Every tile keeps its accent at rest, faint; selection strengthens it.
+                // Three identical grey boxes would still read as one grey row.
                 selected
-                  ? `${opt.tint} ${opt.border} shadow-[var(--elev-2)]`
-                  : "border-border/50 hover:border-border hover:bg-black/5 dark:hover:bg-white/5"
+                  ? `${opt.tint} ${opt.border} shadow-[var(--elev-2)] border`
+                  : "border-border/50 bg-surface-2/40 hover:border-border hover:bg-black/5 dark:hover:bg-white/5"
               )}
             >
               <span className="flex items-center gap-1.5">
-                <span className={cn("material-symbols-outlined text-[16px] leading-none", selected ? opt.tone : "text-text-muted")}>
+                <span
+                  className={cn(
+                    "material-symbols-outlined text-[16px] leading-none",
+                    opt.tone,
+                    selected ? "opacity-100" : "opacity-60"
+                  )}
+                >
                   {opt.icon}
                 </span>
                 <span className={cn("text-sm font-semibold", selected ? opt.tone : "text-text-main")}>

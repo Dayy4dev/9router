@@ -34,8 +34,12 @@ describe("key editor: limit type is a coloured three-way picker, not a dropdown"
   });
 
   it("paints the selected option instead of leaving it white", () => {
-    expect(page).toMatch(/selected\s*\?\s*`\$\{opt\.tint\} \$\{opt\.border\} shadow-\[var\(--elev-2\)\]`/);
-    expect(page).toMatch(/selected \? opt\.tone : "text-text-muted"/);
+    expect(page).toMatch(/selected\s*\?\s*`\$\{opt\.tint\} \$\{opt\.border\} shadow-\[var\(--elev-2\)\] border`/);
+    expect(page).toMatch(/selected \? opt\.tone : "text-text-main"/);
+  });
+
+  it("keeps each tile's accent visible while it is unselected", () => {
+    expect(page).toMatch(/opt\.tone,\s*selected \? "opacity-100" : "opacity-60"/);
   });
 
   it("replaces the dropdown in both modals", () => {

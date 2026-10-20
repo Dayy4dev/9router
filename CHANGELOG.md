@@ -1,3 +1,11 @@
+# v0.5.238 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The three limit tiles keep their colour even when they are not selected**: at rest they were a hairline border around grey text, so the picker still read as one grey row until you clicked — the same complaint the dropdown earned. Each tile now carries its accent at 60% opacity (sky for Tokens, emerald for Cost, violet for Requests) and a faint `bg-surface-2/40` plate, so the row reads as three distinct budgets the moment the modal opens; selecting one strengthens the same accent instead of introducing a colour that was not there before.
+
+---
+
 # v0.5.237 (2026-10-20) · 1 commit
 
 ## What Was Changed

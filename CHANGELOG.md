@@ -1,3 +1,12 @@
+# v0.5.226 (2026-10-20) · 1 commit
+
+## What Was Added
+
+- **CI builds, tests, and boots the standalone server on GitHub Actions**: `next build` does not fit in the development box's memory cap, where the peak already sits next to the limit, so every build now runs on a runner instead. `.github/workflows/ci.yml` installs the root and `tests/` dependencies (no lockfile is tracked, so `npm install` rather than `npm ci`), runs vitest, then builds and checks the standalone tree for the modules `custom-server.js` loads by absolute path (`src/dashboardGuard.js`, `src/lib/db/repos/securityLogRepo.js`, `scripts/auth-guard-hooks.mjs`). It then boots the standalone server against a temporary `DATA_DIR` and fails on anything but a `200` from `/api/health`, or on a `503` from `/login` — the guard-unavailable signature. The bundle is uploaded as an artifact, and a `workflow_dispatch` input pushes a `ghcr.io/serenhope/9router` image for hosts that only run Docker.
+- **A raw vitest exit code no longer decides the CI verdict**: the suite carries catalogued failures on a clean checkout, so `tests/__baseline__/compare-fails.mjs` compares the JSON report against `tests/__baseline__/known-fails.txt` and fails only on a failure that is not catalogued. A catalogued failure that now passes is reported as stale so the list can be pruned, an entry only counts as stale when its suite actually ran, and a suite that failed to load counts as a failure with no name instead of passing silently. `tests/unit/ci-baseline-compare.test.js` (9 tests) pins the comparison and the workflow wiring.
+
+---
+
 # v0.5.225 (2026-10-19) · 2 commits
 
 ## What Was Fixed

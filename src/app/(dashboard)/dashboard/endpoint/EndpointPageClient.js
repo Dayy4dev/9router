@@ -46,11 +46,82 @@ function spentTodayOf(key) {
 // One budget per key: the owner picks tokens, money or request count, and the UI
 // shows whichever one is selected. All three caps can stay stored so switching
 // back and forth does not lose the numbers.
+// Each budget answers a different question, so the picker keeps all three visible and
+// gives each one its own accent. A dropdown reduced this to a single grey line of text,
+// which hid two thirds of the choice and made the most consequential setting in the form
+// look like the least important one.
 const LIMIT_KIND_OPTIONS = [
-  { value: "tokens", label: "Tokens" },
-  { value: "cost", label: "Cost in USD (per UTC day)" },
-  { value: "requests", label: "Requests" },
+  {
+    value: "tokens",
+    label: "Tokens",
+    desc: "Volume",
+    icon: "data_usage",
+    tone: "text-sky-500",
+    tint: "bg-sky-500/10",
+    border: "border-sky-500/50",
+  },
+  {
+    value: "cost",
+    label: "Cost",
+    desc: "USD per day",
+    icon: "payments",
+    tone: "text-emerald-500",
+    tint: "bg-emerald-500/10",
+    border: "border-emerald-500/50",
+  },
+  {
+    value: "requests",
+    label: "Requests",
+    desc: "Calls",
+    icon: "bolt",
+    tone: "text-violet-500",
+    tint: "bg-violet-500/10",
+    border: "border-violet-500/50",
+  },
 ];
+
+function LimitKindPicker({ value, onChange }) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label className="text-sm font-medium text-text-main">Limit Type</label>
+      <div role="radiogroup" aria-label="Limit Type" className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {LIMIT_KIND_OPTIONS.map((opt) => {
+          const selected = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              onClick={() => onChange(opt.value)}
+              className={cn(
+                "chrome-focus flex flex-col items-start gap-0.5 rounded-[var(--r-control)] border px-3 py-2 text-left transition-all duration-[var(--motion-fast)]",
+                selected
+                  ? `${opt.tint} ${opt.border} shadow-[var(--elev-2)]`
+                  : "border-border/50 hover:border-border hover:bg-black/5 dark:hover:bg-white/5"
+              )}
+            >
+              <span className="flex items-center gap-1.5">
+                <span className={cn("material-symbols-outlined text-[16px] leading-none", selected ? opt.tone : "text-text-muted")}>
+                  {opt.icon}
+                </span>
+                <span className={cn("text-sm font-semibold", selected ? opt.tone : "text-text-main")}>
+                  {opt.label}
+                </span>
+              </span>
+              <span className="text-[10px] uppercase tracking-wide text-text-muted">{opt.desc}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+LimitKindPicker.propTypes = {
+  value: PropTypes.string.isRequired,
+  onChange: PropTypes.func.isRequired,
+};
 
 function limitKindOf(key) {
   return key?.limitKind === "cost" || key?.limitKind === "requests" ? key.limitKind : "tokens";
@@ -1693,13 +1764,8 @@ const scopedModelPatterns =
             title="Usage Limit"
             description="One budget is enforced per key. Pick the unit it is measured in."
           >
+            <LimitKindPicker value={newKeyLimitKind} onChange={setNewKeyLimitKind} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Select
-                label="Limit Type"
-                options={LIMIT_KIND_OPTIONS}
-                value={newKeyLimitKind}
-                onChange={(e) => setNewKeyLimitKind(e.target.value)}
-              />
               <Input
                 label={limitFieldLabel(newKeyLimitKind)}
                 type="number"
@@ -1859,13 +1925,8 @@ const scopedModelPatterns =
             title="Usage Limit"
             description="One budget is enforced per key. Pick the unit it is measured in."
           >
+            <LimitKindPicker value={editLimitKind} onChange={setEditLimitKind} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Select
-                label="Limit Type"
-                options={LIMIT_KIND_OPTIONS}
-                value={editLimitKind}
-                onChange={(e) => setEditLimitKind(e.target.value)}
-              />
               <Input
                 label={limitFieldLabel(editLimitKind)}
                 type="number"

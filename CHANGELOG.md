@@ -1,3 +1,11 @@
+# v0.5.237 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **Limit Type is a three-tile picker with colour, not a dropdown**: a `<Select>` collapsed the three budgets into one line of white text and hid two thirds of the choice, which made the setting that decides *what a key is even measuring* look like the least important field in the form. `LimitKindPicker` shows all three side by side — `Tokens` (sky, volume), `Cost` (emerald, USD per day) and `Requests` (violet, calls) — each with its own icon, an uppercase sub-label saying what it counts, and a tinted background plus coloured border on the selected tile. It is a real `radiogroup` (buttons with `role="radio"` and `aria-checked`), so arrow keys and screen readers get the same three-way choice the eye does, and it stacks to one tile per row below `sm` instead of squeezing three labels into a phone-width row. Both the create and the edit modal use it; the value field and the reset interval moved into their own row underneath. `tests/unit/api-key-limit-picker.test.js` pins the three options and their distinct accents/icons, the radiogroup markup, the selected-state styling, and that no `Select label="Limit Type"` survives.
+
+---
+
 # v0.5.236 (2026-10-20) · 1 commit
 
 ## What Was Changed

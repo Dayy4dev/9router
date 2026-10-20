@@ -40,6 +40,12 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # The runner's npm 10.9.9 crashes on the nested install ("Cannot read
+      # properties of null (reading 'edgesOut')") because tests/ resolves inside a
+      # project that has its own tree. npm 12 installs it fine.
+      - name: Use a recent npm
+        run: npm install --global npm@12
+
       # No lockfile is tracked (package-lock.json is gitignored), so npm ci is not
       # available. Root deps come first: the suite imports src/, which needs
       # undici/open and friends at runtime.
@@ -97,7 +103,7 @@ jobs:
           set -eu
           test -f .next/standalone/custom-server.js
           test -f .next/standalone/server.js
-          for module in src/dashboardGuard.js src/lib/db/repos/securityLogRepo.js scripts/auth-guard-hooks.mjs; do
+          for module in src/dashboardGuard.js src/lib/db/repos/securityLogRepo.js scripts/auth-guard-hooks.mjs node_modules/next/server.js; do
             test -f ".next/standalone/$module" || { echo "missing in standalone: $module"; exit 1; }
           done
           test -d .next/standalone/.next/static

@@ -99,8 +99,25 @@ function LimitBadge({ entry }) {
       "text-xs max-w-full truncate px-2 py-0.5 rounded font-medium",
       exhausted ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary"
     )}>
-      {kind === "cost" ? "Spent" : "Usage"}: {formatLimitValue(kind, used)} / {cap > 0 ? formatLimitValue(kind, cap) : "Unlimited"}
+      Usage: {formatLimitValue(kind, used)} / {cap > 0 ? formatLimitValue(kind, cap) : "Unlimited"}
     </span>
+  );
+}
+
+// The key editor carries a dozen fields; grouping them by what they control keeps
+// the form readable instead of one undifferentiated stack of inputs.
+function FormSection({ icon, title, description, children }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-start gap-2 pb-2 border-b border-border-subtle">
+        <span className="material-symbols-outlined text-[18px] leading-6 text-text-muted">{icon}</span>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-text-main">{title}</h3>
+          {description && <p className="mt-0.5 text-xs text-text-muted">{description}</p>}
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -233,7 +250,6 @@ export default function APIPageClient({ machineId }) {
   const [newKeyRpm, setNewKeyRpm] = useState("");
   const [newKeyTpm, setNewKeyTpm] = useState("");
   const [newKeyLimitKind, setNewKeyLimitKind] = useState("tokens");
-  const [newKeyIpWhitelist, setNewKeyIpWhitelist] = useState("");
   const [newKeyExpiresAt, setNewKeyExpiresAt] = useState("");
   const [editingKey, setEditingKey] = useState(null);
   const [editName, setEditName] = useState("");
@@ -244,7 +260,6 @@ export default function APIPageClient({ machineId }) {
   const [editRpm, setEditRpm] = useState("");
   const [editTpm, setEditTpm] = useState("");
   const [editLimitKind, setEditLimitKind] = useState("tokens");
-  const [editIpWhitelist, setEditIpWhitelist] = useState("");
   const [editExpiresAt, setEditExpiresAt] = useState("");
   const [activeProviders, setActiveProviders] = useState([]);
   const [modelAliases, setModelAliases] = useState({});
@@ -945,6 +960,11 @@ const scopedModelPatterns =
   const handleDeselectModelForPicker = (model) => removeAllowedModel(pickerTarget, model?.value);
 
 
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setNewKeyName("");
+  };
+
   const handleCreateKey = async () => {
     if (!newKeyName.trim()) return;
  const trimmedName = newKeyName.trim();
@@ -978,7 +998,6 @@ const scopedModelPatterns =
           allowedModels: newKeyAllowedModels.trim() || "*",
           rpmLimit: newKeyRpm ? Number(newKeyRpm) : 0,
           tpmLimit: newKeyTpm ? Number(newKeyTpm) : 0,
-          ipWhitelist: newKeyIpWhitelist.trim(),
           expiresAt: newKeyExpiresAt || null,
           permissions: permissionsToSave(newKeyPermissions),
         }),
@@ -996,7 +1015,6 @@ const scopedModelPatterns =
         setNewKeyRpm("");
         setNewKeyTpm("");
         setNewKeyLimitKind("tokens");
-        setNewKeyIpWhitelist("");
         setShowAddModal(false);
         setNewKeyExpiresAt("");
         setNewKeyPermissions(EMPTY_PERMISSIONS);
@@ -1031,7 +1049,6 @@ const scopedModelPatterns =
  setNewKeyAllowedModels(sourceKey.allowedModels || "*");
  setNewKeyRpm(sourceKey.rpmLimit ? String(sourceKey.rpmLimit) : "");
  setNewKeyTpm(sourceKey.tpmLimit ? String(sourceKey.tpmLimit) : "");
- setNewKeyIpWhitelist(sourceKey.ipWhitelist || "");
  setNewKeyExpiresAt(sourceKey.expiresAt || "");
  setNewKeyPermissions(sourceKey.permissions || EMPTY_PERMISSIONS);
  setShowAddModal(true);
@@ -1054,6 +1071,30 @@ const scopedModelPatterns =
     } catch (error) {
       console.log("Error updating key:", error);
     }
+  };
+
+  // The edit modal collects many fields; the payload is assembled here so the
+  // button stays a one-liner and every field is written in one place.
+  const handleSaveEditedKey = () => {
+    if (!editingKey) return;
+    const limitNum = editLimit ? Number(editLimit) : 0;
+    const finalReset = limitNum > 0
+      ? (editReset === "custom" ? (editCustomReset.trim() || "never") : editReset)
+      : "never";
+
+    handleUpdateKeyQuota(editingKey.id, {
+      name: editName.trim() || editingKey.name,
+      limitKind: editLimitKind,
+      tokenLimit: editLimitKind === "tokens" ? limitNum : 0,
+      requestLimit: editLimitKind === "requests" ? limitNum : 0,
+      dailyCostLimit: editLimitKind === "cost" ? limitNum : 0,
+      resetInterval: finalReset,
+      allowedModels: editAllowedModels.trim() || "*",
+      rpmLimit: editRpm ? Number(editRpm) : 0,
+      tpmLimit: editTpm ? Number(editTpm) : 0,
+      expiresAt: editExpiresAt || null,
+      permissions: permissionsToSave(editPermissions),
+    });
   };
 
   const handleToggleKeyActive = async (key, isActive) => {
@@ -1521,11 +1562,6 @@ const scopedModelPatterns =
                         Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
                       </span>
                     )}
-                    {key.ipWhitelist && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium">
-                        IP Guard: Active
-                      </span>
-                    )}
                   </div>
                 </div>
                 <div className="flex-shrink-0 items-center gap-1.5">
@@ -1558,7 +1594,6 @@ const scopedModelPatterns =
                       setEditAllowedModels(key.allowedModels || "*");
                       setEditRpm(key.rpmLimit ? String(key.rpmLimit) : "");
                       setEditTpm(key.tpmLimit ? String(key.tpmLimit) : "");
-                      setEditIpWhitelist(key.ipWhitelist || "");
                       setEditExpiresAt(key.expiresAt || "");
                       setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
                     }}
@@ -1608,156 +1643,171 @@ const scopedModelPatterns =
       <Modal
         isOpen={showAddModal}
         title="Create API Key"
-        onClose={() => {
-          setShowAddModal(false);
-          setNewKeyName("");
-        }}
-      >
-        <div className="flex flex-col gap-4">
-          <Input
-            label="Key Name"
-            value={newKeyName}
-            onChange={(e) => setNewKeyName(e.target.value)}
-            placeholder="Production Key"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Limit Type"
-              options={LIMIT_KIND_OPTIONS}
-              value={newKeyLimitKind}
-              onChange={(e) => setNewKeyLimitKind(e.target.value)}
-            />
-            <Input
-              label={limitFieldLabel(newKeyLimitKind)}
-              type="number"
-              step={newKeyLimitKind === "cost" ? "0.01" : "1"}
-              min="0"
-              value={newKeyLimit}
-              onChange={(e) => setNewKeyLimit(e.target.value)}
-              placeholder={limitPlaceholder(newKeyLimitKind)}
-              hint={
-                newKeyLimitKind === "cost"
-                  ? "Refused with 429 once today's spend reaches this amount (resets at 00:00 UTC)"
-                  : newKeyLimitKind === "tokens" && creatorTokenLimit > 0
-                    ? `Your maximum is ${creatorTokenLimit.toLocaleString()}`
-                    : "0 or leave empty for unlimited"
-              }
-            />
-          </div>
-          {newKeyLimitKind !== "cost" && Number(newKeyLimit) > 0 && (
-            <Select
-              label="Auto Reset Interval"
-              options={RESET_INTERVAL_OPTIONS}
-              value={newKeyReset}
-              onChange={(e) => setNewKeyReset(e.target.value)}
-            />
-          )}
-          {newKeyLimitKind !== "cost" && Number(newKeyLimit) > 0 && newKeyReset === "custom" && (
-            <Input
-              label="Custom Interval (e.g. 10h, 3d)"
-              value={newKeyCustomReset}
-              onChange={(e) => setNewKeyCustomReset(e.target.value)}
-              placeholder="10h"
-            />
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="RPM Limit (0: unlimited)"
-              type="number"
-              value={newKeyRpm}
-              onChange={(e) => setNewKeyRpm(e.target.value)}
-              placeholder="0"
-              hint="Max requests/min"
-            />
-            <Input
-              label="TPM Limit (0: unlimited)"
-              type="number"
-              value={newKeyTpm}
-              onChange={(e) => setNewKeyTpm(e.target.value)}
-              placeholder="0"
-              hint="Max tokens/min"
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-text-main">
-                Allowed Models
-              </label>
-              <Button
-                size="sm"
-                variant="ghost"
-                icon="add"
-                onClick={() => {
-                  setPickerTarget("create");
-                  setShowModelPicker(true);
-                }}
-              >
-                Select Models
-              </Button>
-            </div>
-            <Input
-              value={newKeyAllowedModels}
-              readOnly
-              inputClassName="truncate font-mono"
-              hint={isApiKeyUser && creatorAllowedModels !== "*" ? `Limited to your allowed models: ${creatorAllowedModels}` : "Pick models with Select Models. * allows all models."}
-            />
-            {parseAllowedModelsList(newKeyAllowedModels).length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {parseAllowedModelsList(newKeyAllowedModels).map((m) => (
-                  <span
-                    key={m}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs"
-                  >
-                    {m}
-                    <button
-                      type="button"
-                      onClick={() => removeAllowedModel("create", m)}
-                      className="hover:text-red-500 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">close</span>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <Input
-            label="IP Whitelist"
-            value={newKeyIpWhitelist}
-            onChange={(e) => setNewKeyIpWhitelist(e.target.value)}
-            placeholder="e.g. 192.168.1.1, 103.20.10.5 (Leave empty to allow all)"
-            hint="Leave empty to allow access from any IP address"
-          />
-
- <Input
- label="Expiry Date (optional)"
- type="datetime-local"
- value={newKeyExpiresAt}
- onChange={(e) => setNewKeyExpiresAt(e.target.value)}
- hint="Key stops working after this date; leave empty for no expiry"
- />
-          <PermissionsEditor
-            value={newKeyPermissions}
-            onChange={setNewKeyPermissions}
-            allowed={creatorPermissions}
-            locked={permissionsLocked}
-            lockedReason={PERMISSIONS_LOCKED_REASON}
-          />
-          <div className="flex gap-2 w-full mt-2">
-            <Button onClick={handleCreateKey} fullWidth disabled={!newKeyName.trim()} className="min-h-[44px]">
-              Create
-            </Button>
-            <Button
-              onClick={() => {
-                setShowAddModal(false);
-                setNewKeyName("");
-              }}
-              variant="ghost"
-              fullWidth
-            >
+        size="lg"
+        onClose={closeAddModal}
+        footer={
+          <>
+            <Button onClick={closeAddModal} variant="ghost">
               Cancel
             </Button>
-          </div>
+            <Button onClick={handleCreateKey} disabled={!newKeyName.trim()} icon="add">
+              Create Key
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-5">
+          <FormSection
+            icon="badge"
+            title="Identity"
+            description="What you will see in the key list, and how long the key may live."
+          >
+            <Input
+              label="Key Name"
+              value={newKeyName}
+              onChange={(e) => setNewKeyName(e.target.value)}
+              placeholder="Production Key"
+            />
+            <Input
+              label="Expiry Date (optional)"
+              type="datetime-local"
+              value={newKeyExpiresAt}
+              onChange={(e) => setNewKeyExpiresAt(e.target.value)}
+              hint="Key stops working after this date; leave empty for no expiry"
+            />
+          </FormSection>
+
+          <FormSection
+            icon="speed"
+            title="Usage Limit"
+            description="One budget is enforced per key. Pick the unit it is measured in."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Select
+                label="Limit Type"
+                options={LIMIT_KIND_OPTIONS}
+                value={newKeyLimitKind}
+                onChange={(e) => setNewKeyLimitKind(e.target.value)}
+              />
+              <Input
+                label={limitFieldLabel(newKeyLimitKind)}
+                type="number"
+                step={newKeyLimitKind === "cost" ? "0.01" : "1"}
+                min="0"
+                value={newKeyLimit}
+                onChange={(e) => setNewKeyLimit(e.target.value)}
+                placeholder={limitPlaceholder(newKeyLimitKind)}
+                hint={
+                  newKeyLimitKind === "cost"
+                    ? "Refused with 429 once today's spend reaches this amount (resets at 00:00 UTC)"
+                    : newKeyLimitKind === "tokens" && creatorTokenLimit > 0
+                      ? `Your maximum is ${creatorTokenLimit.toLocaleString()}`
+                      : "0 or leave empty for unlimited"
+                }
+              />
+            </div>
+            {newKeyLimitKind !== "cost" && Number(newKeyLimit) > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Select
+                  label="Auto Reset Interval"
+                  options={RESET_INTERVAL_OPTIONS}
+                  value={newKeyReset}
+                  onChange={(e) => setNewKeyReset(e.target.value)}
+                />
+                {newKeyReset === "custom" && (
+                  <Input
+                    label="Custom Interval"
+                    value={newKeyCustomReset}
+                    onChange={(e) => setNewKeyCustomReset(e.target.value)}
+                    placeholder="10h"
+                    hint="e.g. 10h, 3d"
+                  />
+                )}
+              </div>
+            )}
+          </FormSection>
+
+          <FormSection
+            icon="bolt"
+            title="Rate Limits"
+            description="Per-minute ceilings, enforced on their own."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="RPM Limit (0: unlimited)"
+                type="number"
+                value={newKeyRpm}
+                onChange={(e) => setNewKeyRpm(e.target.value)}
+                placeholder="0"
+                hint="Max requests/min"
+              />
+              <Input
+                label="TPM Limit (0: unlimited)"
+                type="number"
+                value={newKeyTpm}
+                onChange={(e) => setNewKeyTpm(e.target.value)}
+                placeholder="0"
+                hint="Max tokens/min"
+              />
+            </div>
+          </FormSection>
+
+          <FormSection
+            icon="admin_panel_settings"
+            title="Access"
+            description="Which models the key may call, and what it may do in the dashboard."
+          >
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-text-main">
+                  Allowed Models
+                </label>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon="add"
+                  onClick={() => {
+                    setPickerTarget("create");
+                    setShowModelPicker(true);
+                  }}
+                >
+                  Select Models
+                </Button>
+              </div>
+              <Input
+                value={newKeyAllowedModels}
+                readOnly
+                inputClassName="truncate font-mono"
+                hint={isApiKeyUser && creatorAllowedModels !== "*" ? `Limited to your allowed models: ${creatorAllowedModels}` : "Pick models with Select Models. * allows all models."}
+              />
+              {parseAllowedModelsList(newKeyAllowedModels).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {parseAllowedModelsList(newKeyAllowedModels).map((m) => (
+                    <span
+                      key={m}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs"
+                    >
+                      {m}
+                      <button
+                        type="button"
+                        onClick={() => removeAllowedModel("create", m)}
+                        className="hover:text-red-500 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <PermissionsEditor
+              value={newKeyPermissions}
+              onChange={setNewKeyPermissions}
+              allowed={creatorPermissions}
+              locked={permissionsLocked}
+              lockedReason={PERMISSIONS_LOCKED_REASON}
+            />
+          </FormSection>
         </div>
       </Modal>
 
@@ -1765,167 +1815,164 @@ const scopedModelPatterns =
       <Modal
         isOpen={!!editingKey}
         title={`Edit API Key: ${editingKey?.name || ""}`}
+        size="lg"
         onClose={() => setEditingKey(null)}
-      >
-        <div className="flex flex-col gap-4">
-          <Input
-            label="Key Name"
-            value={editName}
-            onChange={(e) => setEditName(e.target.value)}
-            placeholder="Production Key"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Limit Type"
-              options={LIMIT_KIND_OPTIONS}
-              value={editLimitKind}
-              onChange={(e) => setEditLimitKind(e.target.value)}
-            />
-            <Input
-              label={limitFieldLabel(editLimitKind)}
-              type="number"
-              step={editLimitKind === "cost" ? "0.01" : "1"}
-              min="0"
-              value={editLimit}
-              onChange={(e) => setEditLimit(e.target.value)}
-              placeholder={limitPlaceholder(editLimitKind)}
-            />
-          </div>
-          {editLimitKind !== "cost" && Number(editLimit) > 0 && (
-            <Select
-              label="Auto Reset Interval"
-              options={RESET_INTERVAL_OPTIONS}
-              value={editReset}
-              onChange={(e) => setEditReset(e.target.value)}
-            />
-          )}
-          {editLimitKind !== "cost" && Number(editLimit) > 0 && editReset === "custom" && (
-            <Input
-              label="Custom Interval (e.g. 10h, 3d)"
-              value={editCustomReset}
-              onChange={(e) => setEditCustomReset(e.target.value)}
-              placeholder="10h"
-            />
-          )}
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="RPM Limit (0: unlimited)"
-              type="number"
-              value={editRpm}
-              onChange={(e) => setEditRpm(e.target.value)}
-              placeholder="0"
-              hint="Max requests/min"
-            />
-            <Input
-              label="TPM Limit (0: unlimited)"
-              type="number"
-              value={editTpm}
-              onChange={(e) => setEditTpm(e.target.value)}
-              placeholder="0"
-              hint="Max tokens/min"
-            />
-            </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <label className="text-sm font-medium text-text-main">
-                Allowed Models
-              </label>
-              <Button
-                size="sm"
-                variant="ghost"
-                icon="add"
-                onClick={() => {
-                  setPickerTarget("edit");
-                  setShowModelPicker(true);
-                }}
-              >
-                Select Models
-              </Button>
-            </div>
-            <Input
-              value={editAllowedModels}
-              readOnly
-              inputClassName="truncate font-mono"
-              hint="Pick models with Select Models. * allows all models."
-            />
-            {parseAllowedModelsList(editAllowedModels).length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mt-1">
-                {parseAllowedModelsList(editAllowedModels).map((m) => (
-                  <span
-                    key={m}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs"
-                  >
-                    {m}
-                    <button
-                      type="button"
-                      onClick={() => removeAllowedModel("edit", m)}
-                      className="hover:text-red-500 transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">close</span>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <Input
-            label="IP Whitelist"
-            value={editIpWhitelist}
-            onChange={(e) => setEditIpWhitelist(e.target.value)}
-            placeholder="e.g. 192.168.1.1, 103.20.10.5 (Leave empty to allow all)"
-            hint="Leave empty to allow access from any IP address"
-          />
-
- <Input
- label="Expiry Date (optional)"
- type="datetime-local"
- value={editExpiresAt}
- onChange={(e) => setEditExpiresAt(e.target.value)}
- hint="Key stops working after this date; leave empty for no expiry"
- />
-          <PermissionsEditor
-            value={editPermissions}
-            onChange={setEditPermissions}
-            allowed={creatorPermissions}
-            locked={permissionsLocked}
-            lockedReason={PERMISSIONS_LOCKED_REASON}
-          />
-          <div className="flex gap-2 w-full mt-2">
-            <Button
-              onClick={() => {
-                if (!editingKey) return;
-                const limitNum = editLimit ? Number(editLimit) : 0;
-                let finalReset = "never";
-                if (limitNum > 0) {
-                  finalReset = editReset === "custom" ? (editCustomReset.trim() || "never") : editReset;
-                }
-                handleUpdateKeyQuota(editingKey.id, {
-                  name: editName.trim() || editingKey.name,
-                  limitKind: editLimitKind,
-                  tokenLimit: editLimitKind === "tokens" ? limitNum : 0,
-                  requestLimit: editLimitKind === "requests" ? limitNum : 0,
-                  dailyCostLimit: editLimitKind === "cost" ? limitNum : 0,
-                  resetInterval: finalReset,
-                  allowedModels: editAllowedModels.trim() || "*",
-                  rpmLimit: editRpm ? Number(editRpm) : 0,
-                  tpmLimit: editTpm ? Number(editTpm) : 0,
-                  ipWhitelist: editIpWhitelist.trim(),
-                  expiresAt: editExpiresAt || null,
-                  permissions: permissionsToSave(editPermissions),
-                });
-              }}
-              fullWidth
-            >
-              Save Changes
-            </Button>
-            <Button
-              onClick={() => setEditingKey(null)}
-              variant="ghost"
-              fullWidth
-            >
+        footer={
+          <>
+            <Button onClick={() => setEditingKey(null)} variant="ghost">
               Cancel
             </Button>
-          </div>
+            <Button onClick={handleSaveEditedKey} icon="save">
+              Save Changes
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-5">
+          <FormSection
+            icon="badge"
+            title="Identity"
+            description="What you will see in the key list, and how long the key may live."
+          >
+            <Input
+              label="Key Name"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Production Key"
+            />
+            <Input
+              label="Expiry Date (optional)"
+              type="datetime-local"
+              value={editExpiresAt}
+              onChange={(e) => setEditExpiresAt(e.target.value)}
+              hint="Key stops working after this date; leave empty for no expiry"
+            />
+          </FormSection>
+
+          <FormSection
+            icon="speed"
+            title="Usage Limit"
+            description="One budget is enforced per key. Pick the unit it is measured in."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Select
+                label="Limit Type"
+                options={LIMIT_KIND_OPTIONS}
+                value={editLimitKind}
+                onChange={(e) => setEditLimitKind(e.target.value)}
+              />
+              <Input
+                label={limitFieldLabel(editLimitKind)}
+                type="number"
+                step={editLimitKind === "cost" ? "0.01" : "1"}
+                min="0"
+                value={editLimit}
+                onChange={(e) => setEditLimit(e.target.value)}
+                placeholder={limitPlaceholder(editLimitKind)}
+              />
+            </div>
+            {editLimitKind !== "cost" && Number(editLimit) > 0 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Select
+                  label="Auto Reset Interval"
+                  options={RESET_INTERVAL_OPTIONS}
+                  value={editReset}
+                  onChange={(e) => setEditReset(e.target.value)}
+                />
+                {editReset === "custom" && (
+                  <Input
+                    label="Custom Interval"
+                    value={editCustomReset}
+                    onChange={(e) => setEditCustomReset(e.target.value)}
+                    placeholder="10h"
+                    hint="e.g. 10h, 3d"
+                  />
+                )}
+              </div>
+            )}
+          </FormSection>
+
+          <FormSection
+            icon="bolt"
+            title="Rate Limits"
+            description="Per-minute ceilings, enforced on their own."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="RPM Limit (0: unlimited)"
+                type="number"
+                value={editRpm}
+                onChange={(e) => setEditRpm(e.target.value)}
+                placeholder="0"
+                hint="Max requests/min"
+              />
+              <Input
+                label="TPM Limit (0: unlimited)"
+                type="number"
+                value={editTpm}
+                onChange={(e) => setEditTpm(e.target.value)}
+                placeholder="0"
+                hint="Max tokens/min"
+              />
+            </div>
+          </FormSection>
+
+          <FormSection
+            icon="admin_panel_settings"
+            title="Access"
+            description="Which models the key may call, and what it may do in the dashboard."
+          >
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-text-main">
+                  Allowed Models
+                </label>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  icon="add"
+                  onClick={() => {
+                    setPickerTarget("edit");
+                    setShowModelPicker(true);
+                  }}
+                >
+                  Select Models
+                </Button>
+              </div>
+              <Input
+                value={editAllowedModels}
+                readOnly
+                inputClassName="truncate font-mono"
+                hint="Pick models with Select Models. * allows all models."
+              />
+              {parseAllowedModelsList(editAllowedModels).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {parseAllowedModelsList(editAllowedModels).map((m) => (
+                    <span
+                      key={m}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-primary/10 text-primary font-mono text-xs"
+                    >
+                      {m}
+                      <button
+                        type="button"
+                        onClick={() => removeAllowedModel("edit", m)}
+                        className="hover:text-red-500 transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[14px]">close</span>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            <PermissionsEditor
+              value={editPermissions}
+              onChange={setEditPermissions}
+              allowed={creatorPermissions}
+              locked={permissionsLocked}
+              lockedReason={PERMISSIONS_LOCKED_REASON}
+            />
+          </FormSection>
         </div>
       </Modal>
 

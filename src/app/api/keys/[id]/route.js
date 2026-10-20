@@ -133,7 +133,6 @@ export async function PUT(request, { params }) {
       }
       updateData.dailyCostLimit = costLimit;
     }
-    if (body.ipWhitelist !== undefined) updateData.ipWhitelist = body.ipWhitelist;
     if (body.expiresAt !== undefined) updateData.expiresAt = body.expiresAt || null;
 
     const updated = await updateApiKey(id, updateData);

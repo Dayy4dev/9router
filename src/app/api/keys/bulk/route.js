@@ -27,7 +27,6 @@ const BULK_FIELDS = new Set([
   "requestLimit",
   "limitKind",
   "allowedModels",
-  "ipWhitelist",
   "expiresAt",
 ]);
 

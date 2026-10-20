@@ -236,7 +236,7 @@ export async function getAllowedModelsOfKey(key) {
  }
 }
 
-export async function validateApiKey(key, requestedModel = null, clientIp = null) {
+export async function validateApiKey(key, requestedModel = null) {
   const db = await getAdapter();
   let result = false;
 
@@ -257,17 +257,6 @@ export async function validateApiKey(key, requestedModel = null, clientIp = null
       const expMs = new Date(row.expiresAt).getTime();
       if (!isNaN(expMs) && Date.now() > expMs) {
         result = "KEY_EXPIRED";
-        return;
-      }
-    }
-
-
-    // Check IP whitelist (empty = disabled/allow all)
-    const ipWhitelist = (row.ipWhitelist || "").trim();
-    if (ipWhitelist && clientIp) {
-      const allowedIps = ipWhitelist.split(",").map((ip) => ip.trim()).filter(Boolean);
-      if (allowedIps.length > 0 && !allowedIps.includes(clientIp)) {
-        result = "IP_NOT_ALLOWED";
         return;
       }
     }

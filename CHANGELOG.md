@@ -1,3 +1,19 @@
+# v0.5.232 (2026-10-20) · 1 commit
+
+## What Was Added
+
+- **The limit badge says `Usage:` whatever the unit**: `Spent: $0.00 / $2.50` read as a different kind of number from `Usage: 12K / 100K tokens`, even though both answer the same question — how much of the selected budget is gone. The unit is already inside the value (`$`, `req`, `tokens`), so the label is now always `Usage: …` and the three kinds line up in the key list.
+
+## What Was Changed
+
+- **The key editor is grouped instead of stacked**: both the create and the edit modal now split their fields into `Identity` (name, expiry), `Usage Limit` (limit type + value + reset interval), `Rate Limits` (RPM/TPM) and `Access` (allowed models, permissions), each with a short caption explaining what it controls. Fields sit two-per-row from the `sm` breakpoint up so the form is shorter, the limit pair no longer wraps awkwardly next to the reset interval, and the actions moved out of the scrolling body into the modal footer — the buttons stay reachable however long the permission list gets. The reset interval and its custom value now share a row, and the edit payload moved into `handleSaveEditedKey` so the button no longer carries a twenty-line inline object.
+
+## What Was Removed
+
+- **IP whitelist**: the field is gone from the create modal, the edit modal and bulk edit, the `IP Guard` chip is gone from the key card, and the API no longer accepts or returns `ipWhitelist`. `validateApiKey()` stopped enforcing it, together with the `IP_NOT_ALLOWED` reason in `keyGate`, the chat handler and the login route — a key cannot be edited into a state the UI cannot show. The `apiKeys.ipWhitelist` column stays so existing rows, backups and restores load unchanged, but nothing reads or writes it. **Note:** a key that was previously restricted to a list of IPs is no longer restricted by IP; revoke or re-mint it if that restriction was load-bearing.
+
+---
+
 # v0.5.231 (2026-10-20) · 1 commit
 
 ## What Was Added

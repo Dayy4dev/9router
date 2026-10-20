@@ -1,3 +1,11 @@
+# v0.5.233 (2026-10-20) · 1 commit
+
+## What Was Fixed
+
+- **The newest changelog entry drew a stray horizontal rule**: `CHANGELOG.md` separates versions with a `---` line, and a version's body runs until the next `# vX.Y.Z` heading, so that separator was handed to the Markdown renderer and became an `<hr>` at the bottom of the card. Only v0.5.232 showed it because Markdown reads `---` glued to the line above as a setext heading underline — every older entry swallowed its separator that way and looked fine, while the new entry, written with a blank line before the rule, rendered the line. `splitVersions()` now runs each body through `stripSectionRules()`, which drops standalone rules (leaving `---` inside fenced code alone, since an entry may quote one) and collapses the blank line the removal would leave behind. Every card now ends the same way, whether or not the file happens to have the blank line. `tests/unit/changelog-section-rules.test.js` covers the rule at the end, a rule between sections, a rule inside a fence, the splitter actually applying it, and that no version body in the real file keeps a rule.
+
+---
+
 # v0.5.232 (2026-10-20) · 1 commit
 
 ## What Was Added

@@ -1,3 +1,13 @@
+# v0.5.245 (2026-10-20) · 1 commit
+
+## What Was Added
+
+- **Quota notices follow the budget a key actually enforces**: the notification scan only ever read `tokenLimit`/`usedTokens`, so a key switched to a USD or request budget exhausted itself in silence — it answered 429 while the bell stayed empty, and the first sign was a client failing. `src/lib/notifications/quotaPressure.js` now reads the selected `limitKind`, warns at 90% and goes critical at the cap, and each kind gets its own wording: `$2.40 of $2.50 spend used. Resets at 00:00 UTC.`, `450 of 500 calls used. No automatic reset.`, `95,000 of 100,000 tokens used. Resets in 5d.` Yesterday's dollars count as zero, so a stale `costDay` never nags about a counter that already rolled over, and inactive keys stay quiet.
+- **Switching kinds or raising a budget clears the old notice**: the dedupe key now carries the kind (`quota:<id>:<kind>:<level>`), and every pass clears the notices it did not recreate — previously a key moved from cost to tokens kept an unread "out of tokens" row in the feed.
+- 7 unit tests in `tests/unit/quota-notifications.test.js` cover the thresholds per kind, the stale-day rollover, the unselected-kind silence, and the reset timestamps.
+
+---
+
 # v0.5.244 (2026-10-20) · 1 commit
 
 ## What Was Fixed

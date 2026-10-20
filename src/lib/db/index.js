@@ -120,7 +120,6 @@ export async function exportDb(options = null) {
       dailyCostLimit: Number(r.dailyCostLimit) || 0,
       costSpent: Number(r.costSpent) || 0,
       costDay: r.costDay || "",
-      ipWhitelist: r.ipWhitelist,
       expiresAt: r.expiresAt || null,
       systemPrompt: r.systemPrompt || "",
       permissions: r.permissions || "",
@@ -269,7 +268,9 @@ export async function importDb(payload) {
         const dailyCostLimit = k.dailyCostLimit !== undefined ? Number(k.dailyCostLimit) : (prev.dailyCostLimit !== undefined ? Number(prev.dailyCostLimit) : 0);
         const costSpent = k.costSpent !== undefined ? Number(k.costSpent) : (prev.costSpent !== undefined ? Number(prev.costSpent) : 0);
         const costDay = k.costDay !== undefined ? k.costDay : (prev.costDay || "");
-        const ipWhitelist = k.ipWhitelist !== undefined ? k.ipWhitelist : (prev.ipWhitelist || "");
+        // The whitelist feature is gone; the column survives, so a restore must
+        // still pass a value for it.
+        const ipWhitelist = "";
         const expiresAt = k.expiresAt !== undefined ? k.expiresAt : (prev.expiresAt || null);
         const systemPrompt = k.systemPrompt !== undefined ? k.systemPrompt : (prev.systemPrompt || "");
         const permissions = k.permissions !== undefined ? k.permissions : (prev.permissions || "");
@@ -531,7 +532,9 @@ export async function importDbProgressive(payload, onProgress) {
         const dailyCostLimit = k.dailyCostLimit !== undefined ? Number(k.dailyCostLimit) : (prev.dailyCostLimit !== undefined ? Number(prev.dailyCostLimit) : 0);
         const costSpent = k.costSpent !== undefined ? Number(k.costSpent) : (prev.costSpent !== undefined ? Number(prev.costSpent) : 0);
         const costDay = k.costDay !== undefined ? k.costDay : (prev.costDay || "");
-        const ipWhitelist = k.ipWhitelist !== undefined ? k.ipWhitelist : (prev.ipWhitelist || "");
+        // The whitelist feature is gone; the column survives, so a restore must
+        // still pass a value for it.
+        const ipWhitelist = "";
         const expiresAt = k.expiresAt !== undefined ? k.expiresAt : (prev.expiresAt || null);
         const systemPrompt = k.systemPrompt !== undefined ? k.systemPrompt : (prev.systemPrompt || "");
         const permissions = k.permissions !== undefined ? k.permissions : (prev.permissions || "");

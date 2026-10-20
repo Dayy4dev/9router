@@ -53,7 +53,7 @@ function spentTodayOf(key) {
 const LIMIT_KIND_OPTIONS = [
   {
     value: "tokens",
-    label: "Tokens",
+    label: "Token volume",
     blurb: "Adds up prompt and completion tokens, so a long conversation costs more than a short one.",
     icon: "data_usage",
     tone: "text-sky-400",
@@ -64,7 +64,7 @@ const LIMIT_KIND_OPTIONS = [
   },
   {
     value: "cost",
-    label: "Cost",
+    label: "USD spend",
     blurb: "Charges every call at the model's price in USD and starts over at midnight UTC.",
     icon: "payments",
     tone: "text-emerald-400",
@@ -75,7 +75,7 @@ const LIMIT_KIND_OPTIONS = [
   },
   {
     value: "requests",
-    label: "Requests",
+    label: "Request count",
     blurb: "Counts calls instead of size, so a huge prompt and a tiny one cost the same.",
     icon: "bolt",
     tone: "text-violet-400",

@@ -23,6 +23,15 @@ describe("key editor: limit type is a card picker, not a dropdown", () => {
     }
   });
 
+  it("names each row by what it measures instead of a bare unit", () => {
+    // "Tokens" / "Cost" / "Requests" alone said nothing the icon did not; each name now
+    // pairs the unit with the measure it stands for.
+    expect(options.map((o) => o.label)).toEqual(["Token volume", "USD spend", "Request count"]);
+    for (const opt of options) {
+      expect(opt.label.trim()).toContain(" ");
+    }
+  });
+
   it("uses an icon per kind, so the choice is not read by text alone", () => {
     expect(options.map((o) => o.icon)).toEqual(["data_usage", "payments", "bolt"]);
   });

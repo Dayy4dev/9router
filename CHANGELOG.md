@@ -1,3 +1,11 @@
+# v0.5.243 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The three budgets are named by what they measure**: `Tokens` / `Cost` / `Requests` were just the units again, so the row title repeated the sentence underneath and said nothing a reader could not guess from the icon. They now read `Token volume`, `USD spend` and `Request count` — each name pairs the unit with the thing being counted, and the explanations below stay as they were.
+
+---
+
 # v0.5.242 (2026-10-20) · 1 commit
 
 ## What Was Changed

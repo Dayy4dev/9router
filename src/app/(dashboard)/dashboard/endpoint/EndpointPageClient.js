@@ -1563,11 +1563,6 @@ const scopedModelPatterns =
                   <div className="flex flex-wrap items-center gap-1.5 mt-2 overflow-hidden">
                     <LimitBadge entry={key} />
                     {limitKindOf(key) !== "cost" && limitCapOf(key) > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-gray-500/10 text-text-muted">
-                        Reset: every {key.resetInterval}
-                      </span>
-                    )}
-                    {limitKindOf(key) !== "cost" && limitCapOf(key) > 0 && key.resetInterval && key.resetInterval !== "never" && (
                       <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
                     )}
                     <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">

@@ -1,3 +1,11 @@
+# v0.5.236 (2026-10-20) · 1 commit
+
+## What Was Changed
+
+- **The key card shows one reset badge, and it is the one that moves**: a capped key on a reset window carried two labels that said the same thing twice — `Reset: every 7d` (the setting, frozen text) next to `Next reset: 6d 23h` (the same fact as a countdown). The static one is gone; what remains is the countdown, which already ticks with `useNow` and turns into `Resetting...` when it reaches zero, so the row now answers "when does this key get its budget back" in one badge instead of restating the configured interval beside it. `tests/unit/api-key-reset-badge.test.js` keeps the static label from coming back and pins the countdown's label, its ticking and its "no window, no badge" guard.
+
+---
+
 # v0.5.235 (2026-10-20) · 1 commit
 
 ## What Was Changed

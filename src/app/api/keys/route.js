@@ -42,7 +42,7 @@ export async function POST(request) {
     const body = await request.json();
     let {
       name, tokenLimit, resetInterval, allowedModels,
-      rpmLimit, tpmLimit, dailyCostLimit, ipWhitelist, expiresAt, systemPrompt,
+      rpmLimit, tpmLimit, dailyCostLimit, requestLimit, limitKind, ipWhitelist, expiresAt, systemPrompt,
       permissions: requestedPermissions,
     } = body;
 
@@ -116,6 +116,8 @@ export async function POST(request) {
       rpmLimit: rpmLimit !== undefined ? Number(rpmLimit) : 0,
       tpmLimit: tpmLimit !== undefined ? Number(tpmLimit) : 0,
       dailyCostLimit: dailyCostLimit !== undefined ? Number(dailyCostLimit) : 0,
+      requestLimit: requestLimit !== undefined ? Number(requestLimit) : 0,
+      limitKind: limitKind === "cost" || limitKind === "requests" ? limitKind : "tokens",
       ipWhitelist: ipWhitelist || "",
       expiresAt: expiresAt || null,
       systemPrompt: systemPrompt || "",
@@ -154,6 +156,8 @@ export async function POST(request) {
       rpmLimit: apiKey.rpmLimit,
       tpmLimit: apiKey.tpmLimit,
       dailyCostLimit: apiKey.dailyCostLimit,
+      requestLimit: apiKey.requestLimit,
+      limitKind: apiKey.limitKind,
       ipWhitelist: apiKey.ipWhitelist,
       permissions: apiKey.permissions,
       // The raw creator key is a secret and never leaves the server; the client

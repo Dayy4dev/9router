@@ -107,6 +107,9 @@ export async function exportDb(options = null) {
       createdAt: r.createdAt,
       tokenLimit: r.tokenLimit,
       usedTokens: r.usedTokens,
+      limitKind: r.limitKind || "tokens",
+      requestLimit: Number(r.requestLimit) || 0,
+      usedRequests: Number(r.usedRequests) || 0,
       resetInterval: r.resetInterval,
       lastResetAt: r.lastResetAt,
       allowedModels: r.allowedModels,
@@ -253,6 +256,9 @@ export async function importDb(payload) {
         const prev = existingApiKeys[k.id] || {};
         const tokenLimit = k.tokenLimit !== undefined ? Number(k.tokenLimit) : (prev.tokenLimit !== undefined ? Number(prev.tokenLimit) : 0);
         const usedTokens = k.usedTokens !== undefined ? Number(k.usedTokens) : (prev.usedTokens !== undefined ? Number(prev.usedTokens) : 0);
+        const limitKind = k.limitKind !== undefined ? k.limitKind : (prev.limitKind || "tokens");
+        const requestLimit = k.requestLimit !== undefined ? Number(k.requestLimit) : (prev.requestLimit !== undefined ? Number(prev.requestLimit) : 0);
+        const usedRequests = k.usedRequests !== undefined ? Number(k.usedRequests) : (prev.usedRequests !== undefined ? Number(prev.usedRequests) : 0);
         const resetInterval = k.resetInterval !== undefined ? k.resetInterval : (prev.resetInterval || "never");
         const lastResetAt = k.lastResetAt !== undefined ? k.lastResetAt : (prev.lastResetAt || null);
         const allowedModels = k.allowedModels !== undefined ? k.allowedModels : (prev.allowedModels || "*");
@@ -270,7 +276,7 @@ export async function importDb(payload) {
         const createdBy = k.createdBy !== undefined ? k.createdBy : (prev.createdBy || "");
 
         db.run(
-          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, limitKind, requestLimit, usedRequests, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             k.id,
             k.key,
@@ -280,6 +286,9 @@ export async function importDb(payload) {
             k.createdAt || new Date().toISOString(),
             tokenLimit,
             usedTokens,
+            limitKind,
+            requestLimit,
+            usedRequests,
             resetInterval,
             lastResetAt,
             allowedModels,
@@ -509,6 +518,9 @@ export async function importDbProgressive(payload, onProgress) {
         const prev = existingApiKeys[k.id] || {};
         const tokenLimit = k.tokenLimit !== undefined ? Number(k.tokenLimit) : (prev.tokenLimit !== undefined ? Number(prev.tokenLimit) : 0);
         const usedTokens = k.usedTokens !== undefined ? Number(k.usedTokens) : (prev.usedTokens !== undefined ? Number(prev.usedTokens) : 0);
+        const limitKind = k.limitKind !== undefined ? k.limitKind : (prev.limitKind || "tokens");
+        const requestLimit = k.requestLimit !== undefined ? Number(k.requestLimit) : (prev.requestLimit !== undefined ? Number(prev.requestLimit) : 0);
+        const usedRequests = k.usedRequests !== undefined ? Number(k.usedRequests) : (prev.usedRequests !== undefined ? Number(prev.usedRequests) : 0);
         const resetInterval = k.resetInterval !== undefined ? k.resetInterval : (prev.resetInterval || "never");
         const lastResetAt = k.lastResetAt !== undefined ? k.lastResetAt : (prev.lastResetAt || null);
         const allowedModels = k.allowedModels !== undefined ? k.allowedModels : (prev.allowedModels || "*");
@@ -526,7 +538,7 @@ export async function importDbProgressive(payload, onProgress) {
         const createdBy = k.createdBy !== undefined ? k.createdBy : (prev.createdBy || "");
 
         db.run(
-          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT OR REPLACE INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, limitKind, requestLimit, usedRequests, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             k.id,
             k.key,
@@ -536,6 +548,9 @@ export async function importDbProgressive(payload, onProgress) {
             k.createdAt || new Date().toISOString(),
             tokenLimit,
             usedTokens,
+            limitKind,
+            requestLimit,
+            usedRequests,
             resetInterval,
             lastResetAt,
             allowedModels,

@@ -335,6 +335,9 @@ export async function saveRequestUsage(entry) {
          if (totalTokens > 0) {
             db.run(`UPDATE apiKeys SET usedTokens = COALESCE(usedTokens, 0) + ? WHERE key = ?`, [totalTokens, entry.apiKey]);
          }
+         // Request counter for keys limited by request count, bumped once per logged
+         // usage row so the gate and this writer read the same number.
+         db.run(`UPDATE apiKeys SET usedRequests = COALESCE(usedRequests, 0) + 1 WHERE key = ?`, [entry.apiKey]);
          // Daily cost counter, written in the same transaction as the usage row so the
          // two can never disagree. date('now') is UTC, the same bucket utcDayKey()
          // returns: a new day replaces the counter instead of adding to yesterday's.

@@ -35,6 +35,9 @@ function rowToKey(row) {
     createdAt: row.createdAt,
     tokenLimit: row.tokenLimit || 0,
     usedTokens: row.usedTokens || 0,
+    limitKind: row.limitKind === "cost" || row.limitKind === "requests" ? row.limitKind : "tokens",
+    requestLimit: Number(row.requestLimit) || 0,
+    usedRequests: Number(row.usedRequests) || 0,
     resetInterval: row.resetInterval || "never",
     lastResetAt: row.lastResetAt || null,
     allowedModels: row.allowedModels || "*",
@@ -84,6 +87,9 @@ export async function createApiKey(name, machineId, options = {}) {
     createdAt: now,
     tokenLimit: Number(options.tokenLimit) || 0,
     usedTokens: Number(options.usedTokens) || 0,
+    limitKind: options.limitKind === "cost" || options.limitKind === "requests" ? options.limitKind : "tokens",
+    requestLimit: Number(options.requestLimit) || 0,
+    usedRequests: Number(options.usedRequests) || 0,
     resetInterval: options.resetInterval || "never",
     lastResetAt: options.lastResetAt || now,
     allowedModels: options.allowedModels || "*",
@@ -103,7 +109,7 @@ export async function createApiKey(name, machineId, options = {}) {
   };
   const permStr = typeof options.permissions === "string" ? options.permissions : JSON.stringify(apiKey.permissions);
   db.run(
-    `INSERT INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO apiKeys(id, key, name, machineId, isActive, createdAt, tokenLimit, usedTokens, limitKind, requestLimit, usedRequests, resetInterval, lastResetAt, allowedModels, rpmLimit, tpmLimit, dailyCostLimit, costSpent, costDay, ipWhitelist, expiresAt, systemPrompt, permissions, createdBy) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       apiKey.id,
       apiKey.key,
@@ -113,6 +119,9 @@ export async function createApiKey(name, machineId, options = {}) {
       apiKey.createdAt,
       apiKey.tokenLimit,
       apiKey.usedTokens,
+      apiKey.limitKind,
+      apiKey.requestLimit,
+      apiKey.usedRequests,
       apiKey.resetInterval,
       apiKey.lastResetAt,
       apiKey.allowedModels,
@@ -140,7 +149,7 @@ export async function updateApiKey(id, data) {
     const merged = { ...rowToKey(row), ...data };
     const permStr = typeof merged.permissions === "string" ? merged.permissions : JSON.stringify(merged.permissions || {});
     db.run(
-      `UPDATE apiKeys SET key = ?, name = ?, machineId = ?, isActive = ?, tokenLimit = ?, usedTokens = ?, resetInterval = ?, lastResetAt = ?, allowedModels = ?, rpmLimit = ?, tpmLimit = ?, dailyCostLimit = ?, costSpent = ?, costDay = ?, ipWhitelist = ?, expiresAt = ?, systemPrompt = ?, permissions = ?, createdBy = ? WHERE id = ?`,
+      `UPDATE apiKeys SET key = ?, name = ?, machineId = ?, isActive = ?, tokenLimit = ?, usedTokens = ?, limitKind = ?, requestLimit = ?, usedRequests = ?, resetInterval = ?, lastResetAt = ?, allowedModels = ?, rpmLimit = ?, tpmLimit = ?, dailyCostLimit = ?, costSpent = ?, costDay = ?, ipWhitelist = ?, expiresAt = ?, systemPrompt = ?, permissions = ?, createdBy = ? WHERE id = ?`,
       [
         merged.key,
         merged.name,
@@ -148,6 +157,9 @@ export async function updateApiKey(id, data) {
         merged.isActive ? 1 : 0,
         Number(merged.tokenLimit) || 0,
         Number(merged.usedTokens) || 0,
+        merged.limitKind === "cost" || merged.limitKind === "requests" ? merged.limitKind : "tokens",
+        Number(merged.requestLimit) || 0,
+        Number(merged.usedRequests) || 0,
         merged.resetInterval || "never",
         merged.lastResetAt || null,
         merged.allowedModels || "*",
@@ -260,8 +272,15 @@ export async function validateApiKey(key, requestedModel = null, clientIp = null
       }
     }
 
+    const limitKind = row.limitKind === "cost" || row.limitKind === "requests" ? row.limitKind : "tokens";
     const tokenLimit = Number(row.tokenLimit) || 0;
+    const requestLimit = Number(row.requestLimit) || 0;
+    const dailyCostLimit = Number(row.dailyCostLimit) || 0;
+    // Exactly one cap is enforced: the one the owner selected. The other numbers may
+    // still be stored (switching back must not lose them) but they never block.
+    const activeCap = limitKind === "cost" ? dailyCostLimit : limitKind === "requests" ? requestLimit : tokenLimit;
     let usedTokens = Number(row.usedTokens) || 0;
+    let usedRequests = Number(row.usedRequests) || 0;
     const resetInterval = row.resetInterval || "never";
     const allowedModels = row.allowedModels || "*";
     const nowMs = Date.now();
@@ -272,7 +291,9 @@ export async function validateApiKey(key, requestedModel = null, clientIp = null
     if (isNaN(lastResetMs)) lastResetMs = nowMs;
 
     let shouldReset = false;
-    if (tokenLimit > 0 && resetInterval && resetInterval !== "never") {
+    // Cost carries its own day stamp, so only the token and request windows need the
+    // interval arithmetic here; a cost key has nothing to reset in this path.
+    if (limitKind !== "cost" && activeCap > 0 && resetInterval && resetInterval !== "never") {
       let intervalMs = 0;
       const num = parseInt(resetInterval, 10);
       if (resetInterval.endsWith("m")) {
@@ -292,23 +313,28 @@ export async function validateApiKey(key, requestedModel = null, clientIp = null
 
     if (shouldReset) {
       usedTokens = 0;
+      usedRequests = 0;
       const newResetIso = new Date(lastResetMs).toISOString();
-      db.run(`UPDATE apiKeys SET usedTokens = 0, lastResetAt = ? WHERE id = ?`, [
+      db.run(`UPDATE apiKeys SET usedTokens = 0, usedRequests = 0, lastResetAt = ? WHERE id = ?`, [
         newResetIso,
         row.id,
       ]);
     }
 
-    if (tokenLimit > 0 && usedTokens >= tokenLimit) {
+    if (limitKind === "tokens" && tokenLimit > 0 && usedTokens >= tokenLimit) {
       result = "QUOTA_EXCEEDED";
+      return;
+    }
+
+    if (limitKind === "requests" && requestLimit > 0 && usedRequests >= requestLimit) {
+      result = "REQUEST_LIMIT_EXCEEDED";
       return;
     }
 
     // Daily money cap. The counter is stamped with the UTC day it belongs to, so a
     // stamp from an earlier day means nothing has been spent today yet; without that
     // check a key would stay blocked until something rewrote the row.
-    const dailyCostLimit = Number(row.dailyCostLimit) || 0;
-    if (dailyCostLimit > 0) {
+    if (limitKind === "cost" && dailyCostLimit > 0) {
       const spentToday = row.costDay === utcDayKey() ? Number(row.costSpent) || 0 : 0;
       if (spentToday >= dailyCostLimit) {
         result = "COST_LIMIT_EXCEEDED";

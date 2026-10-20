@@ -116,6 +116,10 @@ export async function PUT(request, { params }) {
     if (body.resetInterval !== undefined) updateData.resetInterval = body.resetInterval;
     if (body.rpmLimit !== undefined) updateData.rpmLimit = Number(body.rpmLimit);
     if (body.tpmLimit !== undefined) updateData.tpmLimit = Number(body.tpmLimit);
+    if (body.requestLimit !== undefined) updateData.requestLimit = Number(body.requestLimit) || 0;
+    if (body.limitKind !== undefined) {
+      updateData.limitKind = body.limitKind === "cost" || body.limitKind === "requests" ? body.limitKind : "tokens";
+    }
     if (body.dailyCostLimit !== undefined) {
       const costLimit = Number(body.dailyCostLimit) || 0;
       const creatorCostLimit = Number(ctx.session?.dailyCostLimit) || 0;

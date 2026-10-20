@@ -24,6 +24,8 @@ const BULK_FIELDS = new Set([
   "rpmLimit",
   "tpmLimit",
   "dailyCostLimit",
+  "requestLimit",
+  "limitKind",
   "allowedModels",
   "ipWhitelist",
   "expiresAt",

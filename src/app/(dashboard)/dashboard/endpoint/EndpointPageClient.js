@@ -43,6 +43,67 @@ function spentTodayOf(key) {
   return key?.costDay === today ? Number(key.costSpent) || 0 : 0;
 }
 
+// One budget per key: the owner picks tokens, money or request count, and the UI
+// shows whichever one is selected. All three caps can stay stored so switching
+// back and forth does not lose the numbers.
+const LIMIT_KIND_OPTIONS = [
+  { value: "tokens", label: "Tokens" },
+  { value: "cost", label: "Cost in USD (per UTC day)" },
+  { value: "requests", label: "Requests" },
+];
+
+function limitKindOf(key) {
+  return key?.limitKind === "cost" || key?.limitKind === "requests" ? key.limitKind : "tokens";
+}
+
+function limitCapOf(key, kind = limitKindOf(key)) {
+  if (kind === "cost") return Number(key?.dailyCostLimit) || 0;
+  if (kind === "requests") return Number(key?.requestLimit) || 0;
+  return Number(key?.tokenLimit) || 0;
+}
+
+function limitUsedOf(key, kind = limitKindOf(key)) {
+  if (kind === "cost") return spentTodayOf(key);
+  if (kind === "requests") return Number(key?.usedRequests) || 0;
+  return Number(key?.usedTokens) || 0;
+}
+
+function formatLimitValue(kind, value) {
+  const n = Number(value) || 0;
+  if (kind === "cost") return `$${n.toFixed(2)}`;
+  if (kind === "requests") return `${n.toLocaleString()} req`;
+  return `${formatTokensNumber(n)} tokens`;
+}
+
+function limitFieldLabel(kind) {
+  if (kind === "cost") return "Cost Limit in USD (0: unlimited)";
+  if (kind === "requests") return "Request Limit (0: unlimited)";
+  return "Token Limit (0: unlimited)";
+}
+
+function limitPlaceholder(kind) {
+  if (kind === "cost") return "2.50";
+  if (kind === "requests") return "1000";
+  return "e.g. 88000000";
+}
+
+// The active budget as a badge. Colour is the only cue that the key is out of room,
+// so it turns red the moment the used value reaches the cap.
+function LimitBadge({ entry }) {
+  const kind = limitKindOf(entry);
+  const cap = limitCapOf(entry, kind);
+  const used = limitUsedOf(entry, kind);
+  const exhausted = cap > 0 && used >= cap;
+  return (
+    <span className={cn(
+      "text-xs max-w-full truncate px-2 py-0.5 rounded font-medium",
+      exhausted ? "bg-red-500/10 text-red-500" : "bg-primary/10 text-primary"
+    )}>
+      {kind === "cost" ? "Spent" : "Usage"}: {formatLimitValue(kind, used)} / {cap > 0 ? formatLimitValue(kind, cap) : "Unlimited"}
+    </span>
+  );
+}
+
 const RESET_INTERVAL_OPTIONS = [
   { value: "never", label: "Never reset" },
   { value: "5h", label: "Every 5 Hours (5h)" },
@@ -171,7 +232,7 @@ export default function APIPageClient({ machineId }) {
   const [newKeyAllowedModels, setNewKeyAllowedModels] = useState("*");
   const [newKeyRpm, setNewKeyRpm] = useState("");
   const [newKeyTpm, setNewKeyTpm] = useState("");
-  const [newKeyCostLimit, setNewKeyCostLimit] = useState("");
+  const [newKeyLimitKind, setNewKeyLimitKind] = useState("tokens");
   const [newKeyIpWhitelist, setNewKeyIpWhitelist] = useState("");
   const [newKeyExpiresAt, setNewKeyExpiresAt] = useState("");
   const [editingKey, setEditingKey] = useState(null);
@@ -182,7 +243,7 @@ export default function APIPageClient({ machineId }) {
   const [editAllowedModels, setEditAllowedModels] = useState("*");
   const [editRpm, setEditRpm] = useState("");
   const [editTpm, setEditTpm] = useState("");
-  const [editCostLimit, setEditCostLimit] = useState("");
+  const [editLimitKind, setEditLimitKind] = useState("tokens");
   const [editIpWhitelist, setEditIpWhitelist] = useState("");
   const [editExpiresAt, setEditExpiresAt] = useState("");
   const [activeProviders, setActiveProviders] = useState([]);
@@ -898,7 +959,7 @@ const scopedModelPatterns =
       finalReset = newKeyReset === "custom" ? (newKeyCustomReset.trim() || "never") : newKeyReset;
     }
 
-    if (creatorTokenLimit > 0 && limitNum > creatorTokenLimit) {
+    if (newKeyLimitKind === "tokens" && creatorTokenLimit > 0 && limitNum > creatorTokenLimit) {
       alert(`Token limit cannot exceed your maximum (${creatorTokenLimit}).`);
       return;
     }
@@ -909,12 +970,14 @@ const scopedModelPatterns =
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newKeyName,
-          tokenLimit: limitNum,
+          limitKind: newKeyLimitKind,
+          tokenLimit: newKeyLimitKind === "tokens" ? limitNum : 0,
+          requestLimit: newKeyLimitKind === "requests" ? limitNum : 0,
+          dailyCostLimit: newKeyLimitKind === "cost" ? limitNum : 0,
           resetInterval: finalReset,
           allowedModels: newKeyAllowedModels.trim() || "*",
           rpmLimit: newKeyRpm ? Number(newKeyRpm) : 0,
           tpmLimit: newKeyTpm ? Number(newKeyTpm) : 0,
-          dailyCostLimit: newKeyCostLimit ? Number(newKeyCostLimit) : 0,
           ipWhitelist: newKeyIpWhitelist.trim(),
           expiresAt: newKeyExpiresAt || null,
           permissions: permissionsToSave(newKeyPermissions),
@@ -932,7 +995,7 @@ const scopedModelPatterns =
         setNewKeyAllowedModels("*");
         setNewKeyRpm("");
         setNewKeyTpm("");
-        setNewKeyCostLimit("");
+        setNewKeyLimitKind("tokens");
         setNewKeyIpWhitelist("");
         setShowAddModal(false);
         setNewKeyExpiresAt("");
@@ -955,7 +1018,8 @@ const scopedModelPatterns =
  n += 1;
  }
  setNewKeyName(candidate);
- setNewKeyLimit(sourceKey.tokenLimit ? String(sourceKey.tokenLimit) : "");
+ setNewKeyLimitKind(limitKindOf(sourceKey));
+ setNewKeyLimit(limitCapOf(sourceKey) ? String(limitCapOf(sourceKey)) : "");
  const resVal = sourceKey.resetInterval || "never";
  if (["never", "5h", "7d", "14d", "30d"].includes(resVal)) {
  setNewKeyReset(resVal);
@@ -967,7 +1031,6 @@ const scopedModelPatterns =
  setNewKeyAllowedModels(sourceKey.allowedModels || "*");
  setNewKeyRpm(sourceKey.rpmLimit ? String(sourceKey.rpmLimit) : "");
  setNewKeyTpm(sourceKey.tpmLimit ? String(sourceKey.tpmLimit) : "");
- setNewKeyCostLimit(sourceKey.dailyCostLimit ? String(sourceKey.dailyCostLimit) : "");
  setNewKeyIpWhitelist(sourceKey.ipWhitelist || "");
  setNewKeyExpiresAt(sourceKey.expiresAt || "");
  setNewKeyPermissions(sourceKey.permissions || EMPTY_PERMISSIONS);
@@ -1441,15 +1504,13 @@ const scopedModelPatterns =
                     Created {new Date(key.createdAt).toLocaleDateString()}
                   </p>
                   <div className="flex flex-wrap items-center gap-1.5 mt-2 overflow-hidden">
-                    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                      Usage: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) + " tokens" : "Unlimited"}
-                    </span>
-                    {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
+                    <LimitBadge entry={key} />
+                    {limitKindOf(key) !== "cost" && limitCapOf(key) > 0 && key.resetInterval && key.resetInterval !== "never" && (
                       <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-gray-500/10 text-text-muted">
                         Reset: every {key.resetInterval}
                       </span>
                     )}
-                    {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
+                    {limitKindOf(key) !== "cost" && limitCapOf(key) > 0 && key.resetInterval && key.resetInterval !== "never" && (
                       <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
                     )}
                     <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
@@ -1460,27 +1521,9 @@ const scopedModelPatterns =
                         Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
                       </span>
                     )}
-                    {key.dailyCostLimit > 0 && (
-                      <span
-                        className={cn(
-                          "text-xs max-w-full truncate px-2 py-0.5 rounded font-medium",
-                          spentTodayOf(key) >= key.dailyCostLimit
-                            ? "bg-red-500/10 text-red-500"
-                            : "bg-amber-500/10 text-amber-600"
-                        )}
-                        title="Spent today (UTC) against this key's daily cost limit"
-                      >
-                        Cost: ${spentTodayOf(key).toFixed(2)} / ${Number(key.dailyCostLimit).toFixed(2)} today
-                      </span>
-                    )}
                     {key.ipWhitelist && (
                       <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-medium">
                         IP Guard: Active
-                      </span>
-                    )}
-                    {key.tokenLimit > 0 && (key.usedTokens || 0) >= key.tokenLimit && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-red-500/10 text-red-500 font-semibold">
-                        Quota Exceeded
                       </span>
                     )}
                   </div>
@@ -1501,8 +1544,9 @@ const scopedModelPatterns =
                   onClick={() => {
                     setEditingKey(key);
                       setEditName(key.name || "");
-                      const lim = key.tokenLimit ? String(key.tokenLimit) : "";
+                      const lim = limitCapOf(key) ? String(limitCapOf(key)) : "";
                       setEditLimit(lim);
+                      setEditLimitKind(limitKindOf(key));
                       const resVal = key.resetInterval || "never";
                       if (["never", "5h", "7d", "14d", "30d"].includes(resVal)) {
                         setEditReset(resVal);
@@ -1514,7 +1558,6 @@ const scopedModelPatterns =
                       setEditAllowedModels(key.allowedModels || "*");
                       setEditRpm(key.rpmLimit ? String(key.rpmLimit) : "");
                       setEditTpm(key.tpmLimit ? String(key.tpmLimit) : "");
-                      setEditCostLimit(key.dailyCostLimit ? String(key.dailyCostLimit) : "");
                       setEditIpWhitelist(key.ipWhitelist || "");
                       setEditExpiresAt(key.expiresAt || "");
                       setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
@@ -1577,23 +1620,39 @@ const scopedModelPatterns =
             onChange={(e) => setNewKeyName(e.target.value)}
             placeholder="Production Key"
           />
-          <Input
-            label="Token Limit (0 for unlimited)"
-            type="number"
-            value={newKeyLimit}
-            onChange={(e) => setNewKeyLimit(e.target.value)}
-            placeholder="e.g. 88000000"
-            hint={creatorTokenLimit > 0 ? `Your maximum is ${creatorTokenLimit.toLocaleString()}` : "0 or leave empty for unlimited"}
-          />
- {Number(newKeyLimit) > 0 && (
- <Select
- label="Auto Reset Interval"
- options={RESET_INTERVAL_OPTIONS}
- value={newKeyReset}
- onChange={(e) => setNewKeyReset(e.target.value)}
- />
- )}
-          {Number(newKeyLimit) > 0 && newKeyReset === "custom" && (
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Limit Type"
+              options={LIMIT_KIND_OPTIONS}
+              value={newKeyLimitKind}
+              onChange={(e) => setNewKeyLimitKind(e.target.value)}
+            />
+            <Input
+              label={limitFieldLabel(newKeyLimitKind)}
+              type="number"
+              step={newKeyLimitKind === "cost" ? "0.01" : "1"}
+              min="0"
+              value={newKeyLimit}
+              onChange={(e) => setNewKeyLimit(e.target.value)}
+              placeholder={limitPlaceholder(newKeyLimitKind)}
+              hint={
+                newKeyLimitKind === "cost"
+                  ? "Refused with 429 once today's spend reaches this amount (resets at 00:00 UTC)"
+                  : newKeyLimitKind === "tokens" && creatorTokenLimit > 0
+                    ? `Your maximum is ${creatorTokenLimit.toLocaleString()}`
+                    : "0 or leave empty for unlimited"
+              }
+            />
+          </div>
+          {newKeyLimitKind !== "cost" && Number(newKeyLimit) > 0 && (
+            <Select
+              label="Auto Reset Interval"
+              options={RESET_INTERVAL_OPTIONS}
+              value={newKeyReset}
+              onChange={(e) => setNewKeyReset(e.target.value)}
+            />
+          )}
+          {newKeyLimitKind !== "cost" && Number(newKeyLimit) > 0 && newKeyReset === "custom" && (
             <Input
               label="Custom Interval (e.g. 10h, 3d)"
               value={newKeyCustomReset}
@@ -1619,16 +1678,6 @@ const scopedModelPatterns =
               hint="Max tokens/min"
             />
           </div>
-          <Input
-            label="Daily Cost Limit in USD (0: unlimited)"
-            type="number"
-            step="0.01"
-            min="0"
-            value={newKeyCostLimit}
-            onChange={(e) => setNewKeyCostLimit(e.target.value)}
-            placeholder="0"
-            hint="Requests are refused with 429 once the key has spent this much in one UTC day"
-          />
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-text-main">
@@ -1725,22 +1774,32 @@ const scopedModelPatterns =
             onChange={(e) => setEditName(e.target.value)}
             placeholder="Production Key"
           />
-          <Input
-            label="Token Limit (0 for unlimited)"
-            type="number"
-            value={editLimit}
-            onChange={(e) => setEditLimit(e.target.value)}
-            placeholder="e.g. 88000000"
-          />
- {Number(editLimit) > 0 && (
- <Select
- label="Auto Reset Interval"
- options={RESET_INTERVAL_OPTIONS}
- value={editReset}
- onChange={(e) => setEditReset(e.target.value)}
- />
- )}
-          {Number(editLimit) > 0 && editReset === "custom" && (
+          <div className="grid grid-cols-2 gap-3">
+            <Select
+              label="Limit Type"
+              options={LIMIT_KIND_OPTIONS}
+              value={editLimitKind}
+              onChange={(e) => setEditLimitKind(e.target.value)}
+            />
+            <Input
+              label={limitFieldLabel(editLimitKind)}
+              type="number"
+              step={editLimitKind === "cost" ? "0.01" : "1"}
+              min="0"
+              value={editLimit}
+              onChange={(e) => setEditLimit(e.target.value)}
+              placeholder={limitPlaceholder(editLimitKind)}
+            />
+          </div>
+          {editLimitKind !== "cost" && Number(editLimit) > 0 && (
+            <Select
+              label="Auto Reset Interval"
+              options={RESET_INTERVAL_OPTIONS}
+              value={editReset}
+              onChange={(e) => setEditReset(e.target.value)}
+            />
+          )}
+          {editLimitKind !== "cost" && Number(editLimit) > 0 && editReset === "custom" && (
             <Input
               label="Custom Interval (e.g. 10h, 3d)"
               value={editCustomReset}
@@ -1765,17 +1824,7 @@ const scopedModelPatterns =
               placeholder="0"
               hint="Max tokens/min"
             />
-          </div>
-          <Input
-            label="Daily Cost Limit in USD (0: unlimited)"
-            type="number"
-            step="0.01"
-            min="0"
-            value={editCostLimit}
-            onChange={(e) => setEditCostLimit(e.target.value)}
-            placeholder="0"
-            hint="Requests are refused with 429 once the key has spent this much in one UTC day"
-          />
+            </div>
           <div className="flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-text-main">
@@ -1852,12 +1901,14 @@ const scopedModelPatterns =
                 }
                 handleUpdateKeyQuota(editingKey.id, {
                   name: editName.trim() || editingKey.name,
-                  tokenLimit: limitNum,
+                  limitKind: editLimitKind,
+                  tokenLimit: editLimitKind === "tokens" ? limitNum : 0,
+                  requestLimit: editLimitKind === "requests" ? limitNum : 0,
+                  dailyCostLimit: editLimitKind === "cost" ? limitNum : 0,
                   resetInterval: finalReset,
                   allowedModels: editAllowedModels.trim() || "*",
                   rpmLimit: editRpm ? Number(editRpm) : 0,
                   tpmLimit: editTpm ? Number(editTpm) : 0,
-                  dailyCostLimit: editCostLimit ? Number(editCostLimit) : 0,
                   ipWhitelist: editIpWhitelist.trim(),
                   expiresAt: editExpiresAt || null,
                   permissions: permissionsToSave(editPermissions),

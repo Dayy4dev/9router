@@ -1,3 +1,13 @@
+# v0.5.254 (2026-10-21) · 2 commits
+
+## What Was Fixed
+
+- **Opening the model picker no longer blanks the page.** The `· N disabled` hint was computed by a helper defined *inside* the `groupedModels` memo but printed in the group header at render time, so any picker that opened threw `ReferenceError: disabledCountFor is not defined` and Next's error boundary replaced the dashboard with "Application error: a client-side exception has occurred". The helper now lives at component scope, next to the state it reads, and `tests/unit/free-model-rows.test.js` asserts its declaration sits above the memo so the same scope mistake fails the suite instead of the browser.
+
+---
+
+---
+
 # v0.5.253 (2026-10-21) · 2 commits
 
 ## What Was Fixed

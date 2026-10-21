@@ -1,3 +1,14 @@
+# v0.5.252 (2026-10-21) · 2 commits
+
+## What Was Changed
+
+- **A free provider's catalogue is now one model list, not three.** On the OpenCode Free page the same tier was split across the model rows, a "Suggested free models (6)" chip row that asked you to add models that already answered, and a "Disabled models (3)" chip row at the bottom - so the catalogue was never visible in one place and ids you had disabled looked gone. `src/shared/utils/freeModelRows.js` folds registry models, user-added rows and the live catalogue into a single de-duplicated list (custom beats registry beats catalogue), and the page renders it as ordinary rows: each model once, free rows carrying a `FREE` badge, disabled rows dimmed with a restore action. The two chip rows stay only for providers that gate their catalogue behind adding a model.
+- **The picker stopped hiding models without saying so.** `ModelSelectModal` filters disabled ids out of every group, which is correct - a disabled model is not offered by `/v1/models` either - but a group that silently showed 10 of 13 models read as a half-missing free tier. The group header now appends `· N disabled` with a hint that they are restored on the provider page, so the gap is explained where it is seen.
+
+---
+
+---
+
 # v0.5.251 (2026-10-21) · 2 commits
 
 ## What Was Changed

@@ -1,3 +1,13 @@
+# v0.5.253 (2026-10-21) · 2 commits
+
+## What Was Fixed
+
+- **The unified free list only advertised models that can actually answer.** The first cut of the unified list passed the whole live catalogue to the row builder, and the OpenCode Free catalogue marks paid ids with `isFree: false` - so ~85 paid models (Claude, Gemini, GPT families) appeared as free-badged rows on a provider that answers 401 for every one of them without a key. The catalogue handed to `buildUnifiedModelRows` is now filtered to `isFree === true`, the same rule the suggestion picker already used, and the browser check on the provider page counts 10 free rows plus the disabled trio instead of 85+.
+
+---
+
+---
+
 # v0.5.252 (2026-10-21) · 2 commits
 
 ## What Was Changed

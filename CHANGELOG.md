@@ -1,3 +1,13 @@
+# v0.5.258 (2026-10-21) · 2 commits
+
+## What Was Fixed
+
+- **The provider page now agrees with the model picker about what it lists.** The model picker offered all 13 free OpenCode models, but the provider page dropped `jev-1.13-free` because its registry entry carries the `kind: "systemone"` lane and the page's llm-only filter (`!k || k === "llm"`) treated that as a media kind with its own page - the free System One model was visible in one screen and invisible in the other, paid `jev-1.13` chip included while the free one was not. `systemone` is now kept alongside `llm` in the provider page filter, and `tests/unit/provider-model-catalogue.test.js` (8 cases) pins the filter so a future lane cannot silently drift again.
+
+---
+
+---
+
 # v0.5.257 (2026-10-21) · 2 commits
 
 ## What Was Fixed

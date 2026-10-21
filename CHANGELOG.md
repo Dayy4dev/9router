@@ -1,3 +1,13 @@
+# v0.5.255 (2026-10-21) · 2 commits
+
+## What Was Fixed
+
+- **The OpenCode Free panel shows every id the provider publishes, paid ones included.** The first pass of the unified list hid the ~76 paid ids of the live catalogue behind an "only advertise what a keyless caller can use" rule, and the panel then read as a short list with models missing - the opposite of what was being fixed. The catalogue now reaches the row grid unfiltered, the FREE badge comes from each row's own tier flag (`isFree` travels through `buildUnifiedModelRows` instead of being stamped on every catalogue row), and the five registry-pinned free ids (muse spark x2, union-alpha, deepseek flash, jev) carry `isFree: true` in `open-sse/providers/registry/opencode.js` so their badge no longer depends on the id suffix. Verified live: the upstream endpoint lists 86 ids, all 10 free ones plus the 3 registry-only free models render, and `tests/unit/free-model-rows.test.js` (10 cases) pins the unfiltered catalogue, the flag-driven badge and the registry flags.
+
+---
+
+---
+
 # v0.5.254 (2026-10-21) · 2 commits
 
 ## What Was Fixed

@@ -380,6 +380,11 @@ export default function ModelSelectModal({
       return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
     });
 
+    const disabledCountFor = (providerId, alias) => {
+      const ids = new Set([...(disabledModels[alias] || []), ...(disabledModels[providerId] || [])]);
+      return ids.size;
+    };
+
     sortedProviderIds.forEach((providerId) => {
       const alias = getProviderAlias(providerId);
       const providerInfo = allProviders[providerId] || { name: providerId, color: "#666" };
@@ -1082,6 +1087,17 @@ export default function ModelSelectModal({
                 <span className="text-[10px] text-text-muted">
                   ({group.models.length})
                 </span>
+                {/* Disabled ids are filtered out of every group above, so without this
+                    count the picker silently offers fewer models than the provider
+                    publishes and reads as if the free tier were half-missing. */}
+                {disabledCountFor(providerId, group.alias) > 0 && (
+                  <span
+                    className="text-[10px] text-text-muted/70"
+                    title="Disabled models are hidden here - restore them on the provider page"
+                  >
+                    · {disabledCountFor(providerId, group.alias)} disabled
+                  </span>
+                )}
               </div>
 
             <div className="flex flex-wrap gap-1.5">

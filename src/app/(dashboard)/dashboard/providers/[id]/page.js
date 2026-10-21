@@ -1279,7 +1279,10 @@ export default function ProviderDetailPage() {
       ? buildUnifiedModelRows({
           builtinModels: allModels,
           customRows: customModelRows,
-          catalogue: suggestedModels.filter((m) => m?.id),
+          // Only the free tier: the rest of a free-tier catalogue answers 401
+          // without a key, so listing it here would advertise models that cannot
+          // be called. Same rule the free-only consumers use.
+          catalogue: suggestedModels.filter((m) => m?.id && m.isFree === true),
           disabledIds: disabledModelIds,
         })
       : null;

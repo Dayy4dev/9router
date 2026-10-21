@@ -86,5 +86,13 @@ describe("free-catalogue UI contract", () => {
   it("the picker says how many models it is hiding", () => {
     expect(picker).toMatch(/disabledCountFor/);
     expect(picker).toMatch(/·\s*\{disabledCountFor/);
+    // Declared at component scope: the first cut defined it inside the groupedModels
+    // memo and printed it in JSX, so opening the picker threw a ReferenceError and
+    // Next's error boundary blanked the page.
+    const helperAt = picker.indexOf("const disabledCountFor");
+    const memoAt = picker.indexOf("const groupedModels = useMemo");
+    expect(helperAt).toBeGreaterThan(-1);
+    expect(memoAt).toBeGreaterThan(-1);
+    expect(helperAt).toBeLessThan(memoAt);
   });
 });

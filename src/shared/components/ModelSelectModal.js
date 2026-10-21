@@ -315,6 +315,14 @@ export default function ModelSelectModal({
   const allProviders = useMemo(() => ({ ...OAUTH_PROVIDERS, ...FREE_PROVIDERS, ...FREE_TIER_PROVIDERS, ...APIKEY_PROVIDERS }), []);
 
   // Group models by provider with priority order
+  // Component scope, not inside the memo below: the count is printed in the group
+  // header at render time, and a helper closed over only the memo's locals throws a
+  // ReferenceError there - which unmounts the page through the error boundary.
+  const disabledCountFor = (providerId, alias) => {
+    const ids = new Set([...(disabledModels[alias] || []), ...(disabledModels[providerId] || [])]);
+    return ids.size;
+  };
+
   const groupedModels = useMemo(() => {
     const groups = {};
 
@@ -379,11 +387,6 @@ export default function ModelSelectModal({
       const indexB = PROVIDER_ORDER.indexOf(b);
       return (indexA === -1 ? 999 : indexA) - (indexB === -1 ? 999 : indexB);
     });
-
-    const disabledCountFor = (providerId, alias) => {
-      const ids = new Set([...(disabledModels[alias] || []), ...(disabledModels[providerId] || [])]);
-      return ids.size;
-    };
 
     sortedProviderIds.forEach((providerId) => {
       const alias = getProviderAlias(providerId);

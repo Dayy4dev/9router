@@ -29,6 +29,9 @@ export function buildUnifiedModelRows({
       name: row.name || id,
       source,
       priority,
+      // The catalogue carries the tier flag; rows from the registry do not, so
+      // the badge is only ever printed where a source actually said "free".
+      isFree: row.isFree === true,
       disabled: disabled.has(id),
     });
   };

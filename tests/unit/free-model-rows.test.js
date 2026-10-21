@@ -47,6 +47,23 @@ describe("buildUnifiedModelRows", () => {
     expect(result.total).toBe(0);
     expect(result.rows).toEqual([]);
   });
+
+  it("keeps the whole catalogue but marks only the free tier", () => {
+    // He wants the paid ids visible too - the FREE badge is what separates the
+    // tiers - so the merge must carry the flag instead of dropping rows.
+    const result = buildUnifiedModelRows({
+      catalogue: [
+        { id: "beam-free", name: "beam-free", isFree: true },
+        { id: "gpt-6-sol", name: "gpt-6-sol", isFree: false },
+      ],
+    });
+    expect(result.total).toBe(2);
+    expect(result.active.map((row) => row.id)).toEqual(["beam-free", "gpt-6-sol"]);
+    const beam = result.rows.find((row) => row.id === "beam-free");
+    const gpt = result.rows.find((row) => row.id === "gpt-6-sol");
+    expect(beam.isFree).toBe(true);
+    expect(gpt.isFree).toBe(false);
+  });
 });
 
 describe("free-catalogue UI contract", () => {
@@ -67,6 +84,18 @@ describe("free-catalogue UI contract", () => {
     expect(page).toMatch(/unifiedFreeRows\?\.active/);
     expect(page).toMatch(/unifiedFreeRows\?\.disabled/);
     expect(page).toContain("onRestore={() => handleEnableModel(row.id)}");
+  });
+
+  it("the provider grid shows the paid ids too, with the badge marking the tiers", () => {
+    // He reads a short list as missing models: the panel must render the whole
+    // catalogue and let the FREE badge (or the Free in the name) do the sorting.
+    expect(page).toContain("catalogue: suggestedModels.filter((m) => m?.id),");
+    expect(page).not.toMatch(/catalogue: suggestedModels\.filter\(\(m\) => m\?\.id && m\.isFree/);
+    expect(page).toMatch(/isFree=\{row\.isFree === true\}/);
+    const registry = readFileSync(path.join(ROOT, "open-sse/providers/registry/opencode.js"), "utf8");
+    for (const id of ["muse-spark-1.2-contributor-free", "muse-spark-1.3-contributor-free", "union-alpha", "deepseek-v4.1-flash-free", "jev-1.13-free"]) {
+      expect(registry).toMatch(new RegExp(`id: "${id}".*isFree: true`));
+    }
   });
 
   it("the add-me and restore chip rows only exist for providers that gate their catalogue", () => {

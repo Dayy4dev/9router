@@ -1279,10 +1279,11 @@ export default function ProviderDetailPage() {
       ? buildUnifiedModelRows({
           builtinModels: allModels,
           customRows: customModelRows,
-          // Only the free tier: the rest of a free-tier catalogue answers 401
-          // without a key, so listing it here would advertise models that cannot
-          // be called. Same rule the free-only consumers use.
-          catalogue: suggestedModels.filter((m) => m?.id && m.isFree === true),
+          // The whole catalogue, paid ids included: the grid is the only place
+          // that shows what the provider publishes, and the FREE badge on each
+          // row is what tells the tiers apart. Hiding the paid half made the
+          // list look short and left operators swearing models were missing.
+          catalogue: suggestedModels.filter((m) => m?.id),
           disabledIds: disabledModelIds,
         })
       : null;
@@ -1360,7 +1361,7 @@ export default function ProviderDetailPage() {
             testStatus={modelTestResults[row.id]}
             onTest={() => handleTestModel(row.id)}
             isTesting={testingModelIds.has(row.id)}
-            isFree
+            isFree={row.isFree === true}
             onDisable={() => handleDisableModel(row.id)}
             caps={getCaps(`${providerId}/${row.id}`)}
             thinkingSuffix={resolveThinkingSuffix(row.id)}
@@ -1377,7 +1378,7 @@ export default function ProviderDetailPage() {
             testStatus={modelTestResults[row.id]}
             onTest={connections.length > 0 || isFreeNoAuth ? () => handleTestModel(row.id) : undefined}
             isTesting={testingModelIds.has(row.id)}
-            isFree={row.source === "catalogue"}
+            isFree={row.isFree === true}
             isDisabled
             onRestore={() => handleEnableModel(row.id)}
             caps={getCaps(`${providerId}/${row.id}`)}

@@ -45,8 +45,8 @@ describe("free-provider catalogue flow", () => {
     expect(page).toMatch(/onClick=\{async \(\) => \{\s*\n\s*await handleAddCustomModel\(m\.id/);
   });
 
-  it("ModelRow keeps the FREE badge but has no dead disabled/restore props", () => {
-    expect(modelRow).toMatch(/isFree && \(/);
+  it("ModelRow renders ModelTierBadge but has no dead disabled/restore props", () => {
+    expect(modelRow).toContain("ModelTierBadge");
     expect(modelRow).not.toContain("isDisabled");
     expect(modelRow).not.toContain("onRestore");
   });

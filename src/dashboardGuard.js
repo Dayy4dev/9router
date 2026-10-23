@@ -260,6 +260,16 @@ export async function proxy(request) {
   }
 
   if (isPublicLlmApi(pathname)) {
+    // Model listing endpoints require API key or authenticated dashboard session
+    if (pathname === "/v1/models" || pathname === "/api/v1/models" || pathname.startsWith("/v1/models/") || pathname.startsWith("/api/v1/models/")) {
+      const apiKey = extractApiKey(request);
+      if (!apiKey && !(await hasValidToken(request)) && !(await hasValidCliToken(request))) {
+        return NextResponse.json(
+          { error: { message: "API key required to view model list", type: "invalid_request_error", code: "invalid_api_key" } },
+          { status: 401 }
+        );
+      }
+    }
     if (await canAccessPublicLlmApi(request)) return NextResponse.next();
     return NextResponse.json({ error: "API key required for remote API access" }, { status: 401 });
   }

@@ -56,6 +56,52 @@ export function addBufferToUsage(usage) {
   return result;
 }
 
+/**
+ * Apply token multipliers for custom/virtual models (e.g. 5x completion output tokens)
+ * @param {object} usage - Usage object containing prompt_tokens / completion_tokens
+ * @param {{ inputMultiplier?: number, outputMultiplier?: number }} multipliers
+ * @returns {object}
+ */
+export function applyUsageMultipliers(usage, multipliers) {
+  if (!usage || typeof usage !== "object" || !multipliers) return usage;
+  const inMult = Number(multipliers.inputMultiplier);
+  const outMult = Number(multipliers.outputMultiplier);
+  if ((!inMult || inMult <= 0) && (!outMult || outMult <= 0)) return usage;
+
+  const result = { ...usage };
+  const inFactor = inMult > 0 ? inMult : 1;
+  const outFactor = outMult > 0 ? outMult : 1;
+
+  if (result.prompt_tokens !== undefined) {
+    result.prompt_tokens = Math.round(result.prompt_tokens * inFactor);
+  }
+  if (result.input_tokens !== undefined) {
+    result.input_tokens = Math.round(result.input_tokens * inFactor);
+  }
+  if (result.promptTokenCount !== undefined) {
+    result.promptTokenCount = Math.round(result.promptTokenCount * inFactor);
+  }
+
+  if (result.completion_tokens !== undefined) {
+    result.completion_tokens = Math.round(result.completion_tokens * outFactor);
+  }
+  if (result.output_tokens !== undefined) {
+    result.output_tokens = Math.round(result.output_tokens * outFactor);
+  }
+  if (result.candidatesTokenCount !== undefined) {
+    result.candidatesTokenCount = Math.round(result.candidatesTokenCount * outFactor);
+  }
+
+  const prompt = result.prompt_tokens ?? result.input_tokens ?? result.promptTokenCount ?? 0;
+  const comp = result.completion_tokens ?? result.output_tokens ?? result.candidatesTokenCount ?? 0;
+  if (result.total_tokens !== undefined || result.totalTokenCount !== undefined) {
+    result.total_tokens = prompt + comp;
+    if (result.totalTokenCount !== undefined) result.totalTokenCount = prompt + comp;
+  }
+
+  return result;
+}
+
 export function filterUsageForFormat(usage, targetFormat) {
   if (!usage || typeof usage !== "object") return usage;
 

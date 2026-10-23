@@ -596,12 +596,22 @@ export default function ProviderDetailPage() {
 
   // `transport` pins a realtime STT dispatch marker (shared whitelist
   // STT_TRANSPORT_META); the API only honours it on type "stt" records.
-  const handleAddCustomModel = async (modelId, type = "llm", providerAliasOverride = providerStorageAlias, caps, transport, ownedBy = "") => {
+  const handleAddCustomModel = async (modelId, type = "llm", providerAliasOverride = providerStorageAlias, caps, transport, ownedBy = "", multipliers = {}) => {
     try {
       const res = await fetch("/api/models/custom", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ providerAlias: providerAliasOverride, id: modelId, type, ...(caps ? { caps } : {}), ...(transport ? { transport } : {}), ...(ownedBy ? { ownedBy } : {}) }),
+        body: JSON.stringify({
+          providerAlias: providerAliasOverride,
+          id: modelId,
+          type,
+          ...(caps ? { caps } : {}),
+          ...(transport ? { transport } : {}),
+          ...(ownedBy ? { ownedBy } : {}),
+          ...(multipliers.inputMultiplier ? { inputMultiplier: multipliers.inputMultiplier } : {}),
+          ...(multipliers.outputMultiplier ? { outputMultiplier: multipliers.outputMultiplier } : {}),
+          ...(multipliers.antiProbe !== undefined ? { antiProbe: multipliers.antiProbe } : {}),
+        }),
       });
       if (res.ok) {
         await fetchCustomModels();
@@ -2054,10 +2064,10 @@ export default function ProviderDetailPage() {
           isOpen={showAddCustomModel}
           providerAlias={providerStorageAlias}
           providerDisplayAlias={providerDisplayAlias}
-          onSave={async (modelId, caps, transport, ownedBy) => {
+          onSave={async (modelId, caps, transport, ownedBy, multipliers) => {
             // caps.stt is a UI-only flag; the API accepts transports only on
             // type "stt" records, so the save derives the type from it.
-            await handleAddCustomModel(modelId, caps?.stt ? "stt" : "llm", providerStorageAlias, caps, transport, ownedBy);
+            await handleAddCustomModel(modelId, caps?.stt ? "stt" : "llm", providerStorageAlias, caps, transport, ownedBy, multipliers);
             setShowAddCustomModel(false);
           }}
           onClose={() => setShowAddCustomModel(false)}

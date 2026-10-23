@@ -5,6 +5,7 @@ import PropTypes from "prop-types";
 import Modal from "./Modal";
 import ProviderIcon from "./ProviderIcon";
 import CapacityBadges from "./CapacityBadges";
+import ModelTierBadge from "./ModelTierBadge";
 import { useModelCaps } from "@/shared/hooks/useModelCaps";
 import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
 import { OAUTH_PROVIDERS, APIKEY_PROVIDERS, FREE_PROVIDERS, FREE_TIER_PROVIDERS, AI_PROVIDERS, isOpenAICompatibleProvider, isAnthropicCompatibleProvider, getProviderAlias } from "@/shared/constants/providers";
@@ -1041,6 +1042,7 @@ export default function ModelSelectModal({
                     )}
                     {studio.callName}
                     <span className="text-[9px] opacity-60 font-normal">custom</span>
+                    <ModelTierBadge model={studio.callName} />
                     <ContextTag caps={getCaps(studio.callName)} />
                     <CapacityBadges caps={getCaps(studio.callName)} />
                   </button>
@@ -1140,12 +1142,14 @@ export default function ModelSelectModal({
                         <>
                           {model.name}
                           <span className="text-[9px] opacity-60 font-normal">custom</span>
+                          <ModelTierBadge model={model} providerId={providerId} isFree={model.isFree} />
                           <ContextTag caps={getCaps(model.value)} />
                           <CapacityBadges caps={getCaps(model.value)} />
                         </>
                       ) : (
                         <>
                           {model.name}
+                          <ModelTierBadge model={model} providerId={providerId} isFree={model.isFree} />
                           <ContextTag caps={getCaps(model.value)} />
                           <CapacityBadges caps={getCaps(model.value)} />
                         </>

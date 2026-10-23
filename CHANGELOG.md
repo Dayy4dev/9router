@@ -1,3 +1,13 @@
+# v0.5.276 (2026-10-23) · 2 commits
+
+## What Was Added
+
+- **Tier badges (FREE / PAID / UNKNOWN) on all models across all providers.** Added `ModelTierBadge` and `resolveModelTier` to classify and display visual badges for every model (Free with green tag, Paid with amber tag, and Unknown for unclassified/custom models) across `ModelRow`, `CompatibleModelsSection`, `PassthroughModelsSection`, and `ModelSelectModal`.
+- **Token usage multipliers and anti-probe protection for custom models.** Added optional `inputMultiplier` and `outputMultiplier` fields to custom models and model studio. Output tokens and prompt tokens are multiplied accordingly in returned responses and usage tracking. Anti-probe protection conceals real backend model IDs, strips provider headers, and reinforces anti-jailbreak directives.
+- **Enforced API key requirement on `/v1/models` and model listing endpoints.** Anonymous curling of model lists is now blocked with HTTP 401 (`invalid_api_key`) unless a valid API key or authenticated dashboard session is supplied.
+
+---
+
 # v0.5.275 (2026-10-23) · 2 commits
 
 ## What Was Changed

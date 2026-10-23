@@ -75,7 +75,7 @@ export function stripContinuityFields(body) {
   return body;
 }
 
-export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, contextPruningEnabled, maxMessagesLimit, semanticCacheEnabled, semanticCacheTtlHours, semanticCacheMaxEntries, contextPruningLevel, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, requestedModel, toolCallFallbackEnabled = true, providerOverrides }) {
+export async function handleChatCore({ body, modelInfo, credentials, log, onCredentialsRefreshed, onRequestSuccess, onDisconnect, clientRawRequest, connectionId, userAgent, apiKey, ccFilterNaming, rtkEnabled, contextPruningEnabled, maxMessagesLimit, semanticCacheEnabled, semanticCacheTtlHours, semanticCacheMaxEntries, contextPruningLevel, headroomEnabled, headroomUrl, headroomCompressUserMessages, headroomTimeoutMs, cavemanEnabled, cavemanLevel, ponytailEnabled, ponytailLevel, pxpipeEnabled, pxpipeMinChars, pxpipeTimeoutMs, pxpipeTransform, onPxpipeEvent, sourceFormatOverride, providerThinking, requestedModel, toolCallFallbackEnabled = true, providerOverrides, modelMultipliers = null, isAntiProbe = false }) {
   const { provider, model } = modelInfo;
   const requestStartTime = Date.now();
   // Stable per-session color so all lines of one CLI conversation share a tag
@@ -647,7 +647,7 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     }
   }
 
-  const sharedCtx = { provider, model, body, stream, translatedBody, finalBody, requestStartTime, connectionId, apiKey, requestedModel, clientRawRequest, onRequestSuccess, pxpipe: pxpipeSummary, reqTag, log, pluginResult };
+  const sharedCtx = { provider, model, body, stream, translatedBody, finalBody, requestStartTime, connectionId, apiKey, requestedModel, clientRawRequest, onRequestSuccess, pxpipe: pxpipeSummary, reqTag, log, pluginResult, modelMultipliers, isAntiProbe };
   const appendLog = (extra) => appendRequestLog({ model: trackedModel, provider, connectionId, ...extra }).catch(() => { })
   const trackDone = () => trackPendingRequest(trackedModel, provider, connectionId, false);
 

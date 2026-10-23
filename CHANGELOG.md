@@ -1,3 +1,11 @@
+# v0.5.273 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Renamed legacy OpenCode Free provider to "OpenCode Free V1".** Updated display name to "OpenCode Free V1" with badge "OC1" to cleanly differentiate between the legacy V1 provider and the new CLI 1.19.4-based "OpenCode Free V2" provider.
+
+---
+
 # v0.5.272 (2026-10-23) · 2 commits
 
 ## What Was Added

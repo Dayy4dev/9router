@@ -5,10 +5,10 @@ export default {
   alias: "oc",
   uiAlias: "oc",
   display: {
-    name: "OpenCode Free",
+    name: "OpenCode Free V1",
     icon: "terminal",
     color: "#E87040",
-    textIcon: "OC",
+    textIcon: "OC1",
   },
   category: "free",
   noAuth: true,

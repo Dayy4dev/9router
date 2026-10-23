@@ -1,3 +1,13 @@
+# v0.5.260 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **Jev ids no longer loop the fallback with an unwinnable 400.** `jev-1.13` / `jev-1.13-free` are System One decision models: upstream answers `ModelProtocolUnsupported` on the chat completions lane, so every chat request to them burned the whole proxy/fallback loop for a response that could never come (1.073 of the recent 400s). They are removed from the chat registry, the suggested-catalogue filter and the model picker — 12 free models stay visible and routable in both screens instead of 13 with one dead entry. Covered by `tests/unit/provider-model-catalogue.test.js` (9 cases).
+
+---
+
+---
+
 # v0.5.259 (2026-10-23) · 2 commits
 
 ## What Was Fixed

@@ -1,91 +1,35 @@
-const KNOWN_FREE_PROVIDERS = new Set([
-  "oc",
-  "oc1",
-  "oc2",
-  "opencode",
-  "opencode-v2",
-  "mimocode",
-  "ollama-local",
-  "selfhosted-embedding",
-  "selfhosted-stt",
-  "selfhosted-tts",
-]);
-
-const KNOWN_PAID_PROVIDERS = new Set([
-  "openai",
-  "anthropic",
-  "vertex",
-  "vertex-partner",
-  "codex",
-  "cursor",
-  "bedrock",
-  "bedrock-xai",
-  "azure",
-  "openrouter",
-  "together",
-  "sambanova",
-  "deepseek",
-  "groq",
-  "fireworks",
-  "mistral",
-  "cohere",
-  "ai21",
-  "replicate",
-  "perplexity",
-  "moonshot",
-]);
-
 /**
- * Resolves whether a model is "free", "paid", or "unknown".
- * Pure client-safe utility (no backend imports).
+ * Checks if a model is an OpenCode free model or an explicit free tier model.
+ * Only returns true for genuine free models (e.g. beam-free, glm-5.3-flash-free, big-pickle, union-alpha).
+ * Paid models (e.g. claude, gpt, deepseek-pro) return false.
  * @param {string|object} model - Model object or string ID
  * @param {string} [providerId] - Provider ID or alias
  * @param {boolean} [explicitIsFree] - Explicit isFree flag
- * @returns {"free" | "paid" | "unknown"}
+ * @returns {boolean}
  */
-export function resolveModelTier(model, providerId = "", explicitIsFree = undefined) {
-  if (explicitIsFree === true) return "free";
+export function isOpencodeFreeModel(model, providerId = "", explicitIsFree = undefined) {
+  if (explicitIsFree === true) return true;
+  if (explicitIsFree === false) return false;
 
   const rawId = typeof model === "string" ? model : (model?.id || model?.value || model?.name || "");
   const lower = String(rawId).toLowerCase();
 
-  // Any model with free indicator is always free
+  if (typeof model === "object" && model !== null && model.isFree === true) {
+    return true;
+  }
+
   if (
-    /(^|[-_/:])(free|contributor|community|preview-?free)([-_]|$)/i.test(lower) ||
+    /(^|[-_/:])(free|contributor|preview-?free)([-_]|$)/i.test(lower) ||
     lower.includes("big-pickle") ||
     lower.includes("union-alpha")
   ) {
-    return "free";
+    return true;
   }
 
-  const pid = (providerId || (lower.includes("/") ? lower.split("/")[0] : "")).toLowerCase();
-  if (KNOWN_FREE_PROVIDERS.has(pid)) {
-    return "free";
-  }
+  return false;
+}
 
-  if (typeof model === "object" && model !== null) {
-    if (model.isFree === true || model.pricing?.prompt === "0" || model.pricing?.isFree === true) {
-      return "free";
-    }
-  }
-
-  if (explicitIsFree === false) return "paid";
-
-  if (
-    /(gpt-[456]|claude-(?:sonnet|opus|haiku|fable)|gemini-(?:1|2|3|4|pro|flash)|o1|o3|o4|grok-[1234]|deepseek-(?:v3|r1|v4|pro)|mistral-(?:large|medium)|command-r)/i.test(lower)
-  ) {
-    return "paid";
-  }
-
-  if (KNOWN_PAID_PROVIDERS.has(pid)) {
-    return "paid";
-  }
-
-  if (typeof model === "object" && model !== null && model.pricing) {
-    if (Number(model.pricing.input) > 0 || Number(model.pricing.prompt) > 0) {
-      return "paid";
-    }
-  }
-
-  return "unknown";
+// Backward-compatible alias: only returns "free" or "" (no PAID, no UNKNOWN)
+export function resolveModelTier(model, providerId = "", explicitIsFree = undefined) {
+  return isOpencodeFreeModel(model, providerId, explicitIsFree) ? "free" : "";
 }

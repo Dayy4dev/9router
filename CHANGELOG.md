@@ -1,3 +1,11 @@
+# v0.5.278 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Removed PAID and UNKNOWN badges; reserved FREE tag exclusively for free models.** Model badge display is now streamlined: only genuine free models (OpenCode free models such as `beam-free`, `glm-5.3-flash-free`, `big-pickle`, `union-alpha`, etc.) display the green `FREE` tag. Non-free models (e.g. Claude, GPT, or unclassified models) show no tags, keeping provider listings clean and uncluttered.
+
+---
+
 # v0.5.277 (2026-10-23) · 2 commits
 
 ## What Was Fixed

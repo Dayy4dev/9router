@@ -1,27 +1,24 @@
 import { describe, expect, it } from "vitest";
-import { resolveModelTier } from "../../src/shared/utils/modelTier.js";
+import { isOpencodeFreeModel, resolveModelTier } from "../../src/shared/utils/modelTier.js";
 import { applyUsageMultipliers } from "../../open-sse/utils/usageTracking.js";
 
 describe("Model Tier Resolution", () => {
-  it("resolves free models correctly", () => {
+  it("resolves free models correctly with FREE tag", () => {
+    expect(isOpencodeFreeModel("oc1/beam-free")).toBe(true);
+    expect(isOpencodeFreeModel("oc2/deepseek-v4.1-flash-free")).toBe(true);
+    expect(isOpencodeFreeModel("big-pickle")).toBe(true);
+    expect(isOpencodeFreeModel("union-alpha")).toBe(true);
+    expect(isOpencodeFreeModel("flint-40b-free")).toBe(true);
+    expect(isOpencodeFreeModel({ id: "custom-free", isFree: true })).toBe(true);
     expect(resolveModelTier("oc1/beam-free")).toBe("free");
-    expect(resolveModelTier("oc2/deepseek-v4.1-flash-free")).toBe("free");
-    expect(resolveModelTier("big-pickle")).toBe("free");
-    expect(resolveModelTier("union-alpha")).toBe("free");
-    expect(resolveModelTier("flint-40b-free")).toBe("free");
-    expect(resolveModelTier({ id: "custom-free", isFree: true })).toBe("free");
   });
 
-  it("resolves paid commercial models correctly", () => {
-    expect(resolveModelTier("claude-opus-5-5", "anthropic")).toBe("paid");
-    expect(resolveModelTier("gpt-4o", "openai")).toBe("paid");
-    expect(resolveModelTier("gemini-2.5-pro", "vertex")).toBe("paid");
-    expect(resolveModelTier("deepseek-v3", "deepseek")).toBe("paid");
-  });
-
-  it("resolves unknown models correctly", () => {
-    expect(resolveModelTier("custom-random-slug-99", "custom-node")).toBe("unknown");
-    expect(resolveModelTier({ id: "my-selfhosted-model" })).toBe("unknown");
+  it("does not tag non-free models (no PAID, no UNKNOWN)", () => {
+    expect(isOpencodeFreeModel("claude-opus-5-5", "anthropic")).toBe(false);
+    expect(isOpencodeFreeModel("claude-fable-5-1", "oc2")).toBe(false);
+    expect(isOpencodeFreeModel("gpt-4o", "openai")).toBe(false);
+    expect(isOpencodeFreeModel("custom-random-slug-99", "custom-node")).toBe(false);
+    expect(resolveModelTier("claude-opus-5-5")).toBe("");
   });
 });
 

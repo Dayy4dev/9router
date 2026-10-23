@@ -1,3 +1,13 @@
+# v0.5.259 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **FreeUsageLimitError now rotates the OpenCode session instead of hammering every proxy.** Upstream tracks the free quota per session id as well as per IP (upstream issue #5107): once a session window is spent, retrying the same burned session through dozens of proxies only collects the same 429 until the request times out. A 429 carrying `FreeUsageLimitError` on the opencode provider now burns the canonical session (`rotateOpencodeSession`) before the fallback moves to the next account, so the retry re-enters the proxy loop with a fresh quota window. The stable session is untouched on the happy path — a fresh session per request would burn quota faster. Covered by `tests/unit/opencode-session-rotation.test.js` (3 cases: fresh session minted, rotation scoped per identity, chat handler wiring).
+
+---
+
+---
+
 # v0.5.258 (2026-10-21) · 3 commits
 
 ## What Was Fixed

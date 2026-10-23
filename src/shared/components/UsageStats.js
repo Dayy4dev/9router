@@ -56,9 +56,9 @@ function TopologyUnavailableNote() {
 
 function RecentRequests({ requests = [] }) {
   return (
-    <Card className="flex min-w-0 flex-col overflow-hidden" padding="sm" style={{ height: 480 }}>
+    <Card className="flex min-w-0 flex-col overflow-hidden" padding="none" style={{ height: 480 }}>
       {/* Header */}
-      <div className="px-3 py-2.5 border-b border-border shrink-0 flex items-center justify-between">
+      <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
         <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Recent Requests</span>
         <span className="text-[11px] text-text-muted font-mono">{requests.length} logged</span>
       </div>
@@ -69,39 +69,41 @@ function RecentRequests({ requests = [] }) {
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <table className="w-full min-w-[320px] border-collapse text-xs">
+          <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 bg-surface border-b border-border z-10">
               <tr>
-                <th className="py-2 pl-3 pr-1 text-left font-semibold text-text-muted w-4"></th>
-                <th className="py-2 px-2 text-left font-semibold text-text-muted">Model</th>
-                <th className="py-2 px-2 text-right font-semibold text-text-muted whitespace-nowrap">In / Out</th>
-                <th className="py-2 pl-2 pr-3 text-right font-semibold text-text-muted">When</th>
+                <th className="py-2.5 pl-3 pr-1 text-center font-semibold text-text-muted w-6" title="Status">
+                  <span className="material-symbols-outlined text-[12px] leading-none select-none text-text-muted/60">fiber_manual_record</span>
+                </th>
+                <th className="py-2.5 px-2 text-left font-semibold text-text-muted">Model</th>
+                <th className="py-2.5 px-2 text-right font-semibold text-text-muted whitespace-nowrap">Tokens (In / Out)</th>
+                <th className="py-2.5 pl-2 pr-3 text-right font-semibold text-text-muted w-20">Time</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/40">
               {requests.map((r, i) => {
                 const ok = !r.status || r.status === "ok" || r.status === "success";
+                const cleanModel = (r.model || "unknown").replace(/^\/+/, "");
                 return (
                   <tr key={i} className="hover:bg-sidebar/40 transition-colors">
-                    <td className="py-2 pl-3 pr-1 align-middle">
+                    <td className="py-2.5 pl-3 pr-1 text-center align-middle">
                       <span className={`inline-block size-2 rounded-full ${ok ? "bg-emerald-500" : "bg-rose-500"}`} />
                     </td>
-                    <td className="py-2 px-2 font-mono text-xs text-text-main truncate max-w-[180px] sm:max-w-[260px] align-middle" title={r.model}>
-                      {r.model}
+                    <td className="py-2.5 px-2 font-mono text-xs text-text-main align-middle min-w-0" title={cleanModel}>
+                      <div className="truncate max-w-[130px] sm:max-w-[220px]">{cleanModel}</div>
                     </td>
-                    <td className="py-2 px-2 text-right whitespace-nowrap align-middle">
-                      <span className="font-mono text-primary font-medium">{fmt(r.promptTokens)}↑</span>
-                      {" "}
-                      <span className="font-mono text-emerald-500 font-medium">{fmt(r.completionTokens)}↓</span>
-                      {r.cachedTokens > 0 && (
-                        <div className="mt-0.5">
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 py-0.2 rounded" title={`${fmt(r.cachedTokens)} prompt tokens served from cache`}>
+                    <td className="py-2.5 px-2 text-right whitespace-nowrap align-middle">
+                      <div className="inline-flex items-center gap-1 font-mono text-xs">
+                        <span className="text-primary font-medium">{fmt(r.promptTokens)}↑</span>
+                        <span className="text-emerald-500 font-medium">{fmt(r.completionTokens)}↓</span>
+                        {r.cachedTokens > 0 && (
+                          <span className="text-[10px] text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 py-0.5 rounded leading-none" title={`${fmt(r.cachedTokens)} cached tokens`}>
                             ↻{fmt(r.cachedTokens)}
                           </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
-                    <td className="py-2 pl-2 pr-3 text-right text-text-muted whitespace-nowrap align-middle text-[11px]">
+                    <td className="py-2.5 pl-2 pr-3 text-right text-text-muted whitespace-nowrap align-middle text-[11px] font-mono">
                       <TimeAgo timestamp={r.timestamp} />
                     </td>
                   </tr>

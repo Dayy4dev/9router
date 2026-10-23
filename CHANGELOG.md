@@ -1,3 +1,11 @@
+# v0.5.275 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Start OpenCode V1 and V2 models in Suggested Free Models and remove separate Disabled Models list.** For OpenCode V1 (`oc1`) and V2 (`oc2`), models no longer automatically populate the active top list on initial view; instead, all available free models appear as selectable chips under "Suggested free models". Clicking a chip adds it to the active list, and removing/disabling an active model returns it directly back to "Suggested free models" without placing it into a separate "Disabled models" section.
+
+---
+
 # v0.5.274 (2026-10-23) · 2 commits
 
 ## What Was Changed

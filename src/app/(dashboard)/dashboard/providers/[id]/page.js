@@ -45,6 +45,7 @@ export default function ProviderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const providerId = params.id;
+  const isOpenCode = providerId === "opencode" || providerId === "opencode-v2";
   const { getCaps } = useModelCaps();
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1258,10 +1259,14 @@ export default function ProviderDetailPage() {
     // Exclude non-llm models (embedding, tts, etc.) - they have dedicated pages under media-providers.
     // System One stays: its lane is routable inside normal chat routing, the model
     // picker lists it, and hiding it here made the two screens disagree.
-    const allModels = [
-      ...models,
-      ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)),
-    ].filter((m) => { const k = getModelKind(m); return !k || k === "llm" || k === "systemone"; }).filter((m) => !studioTargetIndex.isStudioTarget([providerId, providerStorageAlias, providerDisplayAlias], m.id));
+    // For OpenCode V1 and V2, models start in "Suggested free models" and only rise to
+    // the active list when explicitly added. Disabled/removed models return to suggestions.
+    const allModels = isOpenCode
+      ? []
+      : [
+          ...models,
+          ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)),
+        ].filter((m) => { const k = getModelKind(m); return !k || k === "llm" || k === "systemone"; }).filter((m) => !studioTargetIndex.isStudioTarget([providerId, providerStorageAlias, providerDisplayAlias], m.id));
     const disabledSet = new Set(disabledModelIds);
     const displayModels = allModels.filter((m) => !disabledSet.has(m.id));
     const disabledDisplayModels = allModels.filter((m) => disabledSet.has(m.id));
@@ -1373,7 +1378,7 @@ export default function ProviderDetailPage() {
             ...Object.values(modelAliases),
             ...customModelRows.map((model) => model.fullModel),
           ]);
-          const hardcodedIds = new Set(models.map((m) => m.id));
+          const hardcodedIds = isOpenCode ? new Set() : new Set(models.map((m) => m.id));
           const notAdded = suggestedModels.filter(
             (m) => !addedFullModels.has(`${providerStorageAlias}/${m.id}`) && !hardcodedIds.has(m.id)
           );
@@ -1398,6 +1403,9 @@ export default function ProviderDetailPage() {
                     key={m.id}
                     onClick={async () => {
                       await handleAddCustomModel(m.id, "llm", providerStorageAlias);
+                      if (isOpenCode && disabledSet.has(m.id)) {
+                        await handleEnableModel(m.id);
+                      }
                     }}
                     className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-green-500/30 dark:border-green-500/25 text-xs text-text-muted hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
                     title={m.contextLength != null ? `${m.name} · ${(m.contextLength / 1000).toFixed(0)}k ctx` : m.name}
@@ -1417,6 +1425,9 @@ export default function ProviderDetailPage() {
                         key={m.id}
                         onClick={async () => {
                           await handleAddCustomModel(m.id, "llm", providerStorageAlias);
+                          if (isOpenCode && disabledSet.has(m.id)) {
+                            await handleEnableModel(m.id);
+                          }
                         }}
                         className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-xs text-text-muted hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
                         title={m.contextLength != null ? `${m.name} · ${(m.contextLength / 1000).toFixed(0)}k ctx` : m.name}
@@ -1432,8 +1443,8 @@ export default function ProviderDetailPage() {
           );
         })()}
 
-        {/* Disabled models - restorable */}
-        {disabledDisplayModels.length > 0 && (
+        {/* Disabled models - restorable (not shown for OpenCode V1 and V2 since models return to suggestions) */}
+        {disabledDisplayModels.length > 0 && !isOpenCode && (
           <div className="w-full mt-2">
             <p className="text-xs text-text-muted mb-2">Disabled models ({disabledDisplayModels.length}):</p>
             <div className="flex flex-wrap gap-2">
@@ -1893,7 +1904,7 @@ export default function ProviderDetailPage() {
               </select>
             )}
           </div>
-          {!isCompatible && (() => {
+          {!isCompatible && !isOpenCode && (() => {
             const allIds = [
               ...models,
               ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)),

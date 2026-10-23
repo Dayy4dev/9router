@@ -1,3 +1,11 @@
+# v0.5.269 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **Eliminated telltale prompt injection that triggered upstream OpenCode 429 rejection on model pings.** Upstream OpenCode introduced content filtering that caught the historical placeholder prompt note (`"Do not call the read or shell tools..."`), immediately rejecting requests with `FreeUsageLimitError` and causing model ping/test buttons in the dashboard to spin endlessly until abort timeout. Silenced the note so prompts remain clean. Verified live with model probe tests (`oc/mimo-v2.6-flash-free`, `oc/deepseek-v4.1-flash-free`, `oc/glm-5.3-flash-free`) all completing with `{"ok":true,"status":200}`.
+
+---
+
 # v0.5.268 (2026-10-23) · 2 commits
 
 ## What Was Fixed

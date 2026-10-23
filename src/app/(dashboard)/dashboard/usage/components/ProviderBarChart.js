@@ -109,7 +109,7 @@ export default function ProviderBarChart({ byProvider }) {
               }}
               formatter={(value) => [fmt(value), label]}
             />
-            <Bar dataKey={viewMode} radius={[4, 4, 0, 0]}>
+            <Bar dataKey={viewMode} radius={[4, 4, 0, 0]} maxBarSize={44}>
               {chartData.map((_, i) => (
                 <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.85} />
               ))}

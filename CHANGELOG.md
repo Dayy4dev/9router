@@ -1,3 +1,16 @@
+# v0.5.272 (2026-10-23) · 2 commits
+
+## What Was Added
+
+- **New "OpenCode Free V2" provider (`opencode-v2` / `oc2`).** Added a dedicated OpenCode V2 provider ported directly from the reverse-engineered OpenCode CLI 1.19.4 architecture while keeping the existing OpenCode Free provider intact. V2 features:
+  - Official 1.19.4 wire endpoints (`/inference/openai/v1/chat/completions`, `/inference/anthropic/v1/messages`, `/inference/v1/responses`).
+  - Bitwise timestamp identifiers matching official binary disassembler (`msg_<timestamp_ascending_base62>` and `ses_<timestamp_descending_base62>`).
+  - Standardized tool cloaking (`bash` and `read`) without telltale prompt injection to prevent upstream 429 content-filter triggers.
+  - Full official 1.19.4 free model catalogue (`beam-free`, `big-pickle`, `deepseek-v4.1-flash-free`, `flint-40b-free`, `glm-5.3-flash-free`, `mimo-v2.6-flash-free`, `nemotron-3-ultra-free`, `nemotron-3.5-lightning-free`, `nemotron-3.5-super-vl-free`, `muse-spark` variants, and `union-alpha`).
+  - Native integration with proxy pools and automatic session rotation.
+
+---
+
 # v0.5.271 (2026-10-23) · 2 commits
 
 ## What Was Fixed

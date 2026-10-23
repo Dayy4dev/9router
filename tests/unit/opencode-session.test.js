@@ -278,7 +278,8 @@ describe("OpenCode Stable Session Reuse (429 follow-up)", () => {
     // tool_choice "none" is answered with 403 FreeTierError upstream.
     expect(chatNoTools.tool_choice).toBeUndefined();
     expect(chatNoTools.tools.map((t) => t.function?.name)).toEqual(["read", "shell"]);
-    expect(chatNoTools.messages[0].role).toBe("system");
+    // Kept clean without telltale placeholder notes
+    expect(chatNoTools.messages[0].role).toBe("user");
 
     const chatWithTools = executor.transformRequest("nemotron-3-ultra-free", {
       messages: [{ role: "user", content: "hi" }],
@@ -316,11 +317,30 @@ describe("OpenCode Stable Session Reuse (429 follow-up)", () => {
     expect(transformed.stream).toBe(true);
     expect(transformed.reasoning?.effort).toBe("xhigh");
     expect(transformed.tools.map((tool) => tool.name)).toEqual(["zcode_search", "read", "shell"]);
-    expect(transformed.instructions).toMatch(/Do not call the `read` or `shell` tools/);
+    expect(transformed.instructions).toBeUndefined();
   });
 
   it("declares forceStream on the opencode transport so chatCore serves SSE upstream", async () => {
     const { PROVIDERS } = await import("../../open-sse/config/providers.js");
     expect(PROVIDERS.opencode?.forceStream).toBe(true);
+  });
+
+  it("registers OpenCode Free V2 executor with official 1.19.4 wire protocol", async () => {
+    const v2 = getExecutor("opencode-v2");
+    expect(v2).toBeDefined();
+
+    const headers = v2.buildHeaders({}, true, "https://opencode.ai/inference/openai/v1/chat/completions");
+    expect(headers["User-Agent"]).toContain("opencode/1.19.4");
+    expect(headers["x-opencode-client"]).toBe("cli");
+    expect(headers["x-opencode-request"]).toMatch(/^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/);
+    expect(headers["x-opencode-session"]).toMatch(/^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$/);
+    expect(headers["x-session-affinity"]).toBeUndefined();
+    expect(headers["x-session-id"]).toBeUndefined();
+
+    const url = v2.buildUrl("deepseek-v4.1-flash-free");
+    expect(url).toBe("https://opencode.ai/inference/openai/v1/chat/completions");
+
+    const msgUrl = v2.buildUrl("union-alpha");
+    expect(msgUrl).toBe("https://opencode.ai/inference/anthropic/v1/messages");
   });
 });

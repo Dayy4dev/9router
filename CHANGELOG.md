@@ -1,3 +1,13 @@
+# v0.5.264 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **The executor now mirrors the real OpenCode 1.19.4 CLI fingerprint, and the fallback loop stops at the caller's deadline.** Reverse-engineering the current CLI via mitmproxy showed it sends `User-Agent: opencode/1.19.4 ai-sdk/provider-utils/4.0.23 runtime/bun/1.4.4` with `x-opencode-client: cli`, `x-opencode-project` and a per-message `x-opencode-request` — while 9router still sent the older `opencode/latest/2.0.26/cli` shape, which the free tier reads as a stale relay UA after the upstream update. The executor default, the downstream-UA passthrough check, the registry UAs and the test probe all use the current CLI shape now. Separately, the session-rotation branch never carried the fallback deadline, so an exhausted evening rotated ~1.500 proxies past the 120s probe budget and the dashboard showed "The operation was aborted due to timeout" with no usable error; the session branch now returns the last upstream error once the budget is spent. `tests/unit/opencode-session.test.js` pins the UA default/replacement/passthrough; 37 passed across 4 suites.
+
+---
+
+---
+
 # v0.5.263 (2026-10-23) · 2 commits
 
 ## What Was Fixed

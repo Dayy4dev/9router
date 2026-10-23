@@ -523,7 +523,20 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     if (log?.errorLine) {
       log.errorLine(reqTag, "✗", `ERROR 502 · ${provider}/${model} · ${Date.now() - requestStartTime}ms\n    ${errMsg}${error.stack ? `\n    ${error.stack}` : ""}`);
     }
-    return createErrorResult(HTTP_STATUS.BAD_GATEWAY, errMsg);
+    try {
+      const { recordErrorLog } = await import("@/lib/localDb");
+      recordErrorLog({
+        provider,
+        model,
+        endpoint: clientRawRequest?.endpoint || "chat",
+        statusCode: 502,
+        errorMessage: errMsg,
+        errorType: "executor_error",
+        stack: error.stack || "",
+      });
+    } catch { /* fail open */ }
+    const hideError = Boolean(settings?.hideError);
+    return createErrorResult(HTTP_STATUS.BAD_GATEWAY, errMsg, undefined, null, hideError);
   }
 
   // Handle 401/403 - try token refresh (skip for noAuth providers)
@@ -643,7 +656,19 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
         log.errorLine(reqTag, "✗", `ERROR ${statusCode} · ${provider}/${model} · ${Date.now() - requestStartTime}ms${urlStr}\n    ${errMsg}`);
       }
       reqLogger.logError(new Error(message), finalBody || translatedBody);
-      return createErrorResult(statusCode, errMsg, resetsAtMs, upstreamResponseHeaders(providerResponse.headers));
+      try {
+        const { recordErrorLog } = await import("@/lib/localDb");
+        recordErrorLog({
+          provider,
+          model,
+          endpoint: clientRawRequest?.endpoint || "chat",
+          statusCode,
+          errorMessage: errMsg,
+          errorType: "upstream_error",
+        });
+      } catch { /* fail open */ }
+      const hideError = Boolean(settings?.hideError);
+      return createErrorResult(statusCode, errMsg, resetsAtMs, upstreamResponseHeaders(providerResponse.headers), hideError);
     }
   }
 

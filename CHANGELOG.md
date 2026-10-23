@@ -1,3 +1,16 @@
+# v0.5.280 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Model Tier Consistency in Modal & Select:** Synchronized the green `FREE` badge across `ModelSelectModal`, ensuring models tagged as free in the provider view retain their exact badge and status in the model selection picker.
+- **Provider Models Isolation across All Providers:** In all provider detail pages, built-in catalog models now start un-hoisted in the "Suggested models" / "Suggested free models" lists and only rise to the active models section when explicitly clicked with `(+)`.
+- **Custom Model Studio Multipliers:** Added dedicated Input Multiplier and Output Multiplier fields to the Custom Model Studio form and displayed active multiplier tags on the custom model cards.
+- **Error Log System:** Added an **Error Log** page (`/dashboard/error-log`) under Console Log in the sidebar navigation with real-time logging, stack trace viewing, filtering, single/bulk copying, and deletion.
+- **Experiment Features (Hide Error):** Introduced the **Experiment Features** page (`/dashboard/experiments`) under 9Router Settings with an experimental "Hide Error" toggle that masks sensitive provider errors into `"There is an error but this error is hidden, try checking your error log."` while logging true errors to the Error Log.
+- **API Key Expiration Visibility:** Added expiration date countdown and status badges to API key rows in Endpoint & Keys as well as in the Key Quota card on the dashboard.
+
+---
+
 # v0.5.279 (2026-10-23) · 2 commits
 
 ## What Was Changed

@@ -46,6 +46,7 @@ run("each new permission opens exactly its own pages", () => {
     ["manageTools", "/dashboard/cli-tools"],
     ["manageTools", "/dashboard/token-saver"],
     ["manageAdvanced", "/dashboard/console-log"],
+    ["manageAdvanced", "/dashboard/error-log"],
     ["manageAdvanced", "/dashboard/translator"],
     ["manageAdvanced", "/dashboard/proxy-pools"],
     ["manageAdvanced", "/dashboard/pxpipe"],

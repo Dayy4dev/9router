@@ -135,6 +135,7 @@ const PAGE_PERMISSION_RULES = [
   { prefix: "/dashboard/cli-tools", permissions: ["manageTools"] },
   { prefix: "/dashboard/token-saver", permissions: ["manageTools"] },
   { prefix: "/dashboard/console-log", permissions: ["manageAdvanced"] },
+  { prefix: "/dashboard/error-log", permissions: ["manageAdvanced"] },
   // The security trail names who signed in and from where, so it stays with the
   // administrators; a key session never opens it.
   { prefix: "/dashboard/translator", permissions: ["manageAdvanced"] },
@@ -146,6 +147,7 @@ const PAGE_PERMISSION_RULES = [
   { prefix: "/dashboard/media-providers", permissions: ["manageMediaProviders"] },
   { prefix: "/dashboard/basic-chat", permissions: [] },
   { prefix: "/dashboard/profile", permissions: [] },
+  { prefix: "/dashboard/experiments", permissions: [] },
   // The dashboard index renders the endpoint page, so it follows the same permission.
   // Exact, so a page added later stays admin-only until it is named above.
   { prefix: "/dashboard", permissions: ["manageApiKeys"], exact: true },
@@ -194,6 +196,7 @@ export function firstAllowedPage(permissions) {
     { path: "/dashboard/cli-tools", permissions: ["manageTools"] },
     { path: "/dashboard/token-saver", permissions: ["manageTools"] },
     { path: "/dashboard/console-log", permissions: ["manageAdvanced"] },
+    { path: "/dashboard/error-log", permissions: ["manageAdvanced"] },
     { path: "/dashboard/translator", permissions: ["manageAdvanced"] },
     { path: "/dashboard/proxy-pools", permissions: ["manageAdvanced"] },
   ];

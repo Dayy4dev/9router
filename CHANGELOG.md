@@ -1,3 +1,11 @@
+# v0.5.271 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **Preserved original probe token budget for full model completion responses.** Reverted `max_tokens` back to 1024 in `/api/models/test` to preserve complete responses and chain-of-thought budgets across all models without altering probe defaults.
+
+---
+
 # v0.5.270 (2026-10-23) · 2 commits
 
 ## What Was Fixed

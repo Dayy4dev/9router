@@ -172,10 +172,11 @@ export async function pingModelByKind(model, kind, baseUrl = `http://127.0.0.1:$
     headers,
     body: JSON.stringify({
       model,
-      // 16 tokens: fast ping probe. Reasoning models (ClinePass, DeepSeek Flash, etc.)
-      // emit thinking tokens and soft-pass on finish_reason:"length" (issue #3010)
-      // without keeping the user waiting 20+ seconds for a simple health check.
-      max_tokens: 16,
+      // 1024 tokens: reasoning models (ClinePass/kimi-k3, deepseek-v4-pro, etc.) spend
+      // their budget on chain-of-thought before emitting an answer. A tiny probe like
+      // max_tokens:16 starves the answer and yields a false "no choices" failure.
+      // See issue #3010.
+      max_tokens: 1024,
       stream: false,
       messages: [{ role: "user", content: "hi" }],
     }),

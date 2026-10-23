@@ -1,3 +1,11 @@
+# v0.5.266 (2026-10-23) · 2 commits
+
+## What Was Added
+
+- **Automatic per-request session rotation for residential proxy pools.** Residential proxy gateways that support session-based IP rotation via username conventions (e.g. `res-*-sid-XXXXX`) are now automatically detected: each outbound connection request randomizes the session ID (`randSid`), ensuring a fresh residential egress IP with its own rate limit window. When upstream triggers 429 `FreeUsageLimitError`, the specific spent egress IP is rotated out without prematurely excluding the entire residential pool. Verified with live OpenCode free models (`beam-free`, `mimo-v2.6-flash-free`, `deepseek-v4.1-flash-free`, `glm-5.3-flash-free`) all successfully answering with 200 OK completions through rotating residential proxy.
+
+---
+
 # v0.5.265 (2026-10-23) · 2 commits
 
 ## What Was Changed

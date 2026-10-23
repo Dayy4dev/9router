@@ -51,8 +51,11 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
       const override = (settings.providerStrategies || {})[providerId] || {};
       const strategy = override.rotateStrategy || "none";
       let pickedId = override.proxyPoolId || null;
+      const allPools = (strategy !== "none" || pickedId) ? await getProxyPools({ isActive: true }) : [];
+      const selectedPool = pickedId ? allPools.find(p => p.id === pickedId) : null;
+      const hasDynamicSid = /-sid-\d+/i.test(selectedPool?.proxyUrl || "");
+
       if (strategy !== "none") {
-        const allPools = await getProxyPools({ isActive: true });
         const poolIds = allPools
           .filter(p => p.proxyUrl)
           .map(p => p.id)
@@ -62,12 +65,13 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
           return null;
         }
         pickedId = pickProxyPoolId(poolIds, strategy, providerId);
-      } else if (pickedId && (excludeSet.has(`proxy:${pickedId}`) || excludeSet.has(pickedId))) {
+      } else if (pickedId && !hasDynamicSid && (excludeSet.has(`proxy:${pickedId}`) || excludeSet.has(pickedId))) {
         log.warn("AUTH", `${provider} | configured proxy pool ${pickedId} excluded`);
         return null;
       }
       const resolvedProxy = await resolveConnectionProxyConfig({ proxyPoolId: pickedId || "" });
-      const connectionId = pickedId ? `proxy:${pickedId}` : "noauth";
+      const sidMatch = (resolvedProxy.connectionProxyUrl || "").match(/-sid-(\d+)/i);
+      const connectionId = pickedId ? (sidMatch ? `proxy:${pickedId}:${sidMatch[1]}` : `proxy:${pickedId}`) : "noauth";
       const connectionName = pickedId ? (resolvedProxy.proxyPool?.name || `Proxy (${pickedId.slice(0, 8)})`) : "Public";
       return {
         id: connectionId,

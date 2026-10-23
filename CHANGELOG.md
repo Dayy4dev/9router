@@ -1,3 +1,15 @@
+# v0.5.279 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Custom Plugin Overhaul:**
+  - **OCR Auto Image-to-Text (Plugin #1):** Implemented automated image text conversion scripting with sharp. Inspects image buffers, extracts metadata, dimensions, text chunks (PNG tEXt/zTXt/iTXt, SVG text, and EXIF/IPTC tags), and transcribes visual content into structured text. Converts image blocks into text blocks for text-only models so non-vision models can process images without errors.
+  - **Adaptive Thinking & Superpowers CoT (Plugin #2):** Upgraded reasoning to an Adaptive Thinking system combining Superpowers multi-perspective exploration, hypothesis stress-testing, self-verification, and structured Chain-of-Thought with adaptive depth and native reasoning parameters (`reasoning_effort: high`, Claude thinking budget).
+  - **Removed Speed Mode (Plugin #3) and Context Squeezer (Plugin #5):** Streamlined the plugin lineup down to 5 focused plugins (`imageVision`, `thinkDeeper`, `jsonGuard`, `openaiToolBridge`, `antiSlop`).
+  - **Refreshed All Plugin Names and Descriptions:** Standardized titles and descriptive explanations across UI, constants, and API routes.
+
+---
+
 # v0.5.278 (2026-10-23) · 2 commits
 
 ## What Was Changed

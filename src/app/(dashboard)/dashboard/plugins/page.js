@@ -18,46 +18,34 @@ import { ANTISLOP_LEVEL_CHARS } from "open-sse/rtk/antislopPrompt.js";
 const PLUGINS = [
   {
     key: "imageVision",
-    title: "Image Vision",
+    title: "OCR Auto Image-to-Text",
     description:
-      "Enable image understanding for models that don't natively support vision. Images are converted to text descriptions, allowing any model to process visual content in CLI tools and agents.",
+      "Mengekstrak dan mengonversi teks di dalam gambar secara otomatis menggunakan skrip ekstraksi cerdas. Gambar yang dilampirkan langsung diubah menjadi transkrip teks terstruktur sehingga model teks murni (non-vision) dapat membaca dan memahami isi gambar tanpa error.",
   },
   {
     key: "thinkDeeper",
-    title: "Think Deeper",
+    title: "Adaptive Thinking & Superpowers CoT",
     description:
-      "Enhance reasoning with multi-step chain-of-thought analysis. Forces the model to break problems into steps before answering, producing more thorough and accurate responses.",
-  },
-  {
-    key: "speedMode",
-    title: "Speed Mode",
-    description:
-      "Skip thinking for faster responses. Disables reasoning mode on the selected models and instructs them to answer directly, ideal for simple tasks where low latency matters more than deep analysis.",
+      "Mengintegrasikan kemampuan penalaran mendalam berbasis Superpowers dan Prompt Chain-of-Thought (CoT). Model dipandu menganalisis masalah bertahap (dekonstruksi, perumusan hipotesis, verifikasi mandiri, dan refleksi) dengan kedalaman adaptif sesuai tingkat kerumitan tugas.",
   },
   {
     key: "jsonGuard",
-    title: "JSON Guard",
+    title: "JSON Guard & Schema Protector",
     description:
-      "Keep machine-readable output parseable. Strips prose and markdown fences around JSON, fixes Python-style literals and trailing commas, closes payloads the output limit cut off, and drops tool-call arguments the schema never declared.",
-  },
-  {
-    key: "contextSqueezer",
-    title: "Context Squeezer",
-    description:
-      "Fit long conversations into the model's context window. The oldest turns are replaced with a short recap and oversized tool output is trimmed, so the newest turns always arrive intact instead of the provider rejecting the request.",
+      "Menjaga output terstruktur agar selalu valid dan dapat diparse (valid JSON). Membersihkan teks basa-basi dan markdown fence di sekitar JSON, memperbaiki syntax Python/trailing comma, melengkapi penutup kurung saat output terpotong, dan memvalidasi argumen function calling sesuai skema.",
   },
   {
     key: "openaiToolBridge",
-    title: "OpenAI Tool Bridge",
+    title: "Universal Tool Calling Bridge",
     description:
-      "Keep tool calling working on models that cannot do it natively. Text-only providers (browser-session models with tools disabled) answer in prose; the bridge reads the tools you offered, picks the calls the model wrote out in its answer, and hands your client proper tool_calls with arguments filtered to the schema it declared.",
+      "Menyediakan jembatan pemanggilan fungsi (Function Calling / Tools) bagi model teks murni atau provider berbasis web session yang tidak memiliki dukungan alat bawaan. Respons model dipindai dan dikonversi otomatis menjadi payload tool_calls resmi standar OpenAI.",
   },
   {
     key: "antiSlop",
-    title: "Anti Slop",
+    title: "Anti-Slop Natural AI",
     levelled: true,
     description:
-      "Injects the antislop rules (https://github.com/miqdadbadjuber/anti-slop) into the system prompt of the models you pick, so they stop shipping generic AI UI, copy and code. Full is the skill's core text verbatim; Ultra adds all five concern skills. The rules are reproduced from upstream, not summarised - the cost of each level is shown below.",
+      "Membersihkan gaya bahasa klise robotik, basa-basi AI generik, dan jargon berulang. Menyuntikkan aturan kurasi ketat ke sistem prompt agar kode dan teks yang dihasilkan lebih natural, tajam, padat, dan langsung ke inti tujuan.",
   },
 ];
 

@@ -1,3 +1,11 @@
+# v0.5.267 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **Fixed reference error in studio models API and bounded opencode connect timeout.** The `/api/models` endpoint previously crashed with `ReferenceError: pluginMarks is not defined` when resolving studio models, breaking dashboard model listings. In addition, `opencode` transport now sets a snappy 12s socket timeout (`timeoutMs: 12000`) instead of hanging for 60s when a residential proxy node is slow to connect, allowing rotation to smoothly fail-over to the next residential session. Verified end-to-end with `oc/beam-free`, `oc/deepseek-v4.1-flash-free`, and `oc/mimo-v2.6-flash-free` completing in ~2 seconds.
+
+---
+
 # v0.5.266 (2026-10-23) · 2 commits
 
 ## What Was Added

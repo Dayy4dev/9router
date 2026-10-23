@@ -34,6 +34,11 @@ describe("free-provider catalogue flow", () => {
     // upstream answers ModelProtocolUnsupported on /chat/completions for it.
     const registry = readFileSync(path.join(ROOT, "open-sse/providers/registry/opencode.js"), "utf8");
     expect(registry).not.toMatch(/id: "jev-1\.13-free"/);
+    // Deprecated upstream ids (410 ModelDeprecated) are dropped from the
+    // catalogue filter and the picker, so neither screen can offer them.
+    const filters = readFileSync(path.join(ROOT, "src/app/api/providers/suggested-models/filters.js"), "utf8");
+    expect(filters).toMatch(/DEPRECATED_OPENCODE_MODELS = new Set\(\["minimax-m3\.1-flash-free"\]\)/);
+    expect(picker).toContain("minimax-m3.1-flash-free");
   });
 
   it("adding a chip is an explicit action, not a display row", () => {

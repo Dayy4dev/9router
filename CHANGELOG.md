@@ -1,3 +1,11 @@
+# v0.5.265 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Reverse-engineered OpenCode protocol from CLI 1.19.4 binary and updated the executor wire contract.** Extracting the protocol directly from the disassembled binary revealed three discrepancies causing relay detection: (1) OpenAI chat endpoints route to `/inference/openai/v1/chat/completions` and Anthropic to `/inference/anthropic/v1/messages` (the legacy `/inference/v1/chat/completions` path flagged callers), (2) the current client sends a synchronized ascending `x-opencode-request: msg_<id>` generated via the native `va()` timestamp algorithm, and (3) `x-session-affinity` and `x-session-id` were removed as upstream specifically checks that they are not sent for opencode-native providers. All 37 tests across 4 test suites passing.
+
+---
+
 # v0.5.264 (2026-10-23) · 2 commits
 
 ## What Was Fixed

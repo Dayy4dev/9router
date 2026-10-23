@@ -1,3 +1,11 @@
+# v0.5.270 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **Accelerated model ping probes for reasoning and free models.** The ping endpoint `/api/models/test` previously set `max_tokens: 1024`, causing reasoning models like `deepseek-v4.1-flash-free` and upstream free endpoints to spend 20–30+ seconds generating hundreds of chain-of-thought tokens before returning, making the dashboard test button appear frozen/spinning. With the issue #3010 soft-pass already supporting length-limited reasoning completions, `max_tokens` is now set to 16 for probe checks. Tested live over Cloudflare tunnel: `oc/deepseek-v4.1-flash-free` now resolves in 3.0s and `oc/glm-5.3-flash-free` in 2.3s with `{"ok":true,"status":200}`.
+
+---
+
 # v0.5.269 (2026-10-23) · 2 commits
 
 ## What Was Fixed

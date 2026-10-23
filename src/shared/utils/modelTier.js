@@ -1,5 +1,3 @@
-import { isFreeOpencodeModel } from "@/app/api/providers/suggested-models/filters.js";
-
 const KNOWN_FREE_PROVIDERS = new Set([
   "opencode",
   "opencode-v2",
@@ -36,6 +34,7 @@ const KNOWN_PAID_PROVIDERS = new Set([
 
 /**
  * Resolves whether a model is "free", "paid", or "unknown".
+ * Pure client-safe utility (no backend imports).
  * @param {string|object} model - Model object or string ID
  * @param {string} [providerId] - Provider ID or alias
  * @param {boolean} [explicitIsFree] - Explicit isFree flag
@@ -57,8 +56,7 @@ export function resolveModelTier(model, providerId = "", explicitIsFree = undefi
   if (
     /(^|[-_/:])(free|contributor|community|preview-?free)([-_]|$)/i.test(lower) ||
     lower.includes("big-pickle") ||
-    lower.includes("union-alpha") ||
-    isFreeOpencodeModel({ id: rawId })
+    lower.includes("union-alpha")
   ) {
     return "free";
   }

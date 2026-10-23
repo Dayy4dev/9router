@@ -17,7 +17,13 @@ import {
 
 // OpenCode v2 UA shape: opencode/<channel>/<version>/<client>. Upstream rejects
 // the v1 "opencode/1.18.x" form with 403 FreeTierError since 2026-10-14.
-const OPENCODE_UA = "opencode/latest/2.0.26/cli";
+// Shape as of the 1.19.x CLI (reverse-engineered 2026-10-23 via mitmproxy):
+// "opencode/<version> ai-sdk/provider-utils/<v> runtime/bun/<v>" with
+// x-opencode-client: cli, x-opencode-project, and a per-message
+// x-opencode-request: msg_<...>. The 9router executor must keep mirroring
+// whatever the current CLI sends: a stale UA is how the free tier tells a
+// relay apart from the real client (upstream #5107).
+const OPENCODE_UA = "opencode/1.19.4 ai-sdk/provider-utils/4.0.23 runtime/bun/1.4.4";
 const OPENCODE_CLIENT = "cli";
 const MAX_SESSION_LENGTH = 256;
 const MAX_TOOL_NAME_LEN = 128;
@@ -27,8 +33,14 @@ export const OPENCODE_SESSION_RE = /^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$/;
 const BASE62_CHARS = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 function hasValidOpencodeVersion(ua) {
-  const m = String(ua || "").match(/^opencode\/[a-z0-9-]+\/(\d+)\.\d+\.\d+\/[a-z0-9-]+$/i);
-  return !!m && parseInt(m[1], 10) >= 2;
+  // Only the real current CLI shape passes through: the v2 channel shape
+  // ("opencode/<channel>/<major>.<minor>.<patch>/<client>") was the previous
+  // generation and now reads as a stale relay UA, so anything that is not the
+  // current "opencode/<version> ai-sdk/provider-utils/<v> runtime/bun/<v>"
+  // form is replaced with the current UA (reverse-engineered 2026-10-23 via
+  // mitmproxy against CLI 1.19.4). Anything else (curl, python, a pinned UA)
+  // is not the CLI.
+  return /^opencode\/\d+\.\d+\.\d+ ai-sdk\/provider-utils\/[\d.]+ runtime\/bun\/[\d.]+$/i.test(String(ua || ""));
 }
 // Models served by /inference/v1/responses; every other model stays on /chat/completions.
 const RESPONSES_MODELS = new Set([

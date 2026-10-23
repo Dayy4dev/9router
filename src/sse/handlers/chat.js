@@ -22,6 +22,7 @@ import { handleComboChat, handleFusionChat, detectRequiredCapabilities } from "o
 import { augmentModelsWithCapacityAdapter, withCapacityAdapterStripping, getActiveAdapterStrategy } from "open-sse/services/capacityAdapter.js";
 import { handleBypassRequest } from "open-sse/utils/bypassHandler.js";
 import { HTTP_STATUS } from "open-sse/config/runtimeConfig.js";
+import { OPENCODE_FALLBACK_BUDGET_MS, GENERIC_FALLBACK_BUDGET_MS } from "open-sse/config/errorConfig.js";
 import { detectFormatByEndpoint } from "open-sse/translator/formats.js";
 import * as log from "../utils/logger.js";
 import { updateProviderCredentials, checkAndRefreshToken } from "../services/tokenRefresh.js";
@@ -343,6 +344,11 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
   let lastError = null;
   let lastStatus = null;
   let lastHeaders = null;
+  // Free-tier session rotation only opens new quota windows: when the client
+  // aborts (probe budget spent, user cancelled), every proxy is answering the
+  // same spent-quota 429 and more attempts cannot help, so stop instead of
+  // burning the pool dry past the caller's deadline.
+  const fallbackDeadlineMs = Date.now() + (provider === "opencode" ? OPENCODE_FALLBACK_BUDGET_MS : GENERIC_FALLBACK_BUDGET_MS);
 
   while (true) {
     const credentials = await getProviderCredentials(provider, excludeConnectionIds, model, { requestedModel: requestedModel || model });
@@ -451,6 +457,9 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
     // FreeUsageLimitError means this session window is spent, so burn the
     // canonical session and let the retry re-enter the proxy loop with a fresh
     // one instead of hammering the same burned session through every proxy.
+    // The session branch carries the same deadline as the generic one below:
+    // past the caller's budget every further proxy answers the same
+    // spent-quota 429 into a void, so hand back the last error now.
     if (provider === "opencode" && result.status === 429
         && /free\s*usage\s*limit/i.test(result.error || "")) {
       try {
@@ -462,6 +471,10 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       lastError = result.error;
       lastStatus = result.status;
       lastHeaders = upstreamResponseHeaders(result.response?.headers);
+      if (Date.now() >= fallbackDeadlineMs) {
+        log.warn("FALLBACK", `⏱ fallback budget spent for ${provider}/${model} after ${excludeConnectionIds.size} accounts — returning last error`);
+        return result.response;
+      }
       continue;
     }
 
@@ -477,6 +490,13 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       lastError = result.error;
       lastStatus = result.status;
       lastHeaders = upstreamResponseHeaders(result.response?.headers);
+      // The probe carries its own AbortSignal, but the fallback loop holds no
+      // reference to it: past the caller's deadline every further proxy answers
+      // the same spent-quota 429 into a void, so hand back the last error now.
+      if (Date.now() >= fallbackDeadlineMs) {
+        log.warn("FALLBACK", `⏱ fallback budget spent for ${provider}/${model} after ${excludeConnectionIds.size} accounts — returning last error`);
+        return result.response;
+      }
       continue;
     }
 

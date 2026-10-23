@@ -448,6 +448,7 @@ async function handleSingleModelChat(body, modelStr, clientRawRequest = null, re
       requestedModel,
       modelMultipliers,
       isAntiProbe,
+      hideError: Boolean(chatSettings.hideError),
       credentials: refreshedCredentials,
       log,
       clientRawRequest,

@@ -73,6 +73,7 @@ const API_PERMISSION_RULES = [
   // The provider page needs the model catalog to render a connection, so reading it
   // is shared with manageProviders while every write stays on manageModels. Reading is
   // also shared with manageApiKeys because the key forms pick allowed models from it.
+  { prefix: "/api/models/test", permissions: ["manageModels", "manageProviders", "manageApiKeys"] },
   { prefix: "/api/models/alias", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
   { prefix: "/api/models/disabled", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
   { prefix: "/api/models/availability", permissions: ["manageModels", "manageProviders", "manageApiKeys"], methods: READ_METHODS },
@@ -91,6 +92,7 @@ const API_PERMISSION_RULES = [
   { prefix: "/api/cli-tools", permissions: ["manageTools"] },
   { prefix: "/api/headroom", permissions: ["manageTools"] },
   { prefix: "/api/translator", permissions: ["manageAdvanced"] },
+  { prefix: "/api/error-logs", permissions: ["manageAdvanced"] },
   { prefix: "/api/proxy-pools", permissions: ["manageAdvanced"] },
   { prefix: "/api/pxpipe", permissions: ["manageAdvanced"] },
   { prefix: "/api/plugins", permissions: ["managePlugins"] },

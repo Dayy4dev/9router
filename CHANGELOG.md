@@ -1,3 +1,14 @@
+# v0.5.281 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Fixed 500 error in chat/completions route:** Resolved `ReferenceError: settings is not defined` inside `chatCore.js` by cleanly forwarding `hideError` boolean parameter from chat handler.
+- **Fixed smEnabled ReferenceError in models API:** Removed residual references to `smEnabled` (from removed Speed Mode) in `/api/models/route.js`.
+- **Enhanced OpenCode V2 session recovery:** Added `bodyHasSessionHints` helper to `opencode-v2.js` for robust session continuity across multi-turn turns.
+- **Fixed Error Log API and Ping Permissions:** Added `/api/error-logs` and `/api/models/test` to `permissionPaths.js` and `dashboardGuard.js`.
+
+---
+
 # v0.5.280 (2026-10-23) · 2 commits
 
 ## What Was Changed

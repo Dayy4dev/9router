@@ -1,3 +1,11 @@
+# v0.5.268 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **Preserve HTTPS protocol across dashboard redirects behind reverse proxies / Cloudflare tunnels.** The custom server and auth guard previously hardcoded `http://` when constructing redirect URLs (`/` to `/dashboard`, `/dashboard` to `/login`), causing browsers on HTTPS tunnels to refuse connecting to an insecure HTTP location or triggering mixed-content connection errors. Both now inspect `x-forwarded-proto` and socket encryption so all redirects preserve `https://`.
+
+---
+
 # v0.5.267 (2026-10-23) · 2 commits
 
 ## What Was Fixed

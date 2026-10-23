@@ -6,15 +6,11 @@
 
 ---
 
----
-
 # v0.5.263 (2026-10-23) · 2 commits
 
 ## What Was Fixed
 
 - **Alias-prefixed probes get the slow-fallback budget too.** v0.5.262 gave `opencode/*` probes 120s, but the dashboard probes alias-prefixed ids (`oc/beam-free`, `ocg/...`) and `probeTimeoutMs` compared the raw prefix against the provider set — an unresolved `oc` fell through to the 15s REST budget, so the button test still aborted mid-rotation with "The operation was aborted due to timeout" while direct `opencode/*` calls survived. The budget now resolves the prefix via `resolveProviderId` first (with a fail-open fallback to the raw prefix). `tests/unit/ping-timeout.test.js` pins the alias resolution; 5 passed.
-
----
 
 ---
 
@@ -26,15 +22,11 @@
 
 ---
 
----
-
 # v0.5.261 (2026-10-23) · 2 commits
 
 ## What Was Fixed
 
 - **Two dead model ids are gone from both screens; 9 of 10 live free models now answer.** Besides Jev (400 `ModelProtocolUnsupported`, fixed in v0.5.260), the live catalogue still advertises `minimax-m3.1-flash-free`, but upstream retires it with 410 `ModelDeprecated` pointing at `deepseek-v4.1-flash-free`. It is dropped from the catalogue filter and the picker the same way (`DEPRECATED_OPENCODE_MODELS`), while new id `flint-40b-free` rides the existing free-tier rule with no change. Verified end to end through the preview: `beam-free`, `big-pickle`, `glm-5.3-flash-free`, `mimo-v2.6-flash-free`, `nemotron-3.5-super-vl-free`, `deepseek-v4.1-flash-free`, `flint-40b-free` all answer; `longcat-2.5-preview-free` and `nemotron-3.5-lightning-free` still hit upstream 429 `FreeUsageLimitError` (daily quota, not a routing bug — the session rotation from v0.5.259 keeps retrying with fresh windows). `tests/unit/provider-model-catalogue.test.js` pins the deprecated set and the picker exclusion; 9 passed with `unit/opencode-session-rotation.test.js`.
-
----
 
 ---
 
@@ -46,15 +38,11 @@
 
 ---
 
----
-
 # v0.5.259 (2026-10-23) · 2 commits
 
 ## What Was Fixed
 
 - **FreeUsageLimitError now rotates the OpenCode session instead of hammering every proxy.** Upstream tracks the free quota per session id as well as per IP (upstream issue #5107): once a session window is spent, retrying the same burned session through dozens of proxies only collects the same 429 until the request times out. A 429 carrying `FreeUsageLimitError` on the opencode provider now burns the canonical session (`rotateOpencodeSession`) before the fallback moves to the next account, so the retry re-enters the proxy loop with a fresh quota window. The stable session is untouched on the happy path — a fresh session per request would burn quota faster. Covered by `tests/unit/opencode-session-rotation.test.js` (3 cases: fresh session minted, rotation scoped per identity, chat handler wiring).
-
----
 
 ---
 
@@ -66,15 +54,11 @@
 
 ---
 
----
-
 # v0.5.257 (2026-10-21) · 2 commits
 
 ## What Was Fixed
 
 - **The upstream smoke-test id no longer shows up as a chip.** OpenCode's live catalogue carries a placeholder id literally named `test`, and since the panel started listing "Other models" straight from the catalogue it appeared next to real models as junk. The opencode filter now drops placeholder ids alongside the known-dead one before anything reaches the panel.
-
----
 
 ---
 
@@ -86,15 +70,11 @@
 
 ---
 
----
-
 # v0.5.255 (2026-10-21) · 2 commits
 
 ## What Was Fixed
 
 - **The OpenCode Free panel shows every id the provider publishes, paid ones included.** The first pass of the unified list hid the ~76 paid ids of the live catalogue behind an "only advertise what a keyless caller can use" rule, and the panel then read as a short list with models missing - the opposite of what was being fixed. The catalogue now reaches the row grid unfiltered, the FREE badge comes from each row's own tier flag (`isFree` travels through `buildUnifiedModelRows` instead of being stamped on every catalogue row), and the five registry-pinned free ids (muse spark x2, union-alpha, deepseek flash, jev) carry `isFree: true` in `open-sse/providers/registry/opencode.js` so their badge no longer depends on the id suffix. Verified live: the upstream endpoint lists 86 ids, all 10 free ones plus the 3 registry-only free models render, and `tests/unit/free-model-rows.test.js` (10 cases) pins the unfiltered catalogue, the flag-driven badge and the registry flags.
-
----
 
 ---
 
@@ -106,15 +86,11 @@
 
 ---
 
----
-
 # v0.5.253 (2026-10-21) · 2 commits
 
 ## What Was Fixed
 
 - **The unified free list only advertised models that can actually answer.** The first cut of the unified list passed the whole live catalogue to the row builder, and the OpenCode Free catalogue marks paid ids with `isFree: false` - so ~85 paid models (Claude, Gemini, GPT families) appeared as free-badged rows on a provider that answers 401 for every one of them without a key. The catalogue handed to `buildUnifiedModelRows` is now filtered to `isFree === true`, the same rule the suggestion picker already used, and the browser check on the provider page counts 10 free rows plus the disabled trio instead of 85+.
-
----
 
 ---
 
@@ -127,16 +103,12 @@
 
 ---
 
----
-
 # v0.5.251 (2026-10-21) · 2 commits
 
 ## What Was Changed
 
 - **The dead long-task banner is deleted, not just left unused.** `src/shared/components/LongTaskBanner.js` (431 lines) had zero callers since long runs moved to the notification bell, and `Loading.js` still exported its wrappers (`ProgressCard`, `CenterLoading`, `BusyOverlay`) as a trap for the next feature. The component file and the three exports are gone, `src/shared/components/index.js` stops re-exporting them, and `Loading.js` keeps only what still renders: `Spinner`, `PageLoading`, `Skeleton`, `CardSkeleton`.
 - **The tests follow the component out.** `tests/unit/loading-banner.test.js` existed only to assert on the deleted files (and was already a catalogued load failure), so it is removed together with its entry in `tests/__baseline__/known-fails.txt`. `tests/unit/studio-banner-update.test.js` keeps the store, bell, layout and pool assertions and drops the two that read the deleted sources. `tests/unit/bell-only-progress.test.js` gains a guard: the component file must not exist and neither the wrappers nor their barrel exports may reappear — a zero-call-site component gets re-imported the moment someone reaches for it.
-
----
 
 ---
 

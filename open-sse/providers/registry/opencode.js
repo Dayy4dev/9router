@@ -2,8 +2,9 @@ export default {
   id: "opencode",
   priority: 40,
   hasFree: true,
-  alias: "oc",
-  uiAlias: "oc",
+  alias: "oc1",
+  uiAlias: "oc1",
+  aliases: ["oc"],
   display: {
     name: "OpenCode Free V1",
     icon: "terminal",

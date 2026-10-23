@@ -48,6 +48,8 @@ const executors = {
   vertex: new VertexExecutor("vertex"),
   "vertex-partner": new VertexExecutor("vertex-partner"),
   opencode: new OpenCodeExecutor(),
+  oc1: new OpenCodeExecutor(),
+  oc: new OpenCodeExecutor(),
   "opencode-v2": new OpenCodeV2Executor(),
   oc2: new OpenCodeV2Executor(),
   "opencode-go": new OpenCodeGoExecutor(),

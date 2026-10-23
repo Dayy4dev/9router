@@ -1,3 +1,11 @@
+# v0.5.274 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **Updated OpenCode Free V1 model prefix and alias from `oc` to `oc1`.** The provider alias and UI prefix for OpenCode Free V1 are now `oc1/` (e.g. `oc1/beam-free`, `oc1/deepseek-v4.1-flash-free`), matching the `oc2/` prefix convention of OpenCode Free V2. Legacy `oc/` alias is preserved for backwards compatibility.
+
+---
+
 # v0.5.273 (2026-10-23) · 2 commits
 
 ## What Was Changed

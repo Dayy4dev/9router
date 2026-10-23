@@ -1,3 +1,14 @@
+# v0.5.277 (2026-10-23) · 2 commits
+
+## What Was Fixed
+
+- **Fixed suggested model chips not rising to active list for OpenCode V1 and V2.** Removed built-in model exclusion on OpenCode providers in `getProviderCustomModelRows` so clicking `(+)` immediately adds and displays the model in the top active section.
+- **Accurate Model Tier Badges and chip preview.** Fixed custom model rows incorrectly passing `isFree={false}` that caused free models to display as `PAID`. OpenCode and free tier models now retain their green `FREE` badge. Both suggested free chips and other models now render tier badges before and after addition.
+- **Revamped Recent Requests table and Usage charts alignment.** Restored visibility of Recent Requests by ordering it cleanly for mobile viewports, correcting table background styles, and expanding truncated model name width. Polished Top Models and By Provider bar charts with consistent 210px container heights, refined typography, and aligned controls.
+- **Aligned icons, badges, and typography across cards.** Vertically centered Material Symbols icons, status dots, and badges with text on consistent optical baselines throughout model rows and usage analytics.
+
+---
+
 # v0.5.276 (2026-10-23) · 2 commits
 
 ## What Was Added

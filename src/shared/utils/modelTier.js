@@ -1,4 +1,7 @@
 const KNOWN_FREE_PROVIDERS = new Set([
+  "oc",
+  "oc1",
+  "oc2",
   "opencode",
   "opencode-v2",
   "mimocode",
@@ -42,17 +45,11 @@ const KNOWN_PAID_PROVIDERS = new Set([
  */
 export function resolveModelTier(model, providerId = "", explicitIsFree = undefined) {
   if (explicitIsFree === true) return "free";
-  if (explicitIsFree === false) return "paid";
 
   const rawId = typeof model === "string" ? model : (model?.id || model?.value || model?.name || "");
   const lower = String(rawId).toLowerCase();
 
-  if (typeof model === "object" && model !== null) {
-    if (model.isFree === true || model.pricing?.prompt === "0" || model.pricing?.isFree === true) {
-      return "free";
-    }
-  }
-
+  // Any model with free indicator is always free
   if (
     /(^|[-_/:])(free|contributor|community|preview-?free)([-_]|$)/i.test(lower) ||
     lower.includes("big-pickle") ||
@@ -61,11 +58,18 @@ export function resolveModelTier(model, providerId = "", explicitIsFree = undefi
     return "free";
   }
 
-  const pid = (providerId || lower.split("/")[0] || "").toLowerCase();
-
+  const pid = (providerId || (lower.includes("/") ? lower.split("/")[0] : "")).toLowerCase();
   if (KNOWN_FREE_PROVIDERS.has(pid)) {
     return "free";
   }
+
+  if (typeof model === "object" && model !== null) {
+    if (model.isFree === true || model.pricing?.prompt === "0" || model.pricing?.isFree === true) {
+      return "free";
+    }
+  }
+
+  if (explicitIsFree === false) return "paid";
 
   if (
     /(gpt-[456]|claude-(?:sonnet|opus|haiku|fable)|gemini-(?:1|2|3|4|pro|flash)|o1|o3|o4|grok-[1234]|deepseek-(?:v3|r1|v4|pro)|mistral-(?:large|medium)|command-r)/i.test(lower)

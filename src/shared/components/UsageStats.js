@@ -58,8 +58,9 @@ function RecentRequests({ requests = [] }) {
   return (
     <Card className="flex min-w-0 flex-col overflow-hidden" padding="sm" style={{ height: 480 }}>
       {/* Header */}
-      <div className="px-1 py-2 border-b border-border shrink-0">
-        <span className="text-xs font-semibold text-text-muted uppercase tracking-wide">Recent Requests</span>
+      <div className="px-3 py-2.5 border-b border-border shrink-0 flex items-center justify-between">
+        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Recent Requests</span>
+        <span className="text-[11px] text-text-muted font-mono">{requests.length} logged</span>
       </div>
 
       {!requests.length ? (
@@ -67,36 +68,42 @@ function RecentRequests({ requests = [] }) {
           <span className="text-text-muted text-sm">No requests yet.</span>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <table className="w-full min-w-[300px] border-collapse text-xs">
-            <thead className="sticky top-0 bg-bg z-10">
-              <tr className="border-b border-border">
-                <th className="py-1.5 text-left font-semibold text-text-muted w-2"></th>
-                <th className="py-1.5 text-left font-semibold text-text-muted">Model</th>
-                <th className="py-1.5 text-right font-semibold text-text-muted whitespace-nowrap">In / Out</th>
-                <th className="py-1.5 text-right font-semibold text-text-muted">When</th>
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <table className="w-full min-w-[320px] border-collapse text-xs">
+            <thead className="sticky top-0 bg-surface border-b border-border z-10">
+              <tr>
+                <th className="py-2 pl-3 pr-1 text-left font-semibold text-text-muted w-4"></th>
+                <th className="py-2 px-2 text-left font-semibold text-text-muted">Model</th>
+                <th className="py-2 px-2 text-right font-semibold text-text-muted whitespace-nowrap">In / Out</th>
+                <th className="py-2 pl-2 pr-3 text-right font-semibold text-text-muted">When</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/50">
+            <tbody className="divide-y divide-border/40">
               {requests.map((r, i) => {
                 const ok = !r.status || r.status === "ok" || r.status === "success";
                 return (
-                  <tr key={i} className="hover:bg-bg-subtle transition-colors">
-                    <td className="py-1.5">
-                      <span className={`block w-1.5 h-1.5 rounded-full ${ok ? "bg-success" : "bg-error"}`} />
+                  <tr key={i} className="hover:bg-sidebar/40 transition-colors">
+                    <td className="py-2 pl-3 pr-1 align-middle">
+                      <span className={`inline-block size-2 rounded-full ${ok ? "bg-emerald-500" : "bg-rose-500"}`} />
                     </td>
-                    <td className="py-1.5 font-mono truncate max-w-[120px]" title={r.model}>{r.model}</td>
-                    <td className="py-1.5 text-right whitespace-nowrap">
-                      <span className="text-primary">{fmt(r.promptTokens)}↑</span>
+                    <td className="py-2 px-2 font-mono text-xs text-text-main truncate max-w-[180px] sm:max-w-[260px] align-middle" title={r.model}>
+                      {r.model}
+                    </td>
+                    <td className="py-2 px-2 text-right whitespace-nowrap align-middle">
+                      <span className="font-mono text-primary font-medium">{fmt(r.promptTokens)}↑</span>
                       {" "}
-                      <span className="text-success">{fmt(r.completionTokens)}↓</span>
+                      <span className="font-mono text-emerald-500 font-medium">{fmt(r.completionTokens)}↓</span>
                       {r.cachedTokens > 0 && (
-                        <div>
-                          <Badge variant="info" size="sm" icon="cached" className="mt-0.5" title={`${fmt(r.cachedTokens)} prompt tokens served from cache`}>CACHE {fmt(r.cachedTokens)}</Badge>
+                        <div className="mt-0.5">
+                          <span className="inline-flex items-center gap-0.5 text-[9px] font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 py-0.2 rounded" title={`${fmt(r.cachedTokens)} prompt tokens served from cache`}>
+                            ↻{fmt(r.cachedTokens)}
+                          </span>
                         </div>
                       )}
                     </td>
-                    <td className="py-1.5 text-right text-text-muted whitespace-nowrap"><TimeAgo timestamp={r.timestamp} /></td>
+                    <td className="py-2 pl-2 pr-3 text-right text-text-muted whitespace-nowrap align-middle text-[11px]">
+                      <TimeAgo timestamp={r.timestamp} />
+                    </td>
                   </tr>
                 );
               })}
@@ -604,14 +611,18 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
           <RecentRequests requests={stats.recentRequests || []} />
         </>
       ) : (
-        <div className="grid min-w-0 grid-cols-1 items-stretch gap-2 lg:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
-          <ProviderTopology
-            providers={providers}
-            activeRequests={stats.activeRequests || []}
-            lastProvider={stats.recentRequests?.[0]?.provider || ""}
-            errorProvider={stats.errorProvider || ""}
-          />
-          <RecentRequests requests={stats.recentRequests || []} />
+        <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
+          <div className="order-2 lg:order-1 min-w-0">
+            <ProviderTopology
+              providers={providers}
+              activeRequests={stats.activeRequests || []}
+              lastProvider={stats.recentRequests?.[0]?.provider || ""}
+              errorProvider={stats.errorProvider || ""}
+            />
+          </div>
+          <div className="order-1 lg:order-2 min-w-0">
+            <RecentRequests requests={stats.recentRequests || []} />
+          </div>
         </div>
       )}
 

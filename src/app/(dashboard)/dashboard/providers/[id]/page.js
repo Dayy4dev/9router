@@ -7,7 +7,7 @@ import Image from "next/image";
 import { getProviderIconSrc, markProviderIconMissing } from "@/shared/utils/providerIcon";
 import { getCustomLogo } from "@/shared/utils/providerLogo";
 import { buildStudioTargetIndex } from "@/shared/utils/studioModelVisibility";
-import { Card, Button, Badge, Input, Modal, CardSkeleton, OAuthModal, KiroOAuthWrapper, CursorAuthModal, ZedAuthModal, XiaomiMimoAuthModal, IFlowCookieModal, GitLabAuthModal, Toggle, Select, EditConnectionModal, NoAuthProxyCard, ConfirmModal } from "@/shared/components";
+import { Card, Button, Badge, Input, Modal, CardSkeleton, OAuthModal, KiroOAuthWrapper, CursorAuthModal, ZedAuthModal, XiaomiMimoAuthModal, IFlowCookieModal, GitLabAuthModal, Toggle, Select, EditConnectionModal, NoAuthProxyCard, ConfirmModal, ModelTierBadge } from "@/shared/components";
 import { OAUTH_PROVIDERS, APIKEY_PROVIDERS, FREE_PROVIDERS, FREE_TIER_PROVIDERS, WEB_COOKIE_PROVIDERS, getProviderAlias, resolveProviderId, isOpenAICompatibleProvider, isAnthropicCompatibleProvider, AI_PROVIDERS } from "@/shared/constants/providers";
 import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
 import { getThinkingLevels } from "open-sse/providers/thinkingLevels.js";
@@ -1284,7 +1284,7 @@ export default function ProviderDetailPage() {
       customModels,
       modelAliases,
       providerAlias: providerStorageAlias,
-      builtInModels: models,
+      builtInModels: isOpenCode ? [] : models,
       type: "llm",
     }).filter((row) => !studioTargetIndex.isStudioTarget(providerStorageAlias, row.id));
     return (
@@ -1310,7 +1310,7 @@ export default function ProviderDetailPage() {
             onTest={connections.length > 0 || isFreeNoAuth ? () => handleTestModel(model.id) : undefined}
             isTesting={testingModelIds.has(model.id)}
             isCustom
-            isFree={false}
+            isFree={isOpenCode ? true : model.isFree}
             caps={getCaps(`${providerId}/${model.id}`)}
             thinkingSuffix={resolveThinkingSuffix(model.id)}
           />
@@ -1417,12 +1417,12 @@ export default function ProviderDetailPage() {
                         await handleEnableModel(m.id);
                       }
                     }}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-green-500/30 dark:border-green-500/25 text-xs text-text-muted hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-green-500/30 dark:border-green-500/25 text-xs text-text-muted hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
                     title={m.contextLength != null ? `${m.name} · ${(m.contextLength / 1000).toFixed(0)}k ctx` : m.name}
                   >
-                    <span className="material-symbols-outlined text-[13px]">add</span>
-                    {m.id.split("/").pop()}
-                    <span className="text-[10px] font-bold text-green-600 dark:text-green-400 bg-green-500/10 px-1.5 py-0.5 rounded">FREE</span>
+                    <span className="material-symbols-outlined text-[13px] leading-none">add</span>
+                    <span>{m.id.split("/").pop()}</span>
+                    <ModelTierBadge model={m.id} providerId={providerStorageAlias} isFree={m.isFree} />
                   </button>
                 ))}
               </div>
@@ -1439,11 +1439,12 @@ export default function ProviderDetailPage() {
                             await handleEnableModel(m.id);
                           }
                         }}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-xs text-text-muted hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-black/10 dark:border-white/10 text-xs text-text-muted hover:text-primary hover:border-primary/40 hover:bg-primary/5 transition-colors"
                         title={m.contextLength != null ? `${m.name} · ${(m.contextLength / 1000).toFixed(0)}k ctx` : m.name}
                       >
-                        <span className="material-symbols-outlined text-[13px]">add</span>
-                        {m.id.split("/").pop()}
+                        <span className="material-symbols-outlined text-[13px] leading-none">add</span>
+                        <span>{m.id.split("/").pop()}</span>
+                        <ModelTierBadge model={m.id} providerId={providerStorageAlias} isFree={m.isFree} />
                       </button>
                     ))}
                   </div>

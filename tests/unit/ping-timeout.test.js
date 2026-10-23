@@ -28,4 +28,12 @@ describe("model probe budget", () => {
     }
     expect(SLOW_FALLBACK_PROBE_TIMEOUT_MS).toBeGreaterThan(WEB_COOKIE_PROBE_TIMEOUT_MS);
   });
+
+  it("resolves provider aliases before picking the budget", () => {
+    // The dashboard probes alias-prefixed ids ("oc/beam-free"); an unresolved
+    // alias would fall through to the 15s REST budget and abort mid-rotation.
+    expect(probeTimeoutMs("oc/beam-free")).toBe(SLOW_FALLBACK_PROBE_TIMEOUT_MS);
+    expect(probeTimeoutMs("ocg/some-model")).toBe(SLOW_FALLBACK_PROBE_TIMEOUT_MS);
+    expect(probeTimeoutMs("openai/gpt-4o")).toBe(PROBE_TIMEOUT_MS);
+  });
 });

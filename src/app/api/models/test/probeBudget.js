@@ -7,6 +7,8 @@
  * first assertion runs.
  */
 
+import { resolveProviderId } from "@/shared/constants/providers.js";
+
 /**
  * Providers whose "API" is a browser web endpoint behind a sign-in cookie.
  * A warmed-up probe costs 13-50s on these (per-account queueing plus an 800KB
@@ -37,9 +39,18 @@ export const SLOW_FALLBACK_PROBE_TIMEOUT_MS = 120000;
 
 /**
  * Probe budget for one model id of the form "<provider>/<model>".
+ * The provider may be an alias ("oc/beam-free"), so resolve it to the
+ * registry id first - an unresolved alias would fall through to the 15s REST
+ * budget and abort a healthy slow-fallback probe mid-rotation.
  */
 export function probeTimeoutMs(model) {
-  const provider = String(model).split("/")[0];
+  const raw = String(model).split("/")[0];
+  let provider = raw;
+  try {
+    provider = resolveProviderId(raw) || raw;
+  } catch {
+    provider = raw;
+  }
   if (WEB_COOKIE_PROVIDERS.has(provider)) return WEB_COOKIE_PROBE_TIMEOUT_MS;
   if (SLOW_FALLBACK_PROVIDERS.has(provider)) return SLOW_FALLBACK_PROBE_TIMEOUT_MS;
   return PROBE_TIMEOUT_MS;

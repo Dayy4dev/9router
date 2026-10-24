@@ -354,11 +354,21 @@ export class OpenCodeV2Executor extends BaseExecutor {
     const { model, body, stream, credentials, signal, log, proxyOptions } = args;
 
     // Check if official OpenCode CLI engine is available on system
-    const opencodeBin = fs.existsSync("/root/bin/opencode")
-      ? "/root/bin/opencode"
-      : fs.existsSync("/tmp/oc-cli/package/bin/opencode")
-        ? "/tmp/oc-cli/package/bin/opencode"
-        : null;
+    const opencodeBin = [
+      process.env.OPENCODE_BIN,
+      "/usr/local/bin/opencode",
+      "/usr/bin/opencode",
+      "/root/bin/opencode",
+      "/tmp/oc-cli/package/bin/opencode",
+      "opencode",
+    ].find((bin) => {
+      if (!bin) return false;
+      try {
+        return fs.existsSync(bin);
+      } catch {
+        return false;
+      }
+    }) || null;
 
     if (opencodeBin) {
       try {
@@ -379,6 +389,9 @@ export class OpenCodeV2Executor extends BaseExecutor {
 
         if (promptText) {
           const env = { ...process.env };
+          if (!env.HOME || env.HOME === "/") {
+            env.HOME = "/app/data-home";
+          }
           const proxyUrl = proxyOptions?.connectionProxyUrl || "";
           if (proxyUrl) {
             env.HTTP_PROXY = proxyUrl;
@@ -391,11 +404,15 @@ export class OpenCodeV2Executor extends BaseExecutor {
             opencodeBin,
             ["run", "--model", targetModel, "--format", "default", promptText],
             {
-              cwd: "/root/repos/9router",
+              cwd: process.cwd(),
               env,
               stdio: ["ignore", "pipe", "pipe"],
             }
           );
+
+          if (log?.info) {
+            log.info("OPENCODE-V2", `Engine running via ${opencodeBin} for ${targetModel}`);
+          }
 
           if (signal) {
             signal.addEventListener("abort", () => {

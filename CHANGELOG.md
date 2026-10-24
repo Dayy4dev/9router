@@ -1,3 +1,13 @@
+# v0.5.284 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Containerized Deployment Support for OpenCode Engine:**
+  - Added global installation of `opencode-ai` CLI in the production `Dockerfile` builder stage and copied the binary to `/usr/local/bin/opencode` in the runner stage with required compatibility libraries (`gcompat`, `libstdc++`, `ca-certificates`).
+  - Extended dynamic binary discovery in `opencode-v2.js` to inspect standard PATH locations (`/usr/local/bin/opencode`, `/usr/bin/opencode`, etc.) and ensure working directories and HOME are properly initialized in containerized environments like Railway, Docker, or Kubernetes.
+
+---
+
 # v0.5.283 (2026-10-24) · 2 commits
 
 ## What Was Changed

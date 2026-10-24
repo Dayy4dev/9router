@@ -1,3 +1,13 @@
+# v0.5.298 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **OpenCode Free V2 Upstream Timeout & Session Rotation Resiliency:**
+  - Increased `timeoutMs` for OpenCode V2 transport from 12s to 45s to accommodate high-latency residential broadband SSL handshakes and prevent premature `ProxyFetch connect timeout` aborts.
+  - Dynamized connection ID assignment in `src/sse/services/auth.js` per proxy rotation so free-tier quota exhaustion (`429 FreeUsageLimitError`) seamlessly retries with a fresh residential session and exit IP.
+
+---
+
 # v0.5.297 (2026-10-24) · 2 commits
 
 ## What Was Changed

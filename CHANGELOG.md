@@ -1,3 +1,18 @@
+# v0.5.287 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Unified Logs & Diagnostics Workbench:**
+  - Consolidated the separate Console Log and Error Monitor views into a single unified menu: **Error & Console Logs** (`/dashboard/logs`).
+  - Implemented a clean, anti-slop dual-mode workspace featuring:
+    - **Error Records**: structured exception audit cards with status classification (5xx, 429, Auth), quick copy, search filtering, and collapsible stack traces without fuzzy AI glow effects.
+    - **Live Console**: real-time stdout/stderr stream with status indicator, autoscroll controls, log level filters (ALL, ERR, WARN, INFO), and search.
+  - Backwards-compatible routes for `/dashboard/console-log` and `/dashboard/error-log` linking to the unified workspace.
+- **Refined Hide Error Copywriting:**
+  - Replaced wordy descriptions in Experiment Features with crisp, professional anti-slop copywriting explaining upstream error masking and internal log retention.
+
+---
+
 # v0.5.286 (2026-10-24) · 2 commits
 
 ## What Was Changed

@@ -168,18 +168,11 @@ const getPageInfo = (pathname) => {
       breadcrumbs: [],
     };
 
-  if (pathname.includes("/console-log"))
+  if (pathname.includes("/logs") || pathname.includes("/console-log") || pathname.includes("/error-log"))
     return {
-      title: "Console Log",
-      description: "Live server console output",
-      icon: "monitor",
-      breadcrumbs: [],
-    };
-  if (pathname.includes("/error-log"))
-    return {
-      title: "Error Monitor",
-      description: "All captured system & provider errors",
-      icon: "bug_report",
+      title: "Error & Console Logs",
+      description: "Live system console stream and captured error records",
+      icon: "receipt_long",
       breadcrumbs: [],
     };
   if (pathname === "/dashboard")

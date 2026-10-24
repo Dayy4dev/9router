@@ -78,19 +78,18 @@ export default function ExperimentsClient() {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-text-main flex items-center gap-2">
-                  Hide Error
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400">
+                  Hide Raw Errors
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
                     Experimental
                   </span>
                 </span>
                 <p className="text-xs text-text-muted mt-1 leading-relaxed">
-                  Transforms any raw error messages (such as upstream provider rate limits or filter callbacks)
-                  into:{" "}
-                  <code className="text-rose-600 dark:text-rose-400 font-mono font-medium bg-black/5 dark:bg-white/5 px-1 py-0.5 rounded">
+                  Masks upstream provider errors and stack traces before sending responses to API clients.
+                  When enabled, external clients receive:{" "}
+                  <code className="text-text-main font-mono text-[11px] bg-surface-2 px-1.5 py-0.5 rounded border border-border">
                     &quot;There is an error but this error is hidden, try checking your error log.&quot;
                   </code>
-                  . External clients will not see sensitive stack traces or upstream details, while all raw error details
-                  remain safely recorded in the <strong>Error Monitor</strong> menu.
+                  . Original diagnostics and stack traces remain safely stored in the <strong>Error &amp; Console Logs</strong> menu.
                 </p>
               </div>
             </div>

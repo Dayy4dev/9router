@@ -37,8 +37,7 @@ const workshopItems = [
 // Security Log and Inbox Error live in the bell, not the menu - they are
 // conditions to review, not places you visit to work.
 const debugItems = [
-  { href: "/dashboard/console-log", label: "Console Log", icon: "monitor" },
-  { href: "/dashboard/error-log", label: "Error Monitor", icon: "bug_report" },
+  { href: "/dashboard/logs", label: "Error & Console Logs", icon: "receipt_long" },
   { href: "/dashboard/translator", label: "Translator", icon: "translate" },
 ];
 

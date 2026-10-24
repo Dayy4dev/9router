@@ -1,3 +1,15 @@
+# v0.5.301 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Windows CLI Binary Resolution & Process Spawn Fix:**
+  - Fixed Windows `spawn ENOENT` when launching `opencode` on Windows hosts (e.g. `G:\9router
+ode_modules\.bin\opencode`).
+  - Prioritized Windows executable extensions (`.cmd`, `.exe`, `.bat`) over extensionless shell scripts in `findOpencodeBinary`.
+  - Added `shell: true` and `windowsHide: true` to `child_process.spawn` options on Windows so batch scripts execute seamlessly.
+
+---
+
 # v0.5.300 (2026-10-24) · 2 commits
 
 ## What Was Changed

@@ -1,3 +1,15 @@
+# v0.5.303 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Fix 'chatSettings' TDZ Crash in Chat Handler:**
+  - Resolved `ReferenceError: Cannot access 'chatSettings' before initialization` in `src/sse/handlers/chat.js` by hoisting `getSettings()` before the account evaluation loop so authentication and error-handling code paths execute cleanly.
+- **OpenCode Free V1 Channel Routing & Timeout Parity:**
+  - Added default fallback to the dedicated residential channel route for OpenCode Free V1 (`opencode`) in `src/sse/services/auth.js` and `open-sse/executors/opencode.js`, eliminating 403 FreeTierError rejections on unconfigured/direct host egress.
+  - Increased OpenCode V1 transport timeout to 45s to prevent premature proxy connection drops.
+
+---
+
 # v0.5.302 (2026-10-24) · 2 commits
 
 ## What Was Changed

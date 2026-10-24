@@ -1,3 +1,13 @@
+# v0.5.294 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Animated Dedicated Proxy Banner:**
+  - Redesigned the dedicated proxy routing banner for OpenCode Free V2 into an animated card titled `proxy by: t.me/abcseren`.
+  - Added continuous shimmer beam animations (`proxy-shimmer-beam`), gradient text flow (`proxy-text-gradient`), live beacon radar dot, and direct "Open Telegram" action button.
+
+---
+
 # v0.5.293 (2026-10-24) · 2 commits
 
 ## What Was Changed

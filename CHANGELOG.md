@@ -1,3 +1,13 @@
+# v0.5.292 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Full System Prompt & Multi-Turn Support for OpenCode Engine:**
+  - Implemented `formatOpencodeCliPrompt` in `open-sse/utils/opencodeCliRunner.js` to properly extract and structure all system instructions (`body.system`, `role: "system"`, `role: "developer"`), multi-turn conversation history, and user prompts before passing to the CLI engine.
+  - Enabled native CLI engine execution across both OpenCode V1 (`opencode.js`) and V2 (`opencode-v2.js`), ensuring Model Studio custom models and roleplay system prompts take effect completely without being discarded or blocked by upstream rate limits.
+
+---
+
 # v0.5.291 (2026-10-24) · 2 commits
 
 ## What Was Changed

@@ -177,7 +177,7 @@ const getPageInfo = (pathname) => {
     };
   if (pathname.includes("/error-log"))
     return {
-      title: "Error Log",
+      title: "Error Monitor",
       description: "All captured system & provider errors",
       icon: "bug_report",
       breadcrumbs: [],

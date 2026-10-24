@@ -38,7 +38,7 @@ const workshopItems = [
 // conditions to review, not places you visit to work.
 const debugItems = [
   { href: "/dashboard/console-log", label: "Console Log", icon: "monitor" },
-  { href: "/dashboard/error-log", label: "Error Log", icon: "bug_report" },
+  { href: "/dashboard/error-log", label: "Error Monitor", icon: "bug_report" },
   { href: "/dashboard/translator", label: "Translator", icon: "translate" },
 ];
 

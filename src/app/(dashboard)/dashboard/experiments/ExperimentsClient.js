@@ -33,7 +33,7 @@ export default function ExperimentsClient() {
     setHideError(checked);
     try {
       const res = await fetch("/api/settings", {
-        method: "PUT",
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ hideError: checked }),
       });
@@ -90,7 +90,7 @@ export default function ExperimentsClient() {
                     &quot;There is an error but this error is hidden, try checking your error log.&quot;
                   </code>
                   . External clients will not see sensitive stack traces or upstream details, while all raw error details
-                  remain safely recorded in the <strong>Error Log</strong> menu.
+                  remain safely recorded in the <strong>Error Monitor</strong> menu.
                 </p>
               </div>
             </div>

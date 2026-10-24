@@ -1,3 +1,17 @@
+# v0.5.286 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Settings API & Experiment Toggle Fix:**
+  - Added HTTP `PUT` handler to `/api/settings` and ensured `ExperimentsClient` dispatches valid `PATCH`/`PUT` updates so the "Hide Error" experimental toggle updates without throwing "Failed to update setting".
+- **Console Log Modernization:**
+  - Redesigned the Console Log view into a sleek terminal workstation with macOS window controls, live stream status indicator, auto-scroll pause/resume toggle, quick copy action, search query filter, and level-specific filter pills (All, Errors, Warns, Info).
+- **Error Monitor UI Overhaul & Menu Renaming:**
+  - Renamed the menu item and dashboard headers from "Error Log" to "Error Monitor".
+  - Overhauled Error Monitor with summary metric cards (Total, 5xx Server, 429 Rate Limits, 401/403 Auth), status filter tabs, search filter, collapsible stack traces, and quick copy actions.
+
+---
+
 # v0.5.285 (2026-10-24) · 2 commits
 
 ## What Was Changed

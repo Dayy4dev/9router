@@ -66,6 +66,7 @@ export default function ProviderDetailPage() {
   const [customModels, setCustomModels] = useState([]);
   const [studioModels, setStudioModels] = useState([]);
   const [headerImgError, setHeaderImgError] = useState(false);
+  const [opencodeInstalled, setOpencodeInstalled] = useState(true);
   const [modelTestResults, setModelTestResults] = useState({});
   const [modelsTestError, setModelsTestError] = useState("");
   const [testingModelIds, setTestingModelIds] = useState(() => new Set());
@@ -340,6 +341,9 @@ export default function ProviderDetailPage() {
       if (connectionsRes.ok) {
         const filtered = (connectionsData.connections || []).filter(c => c.provider === providerId);
         setConnections(filtered);
+        if (connectionsData.opencodeInstalled !== undefined) {
+          setOpencodeInstalled(Boolean(connectionsData.opencodeInstalled));
+        }
       }
       if (proxyPoolsRes.ok) {
         setProxyPools(proxyPoolsData.proxyPools || []);
@@ -1571,9 +1575,18 @@ export default function ProviderDetailPage() {
                 </a>
               )}
             </div>
-            <p className="text-text-muted">
-              {connections.length} connection{connections.length === 1 ? "" : "s"}
-            </p>
+            {providerId === "opencode-v2" && !opencodeInstalled ? (
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant="warning" size="sm" dot>
+                  Need Configuration
+                </Badge>
+                <span className="text-xs text-amber-500/90 font-medium">OpenCode CLI binary not found on host</span>
+              </div>
+            ) : (
+              <p className="text-text-muted">
+                {connections.length} connection{connections.length === 1 ? "" : "s"}
+              </p>
+            )}
           </div>
         </div>
       </div>

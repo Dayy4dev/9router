@@ -1,3 +1,13 @@
+# v0.5.299 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **OpenCode CLI Binary Detection & 'Need Configuration' Status:**
+  - Added real-time binary detection for OpenCode CLI across host PATH, global bin, and local node_modules.
+  - When the OpenCode binary is not installed on the host running 9Router seren, OpenCode Free V2 displays a 'Need Configuration' warning badge and instructs the user to install the binary manually (`npm install -g opencode-ai` or curl script).
+
+---
+
 # v0.5.298 (2026-10-24) · 2 commits
 
 ## What Was Changed

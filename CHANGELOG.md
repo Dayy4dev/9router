@@ -1,3 +1,14 @@
+# v0.5.302 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Rescue Zero-Output Responses and Fold Reasoning Tokens:**
+  - Rescued empty response completions in streaming and non-streaming modes when models exhaust token budgets on reasoning (e.g. DeepSeek/Claude with thinking enabled) by promoting reasoning output to content before stream close.
+  - Folded `reasoning_tokens` into `completion_tokens` when upstream providers report `completion_tokens: 0`, preventing clients like Cherry Studio and NextChat from throwing "The model reported success but generated zero output tokens (out 0)".
+  - Added helpful status fallback text when a model produces zero tokens due to length limits or content filter truncation instead of returning an empty body.
+
+---
+
 # v0.5.301 (2026-10-24) · 2 commits
 
 ## What Was Changed

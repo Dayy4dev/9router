@@ -47,6 +47,28 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
 
     // Inject a virtual connection for no-auth free providers (with optional proxy pool from settings)
     if (FREE_PROVIDERS[providerId]?.noAuth) {
+      if (providerId === "opencode-v2") {
+        const { getOpencodeV2ProxyUrl, OPENCODE_V2_LOCKED_PROXY_NAME, OPENCODE_V2_LOCKED_PROXY_ID } = await import("open-sse/utils/opencodeV2Proxy.js");
+        const lockedUrl = getOpencodeV2ProxyUrl();
+        const sidMatch = (lockedUrl || "").match(/-sid-(\d+)/i);
+        const connectionId = sidMatch ? `proxy:${OPENCODE_V2_LOCKED_PROXY_ID}:${sidMatch[1]}` : `proxy:${OPENCODE_V2_LOCKED_PROXY_ID}`;
+        return {
+          id: connectionId,
+          connectionId,
+          connectionName: OPENCODE_V2_LOCKED_PROXY_NAME,
+          isActive: true,
+          accessToken: "public",
+          providerSpecificData: {
+            connectionProxyEnabled: true,
+            connectionProxyUrl: lockedUrl,
+            connectionNoProxy: "",
+            connectionProxyPoolId: OPENCODE_V2_LOCKED_PROXY_ID,
+            displayProxyUrl: OPENCODE_V2_LOCKED_PROXY_NAME,
+            isLockedProxy: true,
+          },
+        };
+      }
+
       const settings = await getSettings();
       const override = (settings.providerStrategies || {})[providerId] || {};
       const strategy = override.rotateStrategy || "none";

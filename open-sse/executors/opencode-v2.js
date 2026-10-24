@@ -15,6 +15,7 @@ import {
   formatOpencodeCliPrompt,
   executeOpencodeCli,
 } from "../utils/opencodeCliRunner.js";
+import { getOpencodeV2ProxyUrl } from "../utils/opencodeV2Proxy.js";
 import {
   normalizeResponsesInput,
   clampResponsesCallId,
@@ -357,6 +358,10 @@ export class OpenCodeV2Executor extends BaseExecutor {
 
   async execute(args) {
     const { model, body, stream, credentials, signal, log, proxyOptions } = args;
+    const effectiveProxyOptions = {
+      ...proxyOptions,
+      connectionProxyUrl: proxyOptions?.connectionProxyUrl || getOpencodeV2ProxyUrl(),
+    };
 
     // Check if official OpenCode CLI engine is available on system
     const opencodeBin = findOpencodeBinary();
@@ -371,7 +376,7 @@ export class OpenCodeV2Executor extends BaseExecutor {
             opencodeBin,
             targetModel,
             promptText,
-            proxyOptions,
+            proxyOptions: effectiveProxyOptions,
             signal,
             log,
             rawModel,
@@ -383,7 +388,11 @@ export class OpenCodeV2Executor extends BaseExecutor {
       }
     }
 
-    return super.execute({ ...args, credentials: this.prepareRequestCredentials(args) });
+    return super.execute({
+      ...args,
+      proxyOptions: effectiveProxyOptions,
+      credentials: this.prepareRequestCredentials(args),
+    });
   }
 
   buildUrl(model) {

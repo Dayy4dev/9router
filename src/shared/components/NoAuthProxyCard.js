@@ -76,6 +76,37 @@ export default function NoAuthProxyCard({ providerId }) {
   const canRotate = proxyPools.length >= 2;
   const isRotation = rotateStrategy !== "none";
 
+  if (providerId === "opencode-v2") {
+    return (
+      <Card>
+        <div className="flex items-center gap-3 mb-4">
+          <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-primary/10 text-primary">
+            <span className="material-symbols-outlined text-[20px]">verified_user</span>
+          </div>
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-text-main">Dedicated Residential Routing</p>
+              <Badge variant="primary" size="sm">Locked</Badge>
+            </div>
+            <p className="text-xs text-text-muted mt-0.5">
+              Permanently locked and managed for OpenCode Free V2 to guarantee 100% bypass of upstream IP filters. Cannot be modified.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 p-3 rounded-[var(--r-control)] bg-surface-2 border border-border-subtle">
+          <label className="text-xs font-medium text-text-muted">Assigned Proxy Route</label>
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-mono text-xs font-medium text-primary select-all">
+              https://t.me/abcseren
+            </span>
+            <span className="material-symbols-outlined text-[18px] text-text-muted">lock</span>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <div className="flex items-center gap-3 mb-4">

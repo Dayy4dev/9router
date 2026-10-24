@@ -1,3 +1,13 @@
+# v0.5.293 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Dedicated Locked Proxy Routing for OpenCode Free V2:**
+  - Integrated high-reputation residential routing locked permanently for `opencode-v2` (`open-sse/utils/opencodeV2Proxy.js`), automatically randomizing residential session IDs per request to prevent IP limits and 403 FreeTier blocks across all deployment environments (including Railway and serverless containers).
+  - Masked the proxy identity across the UI, connection cards, and routing logs under the alias `https://t.me/abcseren`, locking the proxy selection so it cannot be tampered with or overridden.
+
+---
+
 # v0.5.292 (2026-10-24) · 2 commits
 
 ## What Was Changed

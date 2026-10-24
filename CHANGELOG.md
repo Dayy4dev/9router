@@ -1,3 +1,13 @@
+# v0.5.291 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Live Console Layout Harmonization:**
+  - Redesigned the Live Console tab to perfectly mirror the Error Records architectural layout.
+  - Implemented 4 summary metric cards (Total Lines, Errors, Warnings, Stream Status), unified 9Router search input, level segmented control, auto-scroll/copy/clear controls, and structured card list with category badges, line headers, and per-item copy actions.
+
+---
+
 # v0.5.290 (2026-10-24) · 2 commits
 
 ## What Was Changed

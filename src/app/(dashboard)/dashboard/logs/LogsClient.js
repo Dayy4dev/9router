@@ -31,37 +31,43 @@ function getStatusBadge(code) {
   };
 }
 
-function renderConsoleLine(line, index) {
-  let tagColor = "text-text-muted";
-  let contentColor = "text-text-main";
+function parseConsoleItem(line, index) {
+  let tag = "LOG";
+  let variant = "default";
 
   if (line.includes("[ERROR]") || line.includes("✗") || line.includes("Error:") || line.includes("FAILED")) {
-    tagColor = "text-danger font-semibold";
-    contentColor = "text-rose-300";
+    tag = "ERROR";
+    variant = "error";
   } else if (line.includes("[WARN]") || line.includes("⚠️")) {
-    tagColor = "text-warning font-semibold";
-    contentColor = "text-amber-200";
+    tag = "WARN";
+    variant = "warning";
   } else if (line.includes("[INFO]") || line.includes("▶") || line.includes("ℹ️")) {
-    tagColor = "text-primary font-semibold";
-    contentColor = "text-text-main";
-  } else if (line.includes("[DB]") || line.includes("[SYS]")) {
-    tagColor = "text-brand-400 font-semibold";
-    contentColor = "text-text-main";
+    tag = "INFO";
+    variant = "primary";
+  } else if (line.includes("[DB]")) {
+    tag = "DATABASE";
+    variant = "primary";
+  } else if (line.includes("[SYS]") || line.includes("[ROUTER]")) {
+    tag = "SYSTEM";
+    variant = "default";
   } else if (line.includes("✓") || line.includes("done") || line.includes("SUCCESS")) {
-    tagColor = "text-success font-semibold";
-    contentColor = "text-emerald-300";
+    tag = "SUCCESS";
+    variant = "success";
   }
 
-  return (
-    <div key={index} className="flex items-start gap-3 py-1 px-3 hover:bg-surface-2/50 transition-colors font-mono text-xs">
-      <span className="text-text-muted/60 select-none shrink-0 w-8 text-right text-[11px] pt-0.5">
-        {index + 1}
-      </span>
-      <span className={`flex-1 whitespace-pre overflow-x-auto select-text leading-relaxed ${contentColor}`}>
-        <span className={tagColor}>{line}</span>
-      </span>
-    </div>
-  );
+  let timestamp = null;
+  const tsMatch = line.match(/^(\d{4}-\d{2}-\d{2}T[\d:.]+Z?|\d{2}:\d{2}:\d{2})/);
+  if (tsMatch) {
+    timestamp = tsMatch[1];
+  }
+
+  return {
+    index,
+    raw: line,
+    tag,
+    variant,
+    timestamp,
+  };
 }
 
 export default function LogsClient({ initialTab = "errors" }) {
@@ -75,7 +81,7 @@ export default function LogsClient({ initialTab = "errors" }) {
   const [consoleFilter, setConsoleFilter] = useState("");
   const [consoleLevel, setConsoleLevel] = useState("all");
   const [autoScroll, setAutoScroll] = useState(true);
-  const [consoleCopied, setConsoleCopied] = useState(false);
+  const [consoleCopiedId, setConsoleCopiedId] = useState(null);
   const consoleRef = useRef(null);
 
   /* --- Error Records State --- */
@@ -145,7 +151,7 @@ export default function LogsClient({ initialTab = "errors" }) {
 
   /* Actions */
   const handleClearConsole = async () => {
-    if (!window.confirm("Clear console output?")) return;
+    if (!window.confirm("Clear all console stream logs?")) return;
     try {
       await fetch("/api/translator/console-logs", { method: "DELETE" });
       setConsoleLogs([]);
@@ -154,27 +160,25 @@ export default function LogsClient({ initialTab = "errors" }) {
     }
   };
 
-  const handleCopyConsole = () => {
-    const text = filteredConsoleLogs.join("\n");
+  const copyText = (text, id, setter) => {
     navigator.clipboard.writeText(text);
-    setConsoleCopied(true);
-    setTimeout(() => setConsoleCopied(false), 2000);
+    setter(id);
+    setTimeout(() => setter(null), 2000);
+  };
+
+  const handleCopyAllConsole = () => {
+    const text = filteredConsoleItems.map((item) => item.raw).join("\n");
+    copyText(text, "all-console", setConsoleCopiedId);
   };
 
   const handleClearErrors = async () => {
-    if (!window.confirm("Clear all recorded errors?")) return;
+    if (!window.confirm("Clear all recorded error entries?")) return;
     try {
       const res = await fetch("/api/error-logs", { method: "DELETE" });
       if (res.ok) setErrorLogs([]);
     } catch (err) {
       console.error("Failed to clear error logs:", err);
     }
-  };
-
-  const copyErrorText = (text, id) => {
-    navigator.clipboard.writeText(text);
-    setErrorCopiedId(id);
-    setTimeout(() => setErrorCopiedId(null), 2000);
   };
 
   const handleCopyAllErrors = () => {
@@ -186,7 +190,7 @@ export default function LogsClient({ initialTab = "errors" }) {
           }`
       )
       .join("\n\n---\n\n");
-    copyErrorText(formatted, "all-errors");
+    copyText(formatted, "all-errors", setErrorCopiedId);
   };
 
   const toggleErrorExpand = (id) => {
@@ -198,25 +202,38 @@ export default function LogsClient({ initialTab = "errors" }) {
     });
   };
 
-  /* Filtered Data */
-  const filteredConsoleLogs = useMemo(() => {
-    return consoleLogs.filter((line) => {
-      if (consoleLevel === "error" && !(line.includes("[ERROR]") || line.includes("✗") || line.includes("Error:") || line.includes("FAILED"))) {
-        return false;
-      }
-      if (consoleLevel === "warn" && !(line.includes("[WARN]") || line.includes("⚠️"))) {
-        return false;
-      }
-      if (consoleLevel === "info" && !(line.includes("[INFO]") || line.includes("▶") || line.includes("ℹ️"))) {
-        return false;
-      }
-      if (consoleFilter && !line.toLowerCase().includes(consoleFilter.toLowerCase())) {
-        return false;
-      }
-      return true;
-    });
+  /* Parsed and Filtered Console Items */
+  const consoleMetrics = useMemo(() => {
+    let errors = 0;
+    let warns = 0;
+    let info = 0;
+    for (const line of consoleLogs) {
+      if (line.includes("[ERROR]") || line.includes("✗") || line.includes("Error:") || line.includes("FAILED")) errors++;
+      else if (line.includes("[WARN]") || line.includes("⚠️")) warns++;
+      else if (line.includes("[INFO]") || line.includes("[DB]") || line.includes("[SYS]")) info++;
+    }
+    return {
+      total: consoleLogs.length,
+      errors,
+      warns,
+      info,
+    };
+  }, [consoleLogs]);
+
+  const filteredConsoleItems = useMemo(() => {
+    return consoleLogs
+      .map((line, idx) => parseConsoleItem(line, idx))
+      .filter((item) => {
+        if (consoleLevel === "error" && item.tag !== "ERROR") return false;
+        if (consoleLevel === "warn" && item.tag !== "WARN") return false;
+        if (consoleLevel === "info" && item.tag !== "INFO" && item.tag !== "DATABASE" && item.tag !== "SYSTEM") return false;
+
+        if (!consoleFilter) return true;
+        return item.raw.toLowerCase().includes(consoleFilter.toLowerCase());
+      });
   }, [consoleLogs, consoleFilter, consoleLevel]);
 
+  /* Error Metrics & Filtering */
   const errorMetrics = useMemo(() => {
     let server5xx = 0;
     let rate429 = 0;
@@ -256,7 +273,7 @@ export default function LogsClient({ initialTab = "errors" }) {
   return (
     <PageShell width="full" className="min-w-0">
       <div className="flex flex-col gap-4 max-w-5xl">
-        {/* Header & Main Tab Switcher */}
+        {/* Main Header & Dual Tab Switcher */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border-subtle pb-4">
           <div>
             <h1 className="text-xl font-bold text-text-main flex items-center gap-2">
@@ -271,7 +288,7 @@ export default function LogsClient({ initialTab = "errors" }) {
           <SegmentedControl
             options={[
               { value: "errors", label: `Error Records (${errorLogs.length})`, icon: "bug_report" },
-              { value: "console", label: "Live Console", icon: "terminal" },
+              { value: "console", label: `Live Console (${consoleLogs.length})`, icon: "terminal" },
             ]}
             value={activeTab}
             onChange={setActiveTab}
@@ -402,11 +419,12 @@ export default function LogsClient({ initialTab = "errors" }) {
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             type="button"
-                            onClick={() => copyErrorText(
+                            onClick={() => copyText(
                               `[${log.timestamp}] [${log.statusCode}] ${log.provider}/${log.model}: ${log.errorMessage}${
                                 log.stack ? `\n\nStack:\n${log.stack}` : ""
                               }`,
-                              log.id
+                              log.id,
+                              setErrorCopiedId
                             )}
                             className="p-1 rounded text-text-muted hover:text-text-main transition-colors"
                             title="Copy error"
@@ -447,12 +465,36 @@ export default function LogsClient({ initialTab = "errors" }) {
           </div>
         )}
 
-        {/* TAB 2: LIVE CONSOLE STREAM */}
+        {/* TAB 2: LIVE CONSOLE STREAM (DESIGN IDENTICAL TO ERROR RECORDS) */}
         {activeTab === "console" && (
           <div className="flex flex-col gap-3">
-            {/* Standard Search & Controls Row (Clean, Flat, Non-Slop) */}
+            {/* Quick Metrics Bar (Identical layout to Error Records) */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-text-muted uppercase font-medium tracking-wide">Total Lines</span>
+                <span className="text-xl font-bold text-text-main font-mono mt-0.5">{consoleMetrics.total}</span>
+              </Card>
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-danger uppercase font-medium tracking-wide">Errors</span>
+                <span className="text-xl font-bold text-danger font-mono mt-0.5">{consoleMetrics.errors}</span>
+              </Card>
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-warning uppercase font-medium tracking-wide">Warnings</span>
+                <span className="text-xl font-bold text-warning font-mono mt-0.5">{consoleMetrics.warns}</span>
+              </Card>
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-primary uppercase font-medium tracking-wide">Stream Status</span>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className={`size-2 rounded-full ${consoleConnected ? "bg-success" : "bg-danger"}`} />
+                  <span className="text-sm font-bold text-text-main font-mono">
+                    {consoleConnected ? "Connected" : "Offline"}
+                  </span>
+                </div>
+              </Card>
+            </div>
+
+            {/* Standard Search & Filter Row (Identical layout to Error Records) */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-              {/* Standard 9Router Search Input */}
               <div className="relative flex-1 sm:max-w-sm">
                 <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-muted">
                   search
@@ -461,7 +503,7 @@ export default function LogsClient({ initialTab = "errors" }) {
                   type="text"
                   value={consoleFilter}
                   onChange={(e) => setConsoleFilter(e.target.value)}
-                  placeholder="Filter console output..."
+                  placeholder="Filter console by keyword or tag..."
                   className="w-full rounded-[10px] border border-border-subtle bg-surface-2 py-2 pl-9 pr-8 text-xs text-text-main placeholder-text-muted/60 transition-colors focus:border-brand-500/50 focus:outline-none focus:ring-1 focus:ring-brand-500/30 font-sans"
                 />
                 {consoleFilter && (
@@ -475,19 +517,14 @@ export default function LogsClient({ initialTab = "errors" }) {
                 )}
               </div>
 
-              {/* Controls */}
               <div className="flex flex-wrap items-center gap-2">
-                <Badge variant={consoleConnected ? "success" : "error"} dot size="sm">
-                  {consoleConnected ? "Live" : "Offline"}
-                </Badge>
-
                 <SegmentedControl
                   size="sm"
                   options={[
-                    { value: "all", label: "ALL" },
-                    { value: "error", label: "ERR" },
-                    { value: "warn", label: "WARN" },
-                    { value: "info", label: "INFO" },
+                    { value: "all", label: `All (${consoleLogs.length})` },
+                    { value: "error", label: `Err (${consoleMetrics.errors})` },
+                    { value: "warn", label: `Warn (${consoleMetrics.warns})` },
+                    { value: "info", label: `Info (${consoleMetrics.info})` },
                   ]}
                   value={consoleLevel}
                   onChange={setConsoleLevel}
@@ -507,10 +544,10 @@ export default function LogsClient({ initialTab = "errors" }) {
                     <Button
                       size="sm"
                       variant="outline"
-                      icon={consoleCopied ? "check" : "content_copy"}
-                      onClick={handleCopyConsole}
+                      icon={consoleCopiedId === "all-console" ? "check" : "content_copy"}
+                      onClick={handleCopyAllConsole}
                     >
-                      {consoleCopied ? "Copied" : "Copy"}
+                      {consoleCopiedId === "all-console" ? "Copied" : "Copy"}
                     </Button>
                     <Button
                       size="sm"
@@ -525,18 +562,48 @@ export default function LogsClient({ initialTab = "errors" }) {
               </div>
             </div>
 
-            {/* Clean Log Output Panel (Real Dev Console, Zero Fake-Theatrics) */}
-            <Card padding="none" className="overflow-hidden">
-              <div
-                ref={consoleRef}
-                className="py-2 min-h-[360px] h-[calc(100dvh-290px)] overflow-y-auto bg-surface-2/30 select-text divide-y divide-border-subtle/30"
-              >
-                {filteredConsoleLogs.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-text-muted text-xs py-16">
-                    {consoleLogs.length === 0 ? "No console output yet." : "No lines match filter."}
+            {/* Console Log List (Identical Card style to Error Records) */}
+            <Card padding="none" className="divide-y divide-border-subtle max-h-[calc(100dvh-320px)] overflow-y-auto">
+              <div ref={consoleRef}>
+                {filteredConsoleItems.length === 0 ? (
+                  <div className="py-16 text-center text-xs text-text-muted">
+                    {consoleLogs.length === 0 ? "No console output recorded." : "No lines match search filter."}
                   </div>
                 ) : (
-                  filteredConsoleLogs.map((line, i) => renderConsoleLine(line, i))
+                  filteredConsoleItems.map((item) => (
+                    <div key={item.index} className="p-3 text-xs transition-colors hover:bg-surface-2/40">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                          <Badge variant={item.variant} size="sm" className="mt-0.5 shrink-0 font-mono">
+                            {item.tag}
+                          </Badge>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-muted font-mono">
+                              <span>Line #{item.index + 1}</span>
+                              {item.timestamp && <span>{item.timestamp}</span>}
+                            </div>
+                            <div className="mt-1 font-mono text-xs text-text-main break-words whitespace-pre-wrap leading-relaxed select-text">
+                              {item.raw}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => copyText(item.raw, `line-${item.index}`, setConsoleCopiedId)}
+                            className="p-1 rounded text-text-muted hover:text-text-main transition-colors"
+                            title="Copy line"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              {consoleCopiedId === `line-${item.index}` ? "check" : "content_copy"}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </Card>

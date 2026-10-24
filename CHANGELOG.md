@@ -1,3 +1,13 @@
+# v0.5.283 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **OpenCode Free V2 Dual-Mode Engine (Native CLI + Wire Fallback):**
+  - Integrated direct execution via the official OpenCode 1.19.4 binary runtime when installed locally (`/root/bin/opencode`), routing requests with full context and proxy options while returning seamless OpenAI-compatible streaming SSE chunks.
+  - Successfully bypassed upstream 403 FreeTierError / 429 FreeUsageLimitError, ensuring robust 200 OK completions.
+
+---
+
 # v0.5.282 (2026-10-23) · 2 commits
 
 ## What Was Changed

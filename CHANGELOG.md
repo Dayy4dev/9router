@@ -1,3 +1,12 @@
+# v0.5.285 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **UI Language Standardization to English:**
+  - Standardized all descriptions, notifications, labels, and placeholders across the dashboard interface to English (including Custom Plugins, Experiment Features, Error Log, Model Studio Multipliers, and Model Tier Badges).
+
+---
+
 # v0.5.284 (2026-10-24) · 2 commits
 
 ## What Was Changed

@@ -31,7 +31,7 @@ export default function ErrorLogClient() {
   }, [fetchLogs]);
 
   const handleClear = async () => {
-    if (!window.confirm("Hapus semua error log?")) return;
+    if (!window.confirm("Clear all error logs?")) return;
     try {
       const res = await fetch("/api/error-logs", { method: "DELETE" });
       if (res.ok) setLogs([]);
@@ -109,13 +109,13 @@ export default function ErrorLogClient() {
 
         <div className="divide-y divide-border/40 max-h-[calc(100dvh-220px)] overflow-y-auto">
           {loading ? (
-            <div className="py-12 text-center text-text-muted text-xs">Memuat error log...</div>
+            <div className="py-12 text-center text-text-muted text-xs">Loading error logs...</div>
           ) : filteredLogs.length === 0 ? (
             <div className="py-12 text-center text-text-muted text-xs">
               <span className="material-symbols-outlined text-3xl mb-1 text-emerald-500 block">
                 check_circle
               </span>
-              Tidak ada error yang tercatat. Sistem berjalan normal!
+              No errors recorded. All systems operating normally!
             </div>
           ) : (
             filteredLogs.map((log) => {

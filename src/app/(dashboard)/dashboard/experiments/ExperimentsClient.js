@@ -43,14 +43,14 @@ export default function ExperimentsClient() {
       addNotification({
         type: "success",
         title: "Saved",
-        message: `Hide Error fitur telah ${checked ? "diaktifkan" : "dinonaktifkan"}.`,
+        message: `Hide Error feature has been ${checked ? "enabled" : "disabled"}.`,
       });
     } catch (err) {
       setHideError(!checked);
       addNotification({
         type: "error",
         title: "Error",
-        message: err.message || "Gagal menyimpan pengaturan.",
+        message: err.message || "Failed to save settings.",
       });
     } finally {
       setSaving(false);
@@ -66,7 +66,7 @@ export default function ExperimentsClient() {
             Experiment Features
           </h1>
           <p className="text-xs text-text-muted mt-1">
-            Fitur eksperimental dan perlindungan tingkat lanjut untuk 9Router.
+            Experimental capabilities and advanced protection for 9Router.
           </p>
         </div>
 
@@ -84,13 +84,13 @@ export default function ExperimentsClient() {
                   </span>
                 </span>
                 <p className="text-xs text-text-muted mt-1 leading-relaxed">
-                  Mengubah semua pesan error apapun (misalnya callback gagal dari provider atau upstream filter)
-                  menjadi:{" "}
+                  Transforms any raw error messages (such as upstream provider rate limits or filter callbacks)
+                  into:{" "}
                   <code className="text-rose-600 dark:text-rose-400 font-mono font-medium bg-black/5 dark:bg-white/5 px-1 py-0.5 rounded">
                     &quot;There is an error but this error is hidden, try checking your error log.&quot;
                   </code>
-                  . Dengan begitu, klien atau pengguna luar tidak dapat melihat rincian error sensitif, sementara error
-                  aslinya tetap tersimpan rapi dan dapat dibaca di menu <strong>Error Log</strong>.
+                  . External clients will not see sensitive stack traces or upstream details, while all raw error details
+                  remain safely recorded in the <strong>Error Log</strong> menu.
                 </p>
               </div>
             </div>

@@ -6,7 +6,7 @@ import { getThinkingLevels } from "../providers/thinkingLevels.js";
 import { injectReasoningContent } from "../utils/reasoningContentInjector.js";
 import { resolveSessionId } from "../utils/sessionManager.js";
 import { isMuseSparkModel } from "../providers/models/helpers.js";
-import { applyFingerprintTools } from "../utils/opencodeFingerprint.js";
+import { applyOpencodeV2Tools } from "../utils/opencodeV2Fingerprint.js";
 import { ANTHROPIC_API_VERSION } from "../providers/shared.js";
 import {
   normalizeResponsesInput,
@@ -340,9 +340,9 @@ export class OpenCodeV2Executor extends BaseExecutor {
       body.store = false;
       normalizeResponsesTools(body);
       sanitizeResponsesItems(body);
-      applyFingerprintTools(body, true);
+      applyOpencodeV2Tools(body);
     } else if (body && typeof body === "object") {
-      applyFingerprintTools(body, false);
+      applyOpencodeV2Tools(body);
     }
 
     return injectReasoningContent({ provider: this.provider, model, body });
@@ -371,7 +371,6 @@ export class OpenCodeV2Executor extends BaseExecutor {
 
     const headers = {
       "Content-Type": "application/json",
-      "Authorization": "Bearer public",
       "User-Agent": isOpencodeDownstream ? downstreamUa : OPENCODE_V2_UA,
       "x-opencode-client": lower["x-opencode-client"] || OPENCODE_V2_CLIENT,
       "x-opencode-session": session,

@@ -1,3 +1,14 @@
+# v0.5.282 (2026-10-23) · 2 commits
+
+## What Was Changed
+
+- **OpenCode Free V2 Reverse-Engineered Wire Protocol Alignment:**
+  - Upgraded OpenCode V2 tool fingerprinting to match the full 11-tool suite from official OpenCode CLI 1.19.4 (`bash`, `edit`, `glob`, `grep`, `read`, `skill`, `task`, `todowrite`, `webfetch`, `websearch`, `write`).
+  - Removed artificial `Authorization: Bearer public` header that triggered upstream proxy filter rejections.
+  - Aligned request parameters with genuine Bun runtime client wire behavior.
+
+---
+
 # v0.5.281 (2026-10-23) · 2 commits
 
 ## What Was Changed

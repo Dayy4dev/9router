@@ -1290,33 +1290,39 @@ export default function ProviderDetailPage() {
     return (
       <div className="flex flex-wrap gap-3">
         {/* Custom models first */}
-        {customModelRows.map((model) => (
-          <ModelRow
-            key={`${model.source}-${model.fullModel}`}
-            model={{ id: model.id, name: model.name }}
-            fullModel={`${providerDisplayAlias}/${model.id}`}
-            alias={model.alias}
-            copied={copied}
-            onCopy={copy}
-            onSetAlias={() => {}}
-            onDeleteAlias={() => {
-              if (model.source === "custom") {
-                handleDeleteCustomModel(model.id, "llm", providerStorageAlias);
-              } else {
-                handleDeleteAlias(model.alias);
-              }
-            }}
-            testStatus={modelTestResults[model.id]}
-            onTest={connections.length > 0 || isFreeNoAuth ? () => handleTestModel(model.id) : undefined}
-            isTesting={testingModelIds.has(model.id)}
-            isCustom
-            isFree={isOpenCode ? true : model.isFree}
-            caps={getCaps(`${providerId}/${model.id}`)}
-            thinkingSuffix={resolveThinkingSuffix(model.id)}
-          />
-        ))}
+        {customModelRows.map((model) => {
+          const suggested = suggestedModels.find((s) => s.id === model.id);
+          const effectiveIsFree = suggested?.isFree !== undefined ? suggested.isFree : model.isFree;
+          return (
+            <ModelRow
+              key={`${model.source}-${model.fullModel}`}
+              model={{ id: model.id, name: model.name }}
+              fullModel={`${providerDisplayAlias}/${model.id}`}
+              alias={model.alias}
+              copied={copied}
+              onCopy={copy}
+              onSetAlias={() => {}}
+              onDeleteAlias={() => {
+                if (model.source === "custom") {
+                  handleDeleteCustomModel(model.id, "llm", providerStorageAlias);
+                } else {
+                  handleDeleteAlias(model.alias);
+                }
+              }}
+              testStatus={modelTestResults[model.id]}
+              onTest={connections.length > 0 || isFreeNoAuth ? () => handleTestModel(model.id) : undefined}
+              isTesting={testingModelIds.has(model.id)}
+              isCustom
+              isFree={effectiveIsFree}
+              caps={getCaps(`${providerId}/${model.id}`)}
+              thinkingSuffix={resolveThinkingSuffix(model.id)}
+            />
+          );
+        })}
 
         {displayModels.map((model) => {
+          const suggested = suggestedModels.find((s) => s.id === model.id);
+          const effectiveIsFree = suggested?.isFree !== undefined ? suggested.isFree : model.isFree;
           const fullModel = `${providerStorageAlias}/${model.id}`;
           const oldFormatModel = `${providerId}/${model.id}`;
           const existingAlias = Object.entries(modelAliases).find(
@@ -1335,7 +1341,7 @@ export default function ProviderDetailPage() {
               testStatus={modelTestResults[model.id]}
               onTest={connections.length > 0 || isFreeNoAuth ? () => handleTestModel(model.id) : undefined}
               isTesting={testingModelIds.has(model.id)}
-              isFree={model.isFree}
+              isFree={effectiveIsFree}
               onDisable={() => handleDisableModel(model.id)}
               caps={getCaps(`${providerId}/${model.id}`)}
               thinkingSuffix={resolveThinkingSuffix(model.id)}

@@ -1,3 +1,13 @@
+# v0.5.300 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Fix Erroneous FREE Badge on Non-Free Models in OpenCode V1 and V2:**
+  - Removed hardcoded `isFree={isOpenCode ? true : model.isFree}` flag which falsely marked non-free models (e.g., Claude, GPT) as Free when added to Available Models.
+  - Aligned custom and display model tier status with upstream suggested catalogue `isFree` metadata and pattern classification so paid models correctly display without the FREE badge.
+
+---
+
 # v0.5.299 (2026-10-24) · 2 commits
 
 ## What Was Changed

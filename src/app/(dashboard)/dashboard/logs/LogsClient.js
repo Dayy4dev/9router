@@ -2,56 +2,30 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { Button, PageShell } from "@/shared/components";
+import { Card, Button, Badge, SegmentedControl, PageShell } from "@/shared/components";
 import { CONSOLE_LOG_CONFIG } from "@/shared/constants/config";
-
-function getStatusBadge(code) {
-  const num = Number(code) || 500;
-  if (num >= 500) {
-    return {
-      bg: "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20",
-      label: `${num} Server Error`,
-    };
-  }
-  if (num === 429) {
-    return {
-      bg: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
-      label: "429 Rate Limit",
-    };
-  }
-  if (num === 401 || num === 403) {
-    return {
-      bg: "bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20",
-      label: num === 403 ? "403 Forbidden" : "401 Unauthorized",
-    };
-  }
-  return {
-    bg: "bg-zinc-500/10 text-zinc-600 dark:text-zinc-400 border-zinc-500/20",
-    label: `${num} Error`,
-  };
-}
 
 function colorConsoleLine(line, index) {
   let textColor = "text-text-main";
   let bgClass = "";
   if (line.includes("[ERROR]") || line.includes("✗") || line.includes("Error:") || line.includes("FAILED")) {
-    textColor = "text-rose-400";
-    bgClass = "bg-rose-500/5";
+    textColor = "text-danger";
+    bgClass = "bg-danger/5";
   } else if (line.includes("[WARN]") || line.includes("⚠️")) {
-    textColor = "text-amber-400";
-    bgClass = "bg-amber-500/5";
+    textColor = "text-warning";
+    bgClass = "bg-warning/5";
   } else if (line.includes("[INFO]") || line.includes("▶") || line.includes("ℹ️")) {
-    textColor = "text-sky-400";
+    textColor = "text-primary";
   } else if (line.includes("[DEBUG]") || line.includes("🐛")) {
     textColor = "text-text-muted";
   } else if (line.includes("✓") || line.includes("done") || line.includes("SUCCESS")) {
-    textColor = "text-emerald-400";
-    bgClass = "bg-emerald-500/5";
+    textColor = "text-success";
+    bgClass = "bg-success/5";
   }
 
   return (
-    <div className={`flex items-start gap-2.5 px-2 py-0.5 hover:bg-white/5 rounded font-mono text-xs leading-relaxed ${bgClass}`}>
-      <span className="text-zinc-500 select-none shrink-0 w-8 text-right text-[11px] pt-0.5">
+    <div className={`flex items-start gap-2.5 px-2 py-0.5 hover:bg-surface-2 rounded-[var(--r-chip)] font-mono text-xs leading-relaxed ${bgClass}`}>
+      <span className="text-text-muted select-none shrink-0 w-8 text-right text-[11px] pt-0.5">
         {index + 1}
       </span>
       <span className={`flex-1 break-all whitespace-pre-wrap ${textColor}`}>
@@ -255,84 +229,58 @@ export default function LogsClient({ initialTab = "errors" }) {
 
   return (
     <PageShell width="full" className="min-w-0">
-      <div className="flex flex-col gap-3 max-w-5xl">
+      <div className="flex flex-col gap-5 max-w-5xl">
         {/* Main Header & Dual Tab Switcher */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border-subtle pb-4">
           <div>
-            <h1 className="text-lg font-semibold text-text-main flex items-center gap-2">
-              <span className="material-symbols-outlined text-[20px] text-text-muted">receipt_long</span>
+            <h1 className="text-xl font-bold text-text-main flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-[24px] text-primary">receipt_long</span>
               Error &amp; Console Logs
             </h1>
-            <p className="text-xs text-text-muted mt-0.5">
+            <p className="text-xs text-text-muted mt-1">
               Live stdout stream and captured exception records in one diagnostic console.
             </p>
           </div>
 
-          {/* Clean Segmented Tab Switcher (No AI pill-slop) */}
-          <div className="inline-flex items-center p-0.5 rounded-lg border border-border bg-surface-2/60 self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setActiveTab("errors")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                activeTab === "errors"
-                  ? "bg-surface text-text-main shadow-sm border border-border/80"
-                  : "text-text-muted hover:text-text-main"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">bug_report</span>
-              <span>Error Records</span>
-              <span className="ml-1 text-[11px] font-mono opacity-80">
-                ({errorLogs.length})
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("console")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                activeTab === "console"
-                  ? "bg-surface text-text-main shadow-sm border border-border/80"
-                  : "text-text-muted hover:text-text-main"
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">terminal</span>
-              <span>Live Console</span>
-              <span
-                className={`size-1.5 rounded-full ml-1 ${
-                  consoleConnected ? "bg-emerald-500" : "bg-rose-500"
-                }`}
-              />
-            </button>
-          </div>
+          {/* Theme-Synchronized Segmented Control */}
+          <SegmentedControl
+            options={[
+              { value: "errors", label: `Error Records (${errorLogs.length})`, icon: "bug_report" },
+              { value: "console", label: "Live Console", icon: "terminal" },
+            ]}
+            value={activeTab}
+            onChange={setActiveTab}
+            className="self-start sm:self-auto"
+          />
         </div>
 
         {/* TAB 1: ERROR RECORDS */}
         {activeTab === "errors" && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {/* Quick Metrics Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div className="p-2.5 rounded-lg border border-border bg-surface">
-                <span className="text-[11px] text-text-muted block">Total Records</span>
-                <span className="text-base font-semibold text-text-main font-mono">{errorMetrics.total}</span>
-              </div>
-              <div className="p-2.5 rounded-lg border border-border bg-surface">
-                <span className="text-[11px] text-rose-500 block">5xx Server</span>
-                <span className="text-base font-semibold text-rose-500 font-mono">{errorMetrics.server5xx}</span>
-              </div>
-              <div className="p-2.5 rounded-lg border border-border bg-surface">
-                <span className="text-[11px] text-amber-500 block">429 Rate Limits</span>
-                <span className="text-base font-semibold text-amber-500 font-mono">{errorMetrics.rate429}</span>
-              </div>
-              <div className="p-2.5 rounded-lg border border-border bg-surface">
-                <span className="text-[11px] text-purple-500 block">401/403 Auth</span>
-                <span className="text-base font-semibold text-purple-500 font-mono">{errorMetrics.auth4xx}</span>
-              </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-text-muted font-medium uppercase tracking-wider">Total Records</span>
+                <span className="text-xl font-bold text-text-main font-mono mt-0.5">{errorMetrics.total}</span>
+              </Card>
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-danger font-medium uppercase tracking-wider">5xx Server</span>
+                <span className="text-xl font-bold text-danger font-mono mt-0.5">{errorMetrics.server5xx}</span>
+              </Card>
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-warning font-medium uppercase tracking-wider">429 Rate Limits</span>
+                <span className="text-xl font-bold text-warning font-mono mt-0.5">{errorMetrics.rate429}</span>
+              </Card>
+              <Card padding="xs" className="flex flex-col">
+                <span className="text-[11px] text-primary font-medium uppercase tracking-wider">401/403 Auth</span>
+                <span className="text-xl font-bold text-primary font-mono mt-0.5">{errorMetrics.auth4xx}</span>
+              </Card>
             </div>
 
             {/* Controls Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-surface">
+            <Card padding="xs" className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                <span className="material-symbols-outlined text-[16px] text-text-muted">search</span>
+                <span className="material-symbols-outlined text-[18px] text-text-muted">search</span>
                 <input
                   type="text"
                   placeholder="Filter error message, model, or status..."
@@ -347,32 +295,25 @@ export default function LogsClient({ initialTab = "errors" }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-1.5 shrink-0 text-xs">
-                {[
-                  { id: "all", label: `All (${errorLogs.length})` },
-                  { id: "5xx", label: `5xx (${errorMetrics.server5xx})` },
-                  { id: "429", label: `429 (${errorMetrics.rate429})` },
-                  { id: "auth", label: `Auth (${errorMetrics.auth4xx})` },
-                ].map((f) => (
-                  <button
-                    key={f.id}
-                    onClick={() => setErrorStatusFilter(f.id)}
-                    className={`px-2 py-1 rounded text-xs transition-colors ${
-                      errorStatusFilter === f.id
-                        ? "bg-text-main text-bg font-medium"
-                        : "text-text-muted hover:text-text-main hover:bg-surface-2"
-                    }`}
-                  >
-                    {f.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 shrink-0">
+                <SegmentedControl
+                  size="sm"
+                  options={[
+                    { value: "all", label: `All (${errorLogs.length})` },
+                    { value: "5xx", label: `5xx (${errorMetrics.server5xx})` },
+                    { value: "429", label: `429 (${errorMetrics.rate429})` },
+                    { value: "auth", label: `Auth (${errorMetrics.auth4xx})` },
+                  ]}
+                  value={errorStatusFilter}
+                  onChange={setErrorStatusFilter}
+                />
 
                 {errorLogs.length > 0 && (
                   <>
-                    <div className="h-4 w-px bg-border mx-1" />
                     <Button
                       size="sm"
                       variant="outline"
+                      icon={errorCopiedId === "all-errors" ? "check" : "content_copy"}
                       onClick={handleCopyAllErrors}
                     >
                       {errorCopiedId === "all-errors" ? "Copied" : "Copy All"}
@@ -380,48 +321,56 @@ export default function LogsClient({ initialTab = "errors" }) {
                     <Button
                       size="sm"
                       variant="danger"
+                      icon="delete"
                       onClick={handleClearErrors}
                     >
                       Clear
                     </Button>
                   </>
                 )}
-                <Button size="sm" variant="ghost" icon="refresh" onClick={fetchErrorLogs} />
+                <Button size="sm" variant="ghost" icon="refresh" onClick={fetchErrorLogs} title="Refresh records" />
               </div>
-            </div>
+            </Card>
 
             {/* List of Error Items */}
-            <div className="rounded-lg border border-border bg-surface divide-y divide-border/60 max-h-[calc(100dvh-310px)] overflow-y-auto">
+            <Card padding="none" className="divide-y divide-border-subtle max-h-[calc(100dvh-320px)] overflow-y-auto">
               {errorsLoading ? (
-                <div className="py-12 text-center text-xs text-text-muted">Loading recorded errors...</div>
+                <div className="py-16 text-center text-xs text-text-muted">Loading recorded errors...</div>
               ) : filteredErrorLogs.length === 0 ? (
-                <div className="py-12 text-center text-xs text-text-muted">
-                  <span className="material-symbols-outlined text-2xl text-emerald-500 mb-1 block">check_circle</span>
-                  {errorLogs.length === 0 ? "No error records logged. System operating normally." : "No records match search criteria."}
+                <div className="py-16 text-center text-xs text-text-muted flex flex-col items-center justify-center gap-2">
+                  <span className="material-symbols-outlined text-3xl text-success">check_circle</span>
+                  <span className="text-sm font-semibold text-text-main">
+                    {errorLogs.length === 0 ? "No error records logged" : "No records match filter"}
+                  </span>
+                  <span className="text-text-muted">
+                    {errorLogs.length === 0 ? "All systems and upstream providers operating normally." : "Try clearing your search query."}
+                  </span>
                 </div>
               ) : (
                 filteredErrorLogs.map((log) => {
-                  const badge = getStatusBadge(log.statusCode);
+                  const code = Number(log.statusCode) || 500;
+                  const badgeVariant = code >= 500 ? "error" : code === 429 ? "warning" : (code === 401 || code === 403) ? "primary" : "default";
+                  const badgeLabel = code >= 500 ? `${code} Server` : code === 429 ? "429 Limit" : code === 403 ? "403 Forbidden" : code === 401 ? "401 Auth" : `${code}`;
                   const isExpanded = expandedErrorIds.has(log.id);
 
                   return (
-                    <div key={log.id} className="p-3 text-xs transition-colors hover:bg-surface-2/30">
+                    <div key={log.id} className="p-4 text-xs transition-colors hover:bg-surface-2/40">
                       <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                          <span className={`shrink-0 px-1.5 py-0.5 rounded text-[10px] font-mono border font-medium ${badge.bg}`}>
-                            {badge.label}
-                          </span>
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          <Badge variant={badgeVariant} size="sm" className="mt-0.5 shrink-0 font-mono">
+                            {badgeLabel}
+                          </Badge>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-muted font-mono">
                               <span>{log.timestamp}</span>
                               {(log.provider || log.model) && (
-                                <span className="text-text-main font-semibold">
+                                <span className="text-primary font-semibold bg-brand-500/10 px-1.5 py-0.5 rounded-[var(--r-chip)]">
                                   {log.provider ? `${log.provider}/` : ""}{log.model || ""}
                                 </span>
                               )}
                             </div>
-                            <div className="mt-1 text-sm text-text-main font-medium break-words leading-relaxed">
+                            <div className="mt-1.5 text-sm text-text-main font-medium break-words leading-relaxed">
                               {log.errorMessage}
                             </div>
                           </div>
@@ -436,10 +385,10 @@ export default function LogsClient({ initialTab = "errors" }) {
                               }`,
                               log.id
                             )}
-                            className="p-1 rounded text-text-muted hover:text-text-main transition-colors"
+                            className="p-1.5 rounded-[var(--r-chip)] text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
                             title="Copy error"
                           >
-                            <span className="material-symbols-outlined text-[15px]">
+                            <span className="material-symbols-outlined text-[16px]">
                               {errorCopiedId === log.id ? "check" : "content_copy"}
                             </span>
                           </button>
@@ -448,10 +397,10 @@ export default function LogsClient({ initialTab = "errors" }) {
                             <button
                               type="button"
                               onClick={() => toggleErrorExpand(log.id)}
-                              className="p-1 rounded text-text-muted hover:text-text-main transition-colors"
+                              className="p-1.5 rounded-[var(--r-chip)] text-text-muted hover:text-text-main hover:bg-surface-2 transition-colors"
                               title={isExpanded ? "Hide stack" : "View stack"}
                             >
-                              <span className="material-symbols-outlined text-[15px]">
+                              <span className="material-symbols-outlined text-[16px]">
                                 {isExpanded ? "expand_less" : "expand_more"}
                               </span>
                             </button>
@@ -460,8 +409,8 @@ export default function LogsClient({ initialTab = "errors" }) {
                       </div>
 
                       {isExpanded && log.stack && (
-                        <div className="mt-2.5 p-2.5 rounded bg-zinc-950 text-zinc-300 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap border border-border">
-                          <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 font-sans">
+                        <div className="mt-3 p-3 rounded-[var(--r-control)] bg-black/85 text-zinc-200 font-mono text-[11px] overflow-x-auto whitespace-pre-wrap border border-border-subtle">
+                          <div className="text-[10px] text-text-muted uppercase tracking-wider mb-1 font-sans font-semibold">
                             Stack Trace:
                           </div>
                           {log.stack}
@@ -471,17 +420,17 @@ export default function LogsClient({ initialTab = "errors" }) {
                   );
                 })
               )}
-            </div>
+            </Card>
           </div>
         )}
 
         {/* TAB 2: LIVE CONSOLE STREAM */}
         {activeTab === "console" && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             {/* Console Toolbar */}
-            <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-lg border border-border bg-surface text-xs">
+            <Card padding="xs" className="flex flex-wrap items-center justify-between gap-3 text-xs">
               <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                <span className="material-symbols-outlined text-[16px] text-text-muted">search</span>
+                <span className="material-symbols-outlined text-[18px] text-text-muted">search</span>
                 <input
                   type="text"
                   placeholder="Search live stream lines..."
@@ -496,79 +445,74 @@ export default function LogsClient({ initialTab = "errors" }) {
                 )}
               </div>
 
-              <div className="flex items-center gap-1 shrink-0 font-mono text-[11px]">
-                {[
-                  { id: "all", label: "ALL" },
-                  { id: "error", label: "ERR" },
-                  { id: "warn", label: "WARN" },
-                  { id: "info", label: "INFO" },
-                ].map((lvl) => (
-                  <button
-                    key={lvl.id}
-                    onClick={() => setConsoleLevel(lvl.id)}
-                    className={`px-2 py-0.5 rounded transition-colors ${
-                      consoleLevel === lvl.id
-                        ? "bg-text-main text-bg font-semibold"
-                        : "text-text-muted hover:text-text-main hover:bg-surface-2"
-                    }`}
-                  >
-                    {lvl.label}
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant={consoleConnected ? "success" : "error"} dot size="sm">
+                  {consoleConnected ? "Connected" : "Disconnected"}
+                </Badge>
 
-                <div className="h-4 w-px bg-border mx-1" />
+                <SegmentedControl
+                  size="sm"
+                  options={[
+                    { value: "all", label: "ALL" },
+                    { value: "error", label: "ERR" },
+                    { value: "warn", label: "WARN" },
+                    { value: "info", label: "INFO" },
+                  ]}
+                  value={consoleLevel}
+                  onChange={setConsoleLevel}
+                />
 
-                <button
-                  type="button"
+                <Button
+                  size="sm"
+                  variant={autoScroll ? "primary" : "outline"}
                   onClick={() => setAutoScroll(!autoScroll)}
-                  className={`px-2 py-0.5 rounded border transition-colors ${
-                    autoScroll
-                      ? "border-text-main/40 text-text-main"
-                      : "border-border text-text-muted"
-                  }`}
-                  title="Toggle autoscroll"
+                  icon={autoScroll ? "vertical_align_bottom" : "pause"}
                 >
-                  {autoScroll ? "Scroll: ON" : "Scroll: PAUSED"}
-                </button>
+                  {autoScroll ? "Auto-scroll" : "Paused"}
+                </Button>
 
                 {consoleLogs.length > 0 && (
                   <>
-                    <button
-                      type="button"
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon={consoleCopied ? "check" : "content_copy"}
                       onClick={handleCopyConsole}
-                      className="px-2 py-0.5 rounded border border-border text-text-muted hover:text-text-main"
                     >
                       {consoleCopied ? "Copied" : "Copy"}
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon="delete"
                       onClick={handleClearConsole}
-                      className="px-2 py-0.5 rounded border border-rose-500/30 text-rose-500 hover:bg-rose-500/10"
                     >
                       Clear
-                    </button>
+                    </Button>
                   </>
                 )}
               </div>
-            </div>
+            </Card>
 
             {/* Console Terminal Output */}
-            <div
-              ref={consoleRef}
-              className="p-3 font-mono text-xs rounded-lg h-[calc(100dvh-260px)] overflow-y-auto bg-zinc-950 text-zinc-300 border border-border select-text"
-            >
-              {filteredConsoleLogs.length === 0 ? (
-                <div className="h-full flex items-center justify-center text-zinc-500 text-xs">
-                  {consoleLogs.length === 0 ? "Connecting to output stream..." : "No console lines match filter."}
-                </div>
-              ) : (
-                <div className="space-y-0.5">
-                  {filteredConsoleLogs.map((line, i) => (
-                    <div key={i}>{colorConsoleLine(line, i)}</div>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Card padding="none" className="overflow-hidden">
+              <div
+                ref={consoleRef}
+                className="p-3.5 font-mono text-xs h-[calc(100dvh-270px)] overflow-y-auto bg-black/90 text-zinc-200 select-text"
+              >
+                {filteredConsoleLogs.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-text-muted text-xs">
+                    {consoleLogs.length === 0 ? "Connecting to output stream..." : "No console lines match filter."}
+                  </div>
+                ) : (
+                  <div className="space-y-0.5">
+                    {filteredConsoleLogs.map((line, i) => (
+                      <div key={i}>{colorConsoleLine(line, i)}</div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </Card>
           </div>
         )}
       </div>

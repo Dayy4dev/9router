@@ -1,3 +1,14 @@
+# v0.5.288 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Restored Global Theme Background & Glass Depth:**
+  - Fully restored the ambient glass theme background styling in `.dark.glass` so all pages maintain their luminous depth and signature aesthetic across the entire 9Router dashboard.
+- **Complete Design System & Theme Synchronization in Error & Console Logs:**
+  - Refactored `LogsClient` to natively utilize 9Router's official component primitives: `SegmentedControl` with sliding pill indicators for both view tabs and status filters, `Card` with standard elevation and glass styling, `Badge` semantic color variants, and theme-synchronized primary accents (`text-primary`, `bg-brand-500/10`).
+
+---
+
 # v0.5.287 (2026-10-24) · 2 commits
 
 ## What Was Changed

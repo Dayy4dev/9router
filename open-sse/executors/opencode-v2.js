@@ -15,7 +15,7 @@ import {
   formatOpencodeCliPrompt,
   executeOpencodeCli,
 } from "../utils/opencodeCliRunner.js";
-import { getOpencodeV2ProxyUrl } from "../utils/opencodeV2Proxy.js";
+import { resolveV2ChannelRoute } from "../utils/opencodeV2Channel.js";
 import {
   normalizeResponsesInput,
   clampResponsesCallId,
@@ -367,7 +367,7 @@ export class OpenCodeV2Executor extends BaseExecutor {
     const effectiveProxyOptions = {
       ...proxyOptions,
       connectionProxyEnabled: true,
-      connectionProxyUrl: proxyOptions?.connectionProxyUrl || getOpencodeV2ProxyUrl(),
+      connectionProxyUrl: proxyOptions?.connectionProxyUrl || resolveV2ChannelRoute(),
     };
 
     // Check if official OpenCode CLI engine is available on system

@@ -48,22 +48,22 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
     // Inject a virtual connection for no-auth free providers (with optional proxy pool from settings)
     if (FREE_PROVIDERS[providerId]?.noAuth) {
       if (providerId === "opencode-v2") {
-        const { getOpencodeV2ProxyUrl, OPENCODE_V2_LOCKED_PROXY_NAME, OPENCODE_V2_LOCKED_PROXY_ID } = await import("open-sse/utils/opencodeV2Proxy.js");
-        const lockedUrl = getOpencodeV2ProxyUrl();
-        const sidMatch = (lockedUrl || "").match(/-sid-(\d+)/i);
-        const connectionId = sidMatch ? `proxy:${OPENCODE_V2_LOCKED_PROXY_ID}:${sidMatch[1]}` : `proxy:${OPENCODE_V2_LOCKED_PROXY_ID}`;
+        const { resolveV2ChannelRoute, OPENCODE_V2_CHANNEL_REF, OPENCODE_V2_CHANNEL_ID } = await import("open-sse/utils/opencodeV2Channel.js");
+        const channelRoute = resolveV2ChannelRoute();
+        const sidMatch = (channelRoute || "").match(/-sid-(\d+)/i);
+        const connectionId = sidMatch ? `channel:${OPENCODE_V2_CHANNEL_ID}:${sidMatch[1]}` : `channel:${OPENCODE_V2_CHANNEL_ID}`;
         return {
           id: connectionId,
           connectionId,
-          connectionName: OPENCODE_V2_LOCKED_PROXY_NAME,
+          connectionName: OPENCODE_V2_CHANNEL_REF,
           isActive: true,
           accessToken: "public",
           providerSpecificData: {
             connectionProxyEnabled: true,
-            connectionProxyUrl: lockedUrl,
+            connectionProxyUrl: channelRoute,
             connectionNoProxy: "",
-            connectionProxyPoolId: OPENCODE_V2_LOCKED_PROXY_ID,
-            displayProxyUrl: OPENCODE_V2_LOCKED_PROXY_NAME,
+            connectionProxyPoolId: OPENCODE_V2_CHANNEL_ID,
+            displayProxyUrl: OPENCODE_V2_CHANNEL_REF,
             isLockedProxy: true,
           },
         };

@@ -129,18 +129,6 @@ export default function NoAuthProxyCard({ providerId }) {
               </p>
             </div>
           </div>
-
-          <div className="shrink-0 self-start sm:self-auto">
-            <a
-              href="https://t.me/abcseren"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-primary text-white shadow-[var(--shadow-warm)] hover:brightness-110 active:scale-95 transition-all"
-            >
-              <span>Open Telegram</span>
-              <span className="material-symbols-outlined text-[15px]">open_in_new</span>
-            </a>
-          </div>
         </div>
       </div>
     );

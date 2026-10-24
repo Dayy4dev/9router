@@ -1,3 +1,13 @@
+# v0.5.296 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Clean Dedicated Routing Banner (Buttonless):**
+  - Removed the standalone Telegram button from the OpenCode Free V2 dedicated proxy banner for a cleaner, compact, and balanced card layout.
+  - Retained the interactive inline link `proxy by: t.me/abcseren` with subtle external navigation icon and active radar beacon.
+
+---
+
 # v0.5.295 (2026-10-24) · 2 commits
 
 ## What Was Changed

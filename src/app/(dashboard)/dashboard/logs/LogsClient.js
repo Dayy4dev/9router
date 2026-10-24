@@ -6,29 +6,31 @@ import { Card, Button, Badge, SegmentedControl, PageShell } from "@/shared/compo
 import { CONSOLE_LOG_CONFIG } from "@/shared/constants/config";
 
 function colorConsoleLine(line, index) {
-  let textColor = "text-text-main";
+  let textColor = "text-zinc-200";
   let bgClass = "";
   if (line.includes("[ERROR]") || line.includes("✗") || line.includes("Error:") || line.includes("FAILED")) {
-    textColor = "text-danger";
-    bgClass = "bg-danger/5";
+    textColor = "text-rose-400 font-medium";
+    bgClass = "bg-rose-500/10";
   } else if (line.includes("[WARN]") || line.includes("⚠️")) {
-    textColor = "text-warning";
-    bgClass = "bg-warning/5";
+    textColor = "text-amber-400 font-medium";
+    bgClass = "bg-amber-500/10";
   } else if (line.includes("[INFO]") || line.includes("▶") || line.includes("ℹ️")) {
-    textColor = "text-primary";
+    textColor = "text-sky-400 font-medium";
   } else if (line.includes("[DEBUG]") || line.includes("🐛")) {
-    textColor = "text-text-muted";
+    textColor = "text-zinc-400";
+  } else if (line.includes("[DB]") || line.includes("[SYS]") || line.includes("[ROUTER]")) {
+    textColor = "text-purple-300 font-medium";
   } else if (line.includes("✓") || line.includes("done") || line.includes("SUCCESS")) {
-    textColor = "text-success";
-    bgClass = "bg-success/5";
+    textColor = "text-emerald-400 font-medium";
+    bgClass = "bg-emerald-500/10";
   }
 
   return (
-    <div className={`flex items-start gap-2.5 px-2 py-0.5 hover:bg-surface-2 rounded-[var(--r-chip)] font-mono text-xs leading-relaxed ${bgClass}`}>
-      <span className="text-text-muted select-none shrink-0 w-8 text-right text-[11px] pt-0.5">
+    <div className={`flex items-start hover:bg-white/5 py-0.5 rounded-[var(--r-chip)] transition-colors ${bgClass}`}>
+      <span className="text-zinc-500 select-none shrink-0 w-10 text-right text-[11px] font-mono pr-2.5 border-r border-white/10 pt-0.5">
         {index + 1}
       </span>
-      <span className={`flex-1 break-all whitespace-pre-wrap ${textColor}`}>
+      <span className={`pl-2.5 flex-1 font-mono text-xs whitespace-pre overflow-x-auto select-text ${textColor}`}>
         {line}
       </span>
     </div>
@@ -426,89 +428,130 @@ export default function LogsClient({ initialTab = "errors" }) {
 
         {/* TAB 2: LIVE CONSOLE STREAM */}
         {activeTab === "console" && (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             {/* Console Toolbar */}
-            <Card padding="xs" className="flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 flex-1 min-w-[200px]">
-                <span className="material-symbols-outlined text-[18px] text-text-muted">search</span>
-                <input
-                  type="text"
-                  placeholder="Search live stream lines..."
-                  value={consoleFilter}
-                  onChange={(e) => setConsoleFilter(e.target.value)}
-                  className="w-full bg-transparent text-text-main placeholder-text-muted/60 focus:outline-none font-mono"
-                />
-                {consoleFilter && (
-                  <button onClick={() => setConsoleFilter("")} className="text-text-muted hover:text-text-main">
-                    Clear
-                  </button>
-                )}
+            <Card padding="sm" className="flex flex-col gap-3">
+              {/* Row 1: Search and Log Levels */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-[var(--r-control)] bg-surface-2 border border-border-subtle flex-1 min-w-0">
+                  <span className="material-symbols-outlined text-[18px] text-text-muted">search</span>
+                  <input
+                    type="text"
+                    placeholder="Search console lines by keyword..."
+                    value={consoleFilter}
+                    onChange={(e) => setConsoleFilter(e.target.value)}
+                    className="w-full bg-transparent text-xs text-text-main placeholder-text-muted/60 focus:outline-none font-mono"
+                  />
+                  {consoleFilter && (
+                    <button
+                      type="button"
+                      onClick={() => setConsoleFilter("")}
+                      className="text-text-muted hover:text-text-main text-xs p-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">close</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="shrink-0 self-start sm:self-auto">
+                  <SegmentedControl
+                    size="sm"
+                    options={[
+                      { value: "all", label: "ALL" },
+                      { value: "error", label: "ERR" },
+                      { value: "warn", label: "WARN" },
+                      { value: "info", label: "INFO" },
+                    ]}
+                    value={consoleLevel}
+                    onChange={setConsoleLevel}
+                  />
+                </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <Badge variant={consoleConnected ? "success" : "error"} dot size="sm">
-                  {consoleConnected ? "Connected" : "Disconnected"}
-                </Badge>
+              {/* Row 2: Status Indicator & Action Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-border-subtle text-xs">
+                <div className="flex items-center gap-2.5">
+                  <Badge variant={consoleConnected ? "success" : "error"} dot size="sm">
+                    {consoleConnected ? "Connected" : "Disconnected"}
+                  </Badge>
+                  <span className="text-text-muted font-mono text-[11px]">
+                    {filteredConsoleLogs.length} of {consoleLogs.length} lines
+                  </span>
+                </div>
 
-                <SegmentedControl
-                  size="sm"
-                  options={[
-                    { value: "all", label: "ALL" },
-                    { value: "error", label: "ERR" },
-                    { value: "warn", label: "WARN" },
-                    { value: "info", label: "INFO" },
-                  ]}
-                  value={consoleLevel}
-                  onChange={setConsoleLevel}
-                />
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant={autoScroll ? "primary" : "outline"}
+                    onClick={() => setAutoScroll(!autoScroll)}
+                    icon={autoScroll ? "vertical_align_bottom" : "pause"}
+                  >
+                    {autoScroll ? "Scroll: ON" : "Scroll: OFF"}
+                  </Button>
 
-                <Button
-                  size="sm"
-                  variant={autoScroll ? "primary" : "outline"}
-                  onClick={() => setAutoScroll(!autoScroll)}
-                  icon={autoScroll ? "vertical_align_bottom" : "pause"}
-                >
-                  {autoScroll ? "Auto-scroll" : "Paused"}
-                </Button>
-
-                {consoleLogs.length > 0 && (
-                  <>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      icon={consoleCopied ? "check" : "content_copy"}
-                      onClick={handleCopyConsole}
-                    >
-                      {consoleCopied ? "Copied" : "Copy"}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      icon="delete"
-                      onClick={handleClearConsole}
-                    >
-                      Clear
-                    </Button>
-                  </>
-                )}
+                  {consoleLogs.length > 0 && (
+                    <>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={consoleCopied ? "check" : "content_copy"}
+                        onClick={handleCopyConsole}
+                      >
+                        {consoleCopied ? "Copied" : "Copy"}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        icon="delete"
+                        onClick={handleClearConsole}
+                      >
+                        Clear
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </Card>
 
-            {/* Console Terminal Output */}
-            <Card padding="none" className="overflow-hidden">
+            {/* Console Terminal Window */}
+            <Card padding="none" className="overflow-hidden border border-border-subtle bg-black/90">
+              {/* Window Header Bar */}
+              <div className="flex items-center justify-between px-3.5 py-2 border-b border-white/10 bg-white/5 text-[11px] font-mono text-zinc-400 select-none">
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="size-2.5 rounded-full bg-rose-500/80 inline-block" />
+                    <span className="size-2.5 rounded-full bg-amber-500/80 inline-block" />
+                    <span className="size-2.5 rounded-full bg-emerald-500/80 inline-block" />
+                  </div>
+                  <span className="text-zinc-500">|</span>
+                  <span className="text-zinc-300 font-medium">runtime-stdout.log</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-zinc-500 text-[10px]">
+                  <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>active buffer</span>
+                </div>
+              </div>
+
+              {/* Terminal Output */}
               <div
                 ref={consoleRef}
-                className="p-3.5 font-mono text-xs h-[calc(100dvh-270px)] overflow-y-auto bg-black/90 text-zinc-200 select-text"
+                className="p-3 font-mono text-xs h-[calc(100dvh-320px)] overflow-y-auto text-zinc-200 select-text"
               >
                 {filteredConsoleLogs.length === 0 ? (
-                  <div className="h-full flex items-center justify-center text-text-muted text-xs">
-                    {consoleLogs.length === 0 ? "Connecting to output stream..." : "No console lines match filter."}
+                  <div className="h-full flex flex-col items-center justify-center text-zinc-500 text-xs gap-2">
+                    <span className="material-symbols-outlined text-2xl">terminal</span>
+                    <span>{consoleLogs.length === 0 ? "Connecting to output stream..." : "No console lines match active filter."}</span>
                   </div>
                 ) : (
                   <div className="space-y-0.5">
                     {filteredConsoleLogs.map((line, i) => (
                       <div key={i}>{colorConsoleLine(line, i)}</div>
                     ))}
+                    <div className="flex items-center gap-2 pt-3 text-[11px] text-zinc-500 font-mono select-none">
+                      <span className="text-emerald-500 font-bold">❯</span>
+                      <span>listening for runtime events...</span>
+                      <span className="inline-block w-1.5 h-3 bg-emerald-500 animate-pulse" />
+                    </div>
                   </div>
                 )}
               </div>

@@ -1,3 +1,14 @@
+# v0.5.289 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Live Console UI Overhaul & Terminal Polish:**
+  - Redesigned the Live Console toolbar into a responsive 2-tier layout eliminating button clipping and overcrowding on mobile screens.
+  - Added dedicated search input with instant clear, segmented level filters (ALL, ERR, WARN, INFO), live connection badges, line counter, and full-sized touch actions (Scroll toggle, Copy, Clear).
+  - Enhanced the terminal window with macOS window controls, title bar (`runtime-stdout.log`), active buffer indicator, fixed gutter with line number separators, syntax tag highlighting, and an active listener prompt with pulsing cursor.
+
+---
+
 # v0.5.288 (2026-10-24) · 2 commits
 
 ## What Was Changed

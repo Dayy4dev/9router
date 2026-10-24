@@ -40,13 +40,29 @@ const workshopItems = [
 // Security Log and Inbox Error live in the bell, not the menu - they are
 // conditions to review, not places you visit to work.
 const debugItems = [
-  { href: "/dashboard/console-log", label: "Console Log", icon: "monitor" },
+  { href: "/dashboard/logs", label: "Error & Console Logs", icon: "receipt_long" },
   { href: "/dashboard/translator", label: "Translator", icon: "translate" },
 ];
 
 const systemItems = [
   { href: "/dashboard/proxy-pools", label: "Proxy Pools", icon: "lan" },
 ];
+
+// Nothing is granted until /api/auth/status says so. The menu used to fall back
+// to a full-admin object while `permissions` was still null, which meant an API
+// key with only dashboard access saw every admin item for as long as the fetch
+// took -- seconds on a phone. Deny-by-default removes the flash: the menu is
+// empty until the real permissions arrive.
+const NO_PERMISSIONS = {
+  manageApiKeys: false,
+  manageModels: false,
+  manageProviders: false,
+  manageTools: false,
+  manageAdvanced: false,
+  managePlugins: false,
+  manageMediaProviders: false,
+  viewUsage: false,
+};
 
 function NavLink({ href, icon, label, active, onClick, sub = false, collapsed = false }) {
   return (
@@ -109,6 +125,7 @@ export default function Sidebar({ onClose }) {
   // identity on every store change and re-render the sidebar in a loop.
   const sessionRole = useSessionStore((state) => state.role);
   const sessionPermissions = useSessionStore((state) => state.permissions);
+  const sessionLoaded = useSessionStore((state) => state.loaded);
   const setSession = useSessionStore((state) => state.setSession);
   const authStatus = { role: sessionRole, permissions: sessionPermissions };
 
@@ -126,9 +143,15 @@ export default function Sidebar({ onClose }) {
   }, [setSession]);
 
   const isApiKeyUser = authStatus.role === "apikey";
-  const permissions = authStatus.permissions || { manageApiKeys: true, manageModels: true, manageProviders: true, manageTools: true, manageAdvanced: true, managePlugins: true, manageMediaProviders: true, viewUsage: true };
+  const permissions = authStatus.permissions || NO_PERMISSIONS;
+
+  // A session that has not resolved yet is not an admin session: it is an
+  // unknown one. Until `loaded` flips, every menu group stays empty so a
+  // restricted key never renders admin links it cannot open.
+  const sessionReady = sessionLoaded === true;
 
   const filteredNavItems = navItems.filter((item) => {
+    if (!sessionReady) return false;
     if (!isApiKeyUser) return true;
     if (item.href === "/dashboard/endpoint") return permissions.manageApiKeys;
     if (item.href === "/dashboard/providers") return permissions.manageProviders;
@@ -141,6 +164,7 @@ export default function Sidebar({ onClose }) {
   });
 
   const filteredWorkshopItems = workshopItems.filter((item) => {
+    if (!sessionReady) return false;
     if (!isApiKeyUser) return true;
     if (item.href === "/dashboard/model-editor" || item.href === "/dashboard/arena" || item.href === "/dashboard/prompt-injection" || item.href === "/dashboard/prd") {
       return permissions.manageModels;
@@ -150,25 +174,27 @@ export default function Sidebar({ onClose }) {
   });
 
   const filteredDebugItems = debugItems.filter((item) => {
+    if (!sessionReady) return false;
     if (!isApiKeyUser) return true;
     return permissions.manageAdvanced;
   });
 
   const filteredSystemItems = systemItems.filter((item) => {
+    if (!sessionReady) return false;
     if (!isApiKeyUser) return true;
     return permissions.manageAdvanced;
   });
 
-  const canOpenMedia = !isApiKeyUser || permissions.manageMediaProviders;
+  const canOpenMedia = sessionReady && (!isApiKeyUser || permissions.manageMediaProviders);
 
   // Settings are an administrator surface, so a key-signed session skips them
   // instead of firing requests it may not read.
   useEffect(() => {
-    if (isApiKeyUser) return;
+    if (!sessionReady || isApiKeyUser) return;
     useSettingsStore.getState().fetchSettings().then((data) => {
       if (data?.enableTranslator) setEnableTranslator(true);
     });
-  }, [isApiKeyUser]);
+  }, [sessionReady, isApiKeyUser]);
 
   const isActive = (href) => {
     if (href === "/dashboard/endpoint") {
@@ -233,7 +259,7 @@ export default function Sidebar({ onClose }) {
               <span className="material-symbols-outlined text-[18px]">left_panel_open</span>
             </button>
           )}
-          {isApiKeyUser && !collapsed && (
+          {sessionReady && isApiKeyUser && !collapsed && (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 text-xs text-primary font-medium">
               <span className="material-symbols-outlined text-[15px]">key</span>
               <span className="truncate">{authStatus?.displayName || "API Key User"}</span>
@@ -380,15 +406,25 @@ export default function Sidebar({ onClose }) {
               })}
 
               {/* Settings */}
-              {!isApiKeyUser && (
-                <NavLink
-                  href='/dashboard/profile'
-                  icon='settings'
-                  label='9Router Settings'
-                  active={isActive('/dashboard/profile')}
-                  onClick={onClose}
-                  collapsed={collapsed}
-                />
+              {sessionReady && !isApiKeyUser && (
+              <>
+              <NavLink
+                href="/dashboard/profile"
+                icon="settings"
+                label="9Router Settings"
+                active={isActive("/dashboard/profile")}
+                onClick={onClose}
+                collapsed={collapsed}
+              />
+              <NavLink
+                href="/dashboard/experiments"
+                icon="science"
+                label="Experiment Features"
+                active={isActive("/dashboard/experiments")}
+                onClick={onClose}
+                collapsed={collapsed}
+              />
+              </>
               )}
             </div>
           )}

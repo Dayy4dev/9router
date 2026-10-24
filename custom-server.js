@@ -298,9 +298,10 @@ function toGuardRequest(req) {
   const pathname = qIndex === -1 ? url : url.slice(0, qIndex);
   const search = qIndex === -1 ? "" : url.slice(qIndex + 1);
   const rawCookies = req.headers && req.headers.cookie ? req.headers.cookie : "";
+  const proto = (req.headers && (req.headers["x-forwarded-proto"] || (req.socket && req.socket.encrypted ? "https" : "http"))) || "http";
   return {
     method: req.method || "GET",
-    url: "http://" + ((req.headers && req.headers.host) || "localhost") + url,
+    url: proto + "://" + ((req.headers && req.headers.host) || "localhost") + url,
     nextUrl: { pathname, searchParams: new URLSearchParams(search) },
     headers: {
       get(name) {
@@ -378,9 +379,15 @@ async function runAuthGuard(req, res) {
   }
   if (!response || response.headers.get("x-middleware-next") === "1") return false;
   res.statusCode = response.status || 500;
+  const proto = (req.headers && (req.headers["x-forwarded-proto"] || (req.socket && req.socket.encrypted ? "https" : "http"))) || "http";
   response.headers.forEach((value, key) => {
-    if (key === "set-cookie") res.setHeader("set-cookie", Array.isArray(value) ? value : [value]);
-    else if (key !== "content-length") res.setHeader(key, value);
+    if (key === "set-cookie") {
+      res.setHeader("set-cookie", Array.isArray(value) ? value : [value]);
+    } else if (key === "location" && proto === "https" && value.startsWith("http://")) {
+      res.setHeader("location", "https://" + value.slice(7));
+    } else if (key !== "content-length") {
+      res.setHeader(key, value);
+    }
   });
   if (response.body) {
     const buf = Buffer.from(await new Response(response.body).arrayBuffer());
@@ -419,6 +426,34 @@ http.createServer = (...args) => {
     req.headers["x-9r-real-ip"] = ip;
     req.headers["x-9r-peer-token"] = PEER_TOKEN;
     if (viaProxy) req.headers["x-9r-via-proxy"] = "1";
+    // Rendered HTML names the chunk hashes of the build that produced it. Next
+    // marks prerendered pages `s-maxage=31536000, stale-while-revalidate`, which
+    // leaves the browser free to heuristically cache that HTML from Last-Modified.
+    // After a deploy the cached page still points at chunks this build no longer
+    // ships, so the user sees the old screens until a hard refresh. Force every
+    // HTML document to revalidate instead. Immutable hashed assets under
+    // /_next/static are untouched - only a cache-control that tries to go long on
+    // a document is rewritten.
+    const urlPath = String(req.url || "").split("?")[0];
+    const isDocument =
+      !urlPath.startsWith("/_next/") &&
+      !urlPath.startsWith("/api/") &&
+      !/\.[a-zA-Z0-9]+$/.test(urlPath);
+    if (isDocument) {
+      const origSetHeader = res.setHeader.bind(res);
+      res.setHeader = (name, value) => {
+        if (String(name).toLowerCase() === "cache-control") {
+          const v = String(value);
+          // Leave Next's own explicit no-store/no-cache alone; only override the
+          // long-lived s-maxage form Next emits for prerendered pages.
+          if (v.includes("s-maxage") && !v.includes("must-revalidate")) {
+            value = "public, max-age=0, must-revalidate";
+            res.setHeader = origSetHeader; // one override is enough; restore
+          }
+        }
+        return origSetHeader(name, value);
+      };
+    }
     // Auth gate ahead of Next; runAuthGuard resolves false when the request
     // may pass through, true when it already answered (401 or redirect).
     return runAuthGuard(req, res)

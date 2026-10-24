@@ -583,24 +583,6 @@ export const PATTERN_CAPABILITIES = [
  * Union:        vision, pdf, audioInput, videoInput, imageOutput, audioOutput, search
  * Intersection: tools
  * Primary:      reasoning fields from the first (primary) model
- * Conservative: contextWindow = min; maxOutput = max
- *
- * @param {string[]} comboModels
- * @param {Object|null} [comboLookup] optional map of combo name → models array for nested resolution
- * @param {Function|null} [resolveCaps] optional (fullId) → caps override. The synced model
- *   catalog is server-only (it reads a file), so a browser-side resolution cannot see the
- *   limits it supplies and silently falls back to the generic patterns below. Callers that
- *   have the server's answer (/api/models, via useModelCaps) pass it here; it is merged over
- *   the local tables, so fields it does not carry (tools, pdf, audio/video, thinking*) survive.
- * @param {number} [_depth] internal recursion depth guard
- * @returns {object|null} full capabilities object, or null for empty input
- */
-/**
- * Aggregate capabilities across a combo's member models.
- *
- * Union:        vision, pdf, audioInput, videoInput, imageOutput, audioOutput, search
- * Intersection: tools
- * Primary:      reasoning fields from the first (primary) model
  * Window:       contextWindow and maxOutput both follow the largest member, because a
  *               combo fails over instead of splitting one conversation across models.
  *               Reporting the smallest window would make a client compact a 1M model
@@ -614,8 +596,11 @@ export const PATTERN_CAPABILITIES = [
  *   limits it supplies and silently falls back to the generic patterns below. Callers that
  *   have the server's answer (/api/models, via useModelCaps) pass it here; it is merged over
  *   the local tables, so fields it does not carry (tools, pdf, audio/video, thinking*) survive.
+ *   Anything that is not a function is ignored: this slot used to hold the recursion depth,
+ *   and a stale call site passing a number there took the whole models list down with
+ *   "e is not a function" the moment a user had a combo.
  * @param {number} [_depth] internal recursion depth guard
- * @param {number} [contextOverride] explicit contextWindow set on the combo
+ * @param {number} [contextOverride] explicit contextWindow set on the combo, 0 = auto
  * @returns {object|null} full capabilities object, or null for empty input
  */
 export function aggregateComboCapabilities(comboModels, comboLookup = null, resolveCaps = null, _depth = 0, contextOverride = 0) {
@@ -627,18 +612,19 @@ export function aggregateComboCapabilities(comboModels, comboLookup = null, reso
     resolveCaps = null;
   }
   if (!comboModels?.length || _depth > 6) return null;
+  const resolve = typeof resolveCaps === "function" ? resolveCaps : null;
   const allCaps = comboModels.map((fullId) => {
     // Nested combo: bare name (no slash) that exists in the lookup — recurse
     if (!fullId.includes("/") && comboLookup?.[fullId]) {
-      return aggregateComboCapabilities(comboLookup[fullId], comboLookup, resolveCaps, _depth + 1, contextOverride)
-          ?? resolveCaps?.(fullId)
+      return aggregateComboCapabilities(comboLookup[fullId], comboLookup, resolve, _depth + 1, contextOverride)
+          ?? resolve?.(fullId)
           ?? getCapabilitiesForModel(null, fullId);
     }
     const slash = fullId.indexOf("/");
     const provider = slash === -1 ? null : fullId.slice(0, slash);
     const model = slash === -1 ? fullId : fullId.slice(slash + 1);
     const local = getCapabilitiesForModel(provider, model);
-    const override = typeof resolveCaps === "function" ? resolveCaps(fullId) : null;
+    const override = resolve?.(fullId);
     return override ? { ...local, ...override } : local;
   });
   const first = allCaps[0];

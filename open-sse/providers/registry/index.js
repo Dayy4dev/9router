@@ -150,6 +150,7 @@ import p147 from "./minimax-code-global.js";
 import p148 from "./bedrock.js";
 import p149 from "./bedrock-xai.js";
 import p150 from "./nous.js";
+import p151 from "./opencode-v2.js";
 export default [
   p0,
   p1,
@@ -300,4 +301,5 @@ export default [
   p148,
   p149,
   p150,
+  p151,
 ];

@@ -37,9 +37,38 @@ export async function GET() {
 }
 
 // POST /api/models/custom - Add custom model
+// Accepts either a single model or { models: [...] } for a bulk add, so the
+// "Active All" action can switch on a whole catalogue in one round trip
+// instead of one request per model id.
 export async function POST(request) {
   try {
-    const { providerAlias, id, type, name, ownedBy, caps, transport, inputMultiplier, outputMultiplier, antiProbe } = await request.json();
+    const body = await request.json();
+
+    if (Array.isArray(body?.models)) {
+      let count = 0;
+      for (const entry of body.models) {
+        if (!entry?.providerAlias || !entry?.id) continue;
+        const type = entry.type || "llm";
+        const cleanCaps = sanitizeCaps(entry.caps);
+        const cleanTransport = sanitizeTransport(entry.transport, type);
+        await addCustomModel({
+          providerAlias: entry.providerAlias,
+          id: entry.id,
+          type,
+          name: entry.name,
+          ownedBy: typeof entry.ownedBy === "string" ? entry.ownedBy.trim() : "",
+          ...(cleanCaps ? { caps: cleanCaps } : {}),
+          ...(cleanTransport ? { transport: cleanTransport } : {}),
+          inputMultiplier: entry.inputMultiplier,
+          outputMultiplier: entry.outputMultiplier,
+          antiProbe: entry.antiProbe,
+        });
+        count += 1;
+      }
+      return NextResponse.json({ success: true, count });
+    }
+
+    const { providerAlias, id, type, name, ownedBy, caps, transport, inputMultiplier, outputMultiplier, antiProbe } = body;
     if (!providerAlias || !id) {
       return NextResponse.json({ error: "providerAlias and id required" }, { status: 400 });
     }

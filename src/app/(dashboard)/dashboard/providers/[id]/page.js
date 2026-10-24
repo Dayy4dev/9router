@@ -86,6 +86,7 @@ export default function ProviderDetailPage() {
   const [liveModelsError, setLiveModelsError] = useState(null);
   const [kiloFreeModels, setKiloFreeModels] = useState([]);
   const [disabledModelIds, setDisabledModelIds] = useState([]);
+  const [enablingAll, setEnablingAll] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
   const [showAgRiskModal, setShowAgRiskModal] = useState(false);
   const [oneByOneRunning, setOneByOneRunning] = useState(false);
@@ -302,12 +303,31 @@ export default function ProviderDetailPage() {
     });
   };
 
-  const handleEnableAll = async () => {
+  const handleEnableAll = async (inactiveIds = []) => {
+    if (enablingAll) return;
+    setEnablingAll(true);
     try {
+      // 1. Re-enable every model currently disabled in the database.
       const res = await fetch(`/api/models/disabled?providerAlias=${encodeURIComponent(providerStorageAlias)}`, { method: "DELETE" });
       if (res.ok) await fetchDisabledModels();
+
+      // 2. Add any not-yet-added catalogue/suggested models so the whole
+      //    provider's model set shows up in the active list in one click.
+      const ids = Array.from(new Set(Array.isArray(inactiveIds) ? inactiveIds : []));
+      if (ids.length > 0) {
+        await fetch("/api/models/custom", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            models: ids.map((id) => ({ providerAlias: providerStorageAlias, id, type: "llm" })),
+          }),
+        });
+        await fetchCustomModels();
+      }
     } catch (error) {
       console.log("Error enabling all models:", error);
+    } finally {
+      setEnablingAll(false);
     }
   };
 
@@ -1298,10 +1318,9 @@ export default function ProviderDetailPage() {
     // For all providers, built-in catalog models start in "Suggested models"
     // and only rise to the active list when explicitly added with (+).
     // Disabled/removed models return to suggestions.
-    const allModels = [];
+    // Built-in catalogue models live in the suggestion chips until they are
+    // added; the active list below is the set the operator switched on.
     const disabledSet = new Set(disabledModelIds);
-    const displayModels = [];
-    const disabledDisplayModels = [];
     const customModelRows = getProviderCustomModelRows({
       customModels,
       modelAliases,
@@ -1309,6 +1328,15 @@ export default function ProviderDetailPage() {
       builtInModels: [],
       type: "llm",
     }).filter((row) => !studioTargetIndex.isStudioTarget(providerStorageAlias, row.id));
+
+    // A disabled model must leave the active grid, otherwise "Disable All" and
+    // "Active All" both look like no-ops. Disabled ids move to the restorable
+    // strip under the grid, which is also what "Active All" empties.
+    const activeCustomModelRows = customModelRows.filter((row) => !disabledSet.has(row.id));
+    const disabledDisplayModels = Array.from(new Set([
+      ...customModelRows.filter((row) => disabledSet.has(row.id)).map((row) => row.id),
+      ...disabledModelIds,
+    ])).map((id) => ({ id }));
 
     // Apply search query & status filter
     const matchesFilter = (m) => {
@@ -1327,11 +1355,9 @@ export default function ProviderDetailPage() {
       return true;
     };
 
-    const filteredCustomModelRows = customModelRows.filter(matchesFilter);
-    const filteredDisplayModels = displayModels.filter(matchesFilter);
-
-    const hasAnyModels = customModelRows.length > 0 || displayModels.length > 0;
-    const hasFilteredModels = filteredCustomModelRows.length > 0 || filteredDisplayModels.length > 0;
+    const filteredCustomModelRows = activeCustomModelRows.filter(matchesFilter);
+    const hasAnyModels = activeCustomModelRows.length > 0;
+    const hasFilteredModels = filteredCustomModelRows.length > 0;
 
     return (
       <div className="flex flex-wrap gap-3">
@@ -1367,36 +1393,6 @@ export default function ProviderDetailPage() {
               isTesting={testingModelIds.has(model.id)}
               isCustom
               isFree={effectiveIsFree}
-              caps={getCaps(`${providerId}/${model.id}`)}
-              thinkingSuffix={resolveThinkingSuffix(model.id)}
-            />
-          );
-        })}
-
-        {filteredDisplayModels.map((model) => {
-          const suggested = suggestedModels.find((s) => s.id === model.id);
-          const effectiveIsFree = suggested?.isFree !== undefined ? suggested.isFree : model.isFree;
-          const fullModel = `${providerStorageAlias}/${model.id}`;
-          const oldFormatModel = `${providerId}/${model.id}`;
-          const existingAlias = Object.entries(modelAliases).find(
-            ([, m]) => m === fullModel || m === oldFormatModel
-          )?.[0];
-          return (
-            <ModelRow
-              key={model.id}
-              model={model}
-              fullModel={`${providerDisplayAlias}/${model.id}`}
-              alias={existingAlias}
-              copied={copied}
-              onCopy={copy}
-              onSetAlias={(alias) => handleSetAlias(model.id, alias, providerStorageAlias)}
-              onDeleteAlias={() => handleDeleteAlias(existingAlias)}
-              testStatus={modelTestResults[model.id]}
-              latencyMs={modelTestLatencies[model.id]}
-              onTest={connections.length > 0 || isFreeNoAuth ? () => handleTestModel(model.id) : undefined}
-              isTesting={testingModelIds.has(model.id)}
-              isFree={effectiveIsFree}
-              onDisable={() => handleDisableModel(model.id)}
               caps={getCaps(`${providerId}/${model.id}`)}
               thinkingSuffix={resolveThinkingSuffix(model.id)}
             />
@@ -1525,8 +1521,8 @@ export default function ProviderDetailPage() {
           );
         })()}
 
-        {/* Disabled models - restorable (not shown for OpenCode V1 and V2 since models return to suggestions) */}
-        {disabledDisplayModels.length > 0 && !isOpenCode && (
+        {/* Disabled models - restorable */}
+        {disabledDisplayModels.length > 0 && (
           <div className="w-full mt-2">
             <p className="text-xs text-text-muted mb-2">Disabled models ({disabledDisplayModels.length}):</p>
             <div className="flex flex-wrap gap-2">
@@ -2001,17 +1997,29 @@ export default function ProviderDetailPage() {
                 customModels,
                 modelAliases,
                 providerAlias: providerStorageAlias,
-                builtInModels: models,
+                builtInModels: [],
                 type: "llm",
               }).filter((row) => !studioTargetIndex.isStudioTarget(providerStorageAlias, row.id));
 
-              const allIds = Array.from(new Set([
-                ...customModelRows.map((m) => m.id),
+              const addedIds = new Set(customModelRows.map((m) => m.id));
+
+              // All models published by this provider (built-in catalog, kilo free, suggested from API)
+              const availableCatalogIds = Array.from(new Set([
                 ...models.filter((m) => { const k = getModelKind(m); return !k || k === "llm"; }).map((m) => m.id),
                 ...kiloFreeModels.filter((fm) => !models.some((m) => m.id === fm.id)).map((m) => m.id),
+                ...suggestedModels.filter((m) => m?.id).map((m) => m.id),
               ]));
 
-              const activeIds = allIds.filter((id) => !disabledModelIds.includes(id));
+              // Catalog models not yet added to the active list
+              const notAddedCatalogIds = availableCatalogIds.filter((id) => !addedIds.has(id));
+
+              // Active models (added and not disabled)
+              const activeIds = customModelRows
+                .map((m) => m.id)
+                .filter((id) => !disabledModelIds.includes(id));
+
+              // Active All can be clicked if there are disabled models OR available catalog models to activate
+              const hasInactive = disabledModelIds.length > 0 || notAddedCatalogIds.length > 0;
               const failedActiveIds = activeIds.filter((id) => modelTestResults[id] === "error");
               const canTest = connections.length > 0 || isFreeNoAuth;
               return (
@@ -2041,9 +2049,16 @@ export default function ProviderDetailPage() {
                       {`Disable Failed (${failedActiveIds.length})`}
                     </Button>
                   )}
-                  {disabledModelIds.length > 0 && (
-                    <Button size="sm" variant="secondary" icon="restart_alt" onClick={handleEnableAll}>
-                      Active All
+                  {hasInactive && (
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      icon={enablingAll ? "progress_activity" : "restart_alt"}
+                      disabled={enablingAll || isTestingAll}
+                      onClick={() => handleEnableAll(notAddedCatalogIds)}
+                      title="Activate all available and disabled models"
+                    >
+                      {enablingAll ? translate("Activating...") : translate("Active All")}
                     </Button>
                   )}
                   {activeIds.length > 0 && (

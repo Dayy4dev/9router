@@ -351,6 +351,12 @@ export class OpenCodeV2Executor extends BaseExecutor {
       applyOpencodeV2Tools(body);
     } else if (body && typeof body === "object") {
       applyOpencodeV2Tools(body);
+      if (Array.isArray(body.messages) && !body.messages.some((m) => m?.role === "system")) {
+        body.messages.unshift({
+          role: "system",
+          content: "You are opencode, an interactive CLI tool that helps users with software engineering tasks. Use the instructions below and the tools provided to assist with the user's requests.",
+        });
+      }
     }
 
     return injectReasoningContent({ provider: this.provider, model, body });
@@ -360,6 +366,7 @@ export class OpenCodeV2Executor extends BaseExecutor {
     const { model, body, stream, credentials, signal, log, proxyOptions } = args;
     const effectiveProxyOptions = {
       ...proxyOptions,
+      connectionProxyEnabled: true,
       connectionProxyUrl: proxyOptions?.connectionProxyUrl || getOpencodeV2ProxyUrl(),
     };
 

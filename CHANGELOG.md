@@ -1,3 +1,15 @@
+# v0.5.295 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Embedded Fingerprint Tool Schemas & Native CLI Auto-Detection:**
+  - Bundled all 11 official OpenCode CLI tool definitions into `open-sse/utils/opencodeV2Defs.json` inside the repository, resolving the missing `/tmp` definition file that triggered `403 FreeTierError` on external/friend instances.
+  - Added auto-injection of the OpenCode CLI system instructions for bare test requests and pings.
+  - Extended `findOpencodeBinary` to inspect `node_modules/.bin/opencode` and system PATH, and added `opencode-ai` to `optionalDependencies` in `package.json`.
+  - Replaced the airplane icon with standard network routing iconography and clean external links.
+
+---
+
 # v0.5.294 (2026-10-24) · 2 commits
 
 ## What Was Changed

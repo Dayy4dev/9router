@@ -1,5 +1,6 @@
 import fs from "fs";
-import { spawn } from "child_process";
+import path from "path";
+import { spawn, execSync } from "child_process";
 
 export function findOpencodeBinary() {
   const candidates = [
@@ -8,7 +9,8 @@ export function findOpencodeBinary() {
     "/usr/bin/opencode",
     "/root/bin/opencode",
     "/tmp/oc-cli/package/bin/opencode",
-    "opencode",
+    path.join(process.cwd(), "node_modules", ".bin", "opencode"),
+    path.join(process.cwd(), "node_modules", ".bin", "opencode.cmd"),
   ];
 
   for (const bin of candidates) {
@@ -19,6 +21,17 @@ export function findOpencodeBinary() {
       /* ignore */
     }
   }
+
+  // Probe system PATH
+  try {
+    const isWin = process.platform === "win32";
+    const cmd = isWin ? "where opencode 2>nul" : "which opencode 2>/dev/null";
+    const p = execSync(cmd, { encoding: "utf8", timeout: 2000 }).trim().split(/\r?\n/)[0];
+    if (p && fs.existsSync(p)) return p;
+  } catch {
+    /* ignore */
+  }
+
   return null;
 }
 

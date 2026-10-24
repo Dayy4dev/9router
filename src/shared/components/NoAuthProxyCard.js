@@ -88,9 +88,9 @@ export default function NoAuthProxyCard({ providerId }) {
         {/* Content */}
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5">
           <div className="flex items-start sm:items-center gap-3.5">
-            {/* Glowing animated telegram icon */}
+            {/* Glowing animated proxy route icon (lan) */}
             <div className="relative flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/25 shadow-[0_0_16px_rgba(229,106,74,0.2)]">
-              <span className="material-symbols-outlined text-[24px]">send</span>
+              <span className="material-symbols-outlined text-[22px]">lan</span>
               <span className="absolute -top-1 -right-1 flex size-3">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex size-3 rounded-full bg-emerald-500" />
@@ -135,10 +135,10 @@ export default function NoAuthProxyCard({ providerId }) {
               href="https://t.me/abcseren"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold bg-primary text-white shadow-[var(--shadow-warm)] hover:brightness-110 active:scale-95 transition-all"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-primary text-white shadow-[var(--shadow-warm)] hover:brightness-110 active:scale-95 transition-all"
             >
-              <span className="material-symbols-outlined text-[16px]">send</span>
               <span>Open Telegram</span>
+              <span className="material-symbols-outlined text-[15px]">open_in_new</span>
             </a>
           </div>
         </div>

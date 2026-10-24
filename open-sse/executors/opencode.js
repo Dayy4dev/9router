@@ -421,6 +421,10 @@ export class OpenCodeExecutor extends BaseExecutor {
 
   async execute(args) {
     const { model, body, proxyOptions, signal, log } = args;
+    const effectiveProxyOptions = proxyOptions ? {
+      ...proxyOptions,
+      connectionProxyEnabled: true,
+    } : null;
     const opencodeBin = findOpencodeBinary();
     if (opencodeBin) {
       try {
@@ -433,7 +437,7 @@ export class OpenCodeExecutor extends BaseExecutor {
             opencodeBin,
             targetModel,
             promptText,
-            proxyOptions,
+            proxyOptions: effectiveProxyOptions,
             signal,
             log,
             rawModel,
@@ -445,7 +449,11 @@ export class OpenCodeExecutor extends BaseExecutor {
       }
     }
 
-    return super.execute({ ...args, credentials: this.prepareRequestCredentials(args) });
+    return super.execute({
+      ...args,
+      proxyOptions: effectiveProxyOptions,
+      credentials: this.prepareRequestCredentials(args),
+    });
   }
 
   // Free tier endpoints matching OpenCode 1.19+ CLI:

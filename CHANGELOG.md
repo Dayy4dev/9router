@@ -1,3 +1,15 @@
+# v0.5.315 (2026-10-25) · 2 commits
+
+## What Was Changed
+
+- **Add Dedicated OCR Auto Image-to-Text Plugin:**
+  - Added **OCR Auto Image-to-Text (`imageVision`)** alongside Adaptive Thinking in the Custom Plugins suite.
+  - Automatically intercepts base64 images and URLs in prompt payloads, parses dimensions and metadata via Sharp, and converts images into structured markdown OCR text blocks.
+  - Enables text-only models (e.g. DeepSeek-R1, Llama-text, GLM, CLI engines) to process visual content without 400 errors, and provides high-precision OCR transcripts for vision models.
+  - Updated `/dashboard/plugins` with a balanced 2-column card layout, capacity markers, and per-model assignment pickers.
+
+---
+
 # v0.5.314 (2026-10-25) · 2 commits
 
 ## What Was Changed

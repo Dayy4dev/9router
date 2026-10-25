@@ -1,3 +1,12 @@
+# v0.5.308 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Remove Redundant 'use server' Directives in API Route Handlers:**
+  - Removed `"use server"` directive from 24 API route files under `src/app/api/cli-tools/` and `src/app/api/tunnel/`. In Next.js App Router, `"use server"` designates React Server Actions (which disallow non-function exports like `export const dynamic = "force-dynamic"`). Route handlers run server-side by default and do not use Server Action directives.
+
+---
+
 # v0.5.307 (2026-10-24) · 2 commits
 
 ## What Was Changed

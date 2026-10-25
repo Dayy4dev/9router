@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { createProviderConnection } from "@/models";
 import {
+
+export const dynamic = "force-dynamic";
   fetchZedAuthenticatedUser,
   resolveZedOrganizationId,
 } from "open-sse/shared/zedAuth.js";

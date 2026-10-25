@@ -8,6 +8,8 @@ import path from "path";
 import os from "os";
 import { resolveModelDisplayName } from "@/shared/utils/modelDisplayName";
 
+export const dynamic = "force-dynamic";
+
 const execAsync = promisify(exec);
 
 // OpenClaw 2026.5.x writes agents[].model as either a plain string

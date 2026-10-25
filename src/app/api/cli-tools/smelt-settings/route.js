@@ -7,6 +7,8 @@ import os from "os";
 import { exec } from "child_process";
 import { promisify } from "util";
 
+export const dynamic = "force-dynamic";
+
 const execAsync = promisify(exec);
 
 const getSmeltConfigPath = () => path.join(os.homedir(), ".smelt", "config.json");

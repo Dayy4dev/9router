@@ -8,6 +8,8 @@ import path from "path";
 import os from "os";
 import { DEFAULT_PLUGINS } from "@/shared/constants/coworkPlugins";
 
+export const dynamic = "force-dynamic";
+
 const execAsync = promisify(exec);
 
 // Exa MCP def - reuse from coworkPlugins (DRY).

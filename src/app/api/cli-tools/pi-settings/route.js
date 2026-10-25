@@ -8,6 +8,8 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { resolveModelDisplayName } from "@/shared/utils/modelDisplayName";
 
+export const dynamic = "force-dynamic";
+
 const execAsync = promisify(exec);
 
 const getPiModelsJsonPath = () => {

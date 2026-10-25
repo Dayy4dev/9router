@@ -8,6 +8,8 @@ import { exec } from "child_process";
 import { promisify } from "util";
 import { parseTOML, stringifyTOML } from "confbox";
 
+export const dynamic = "force-dynamic";
+
 const execAsync = promisify(exec);
 
 const getForgeDir = () => path.join(os.homedir(), ".forge");

@@ -1,3 +1,13 @@
+# v0.5.306 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Stage open-sse Assets in Standalone Builds & Enforce Dynamic API Routes:**
+  - Added `open-sse/` directory to standalone asset copy step (`scripts/copy-standalone-assets.mjs`) ensuring `opencodeV2Defs.json` schema definitions and runtime files are present in standalone and Bun production environments.
+  - Added `export const dynamic = "force-dynamic"` across all dynamic API route handlers to guarantee Next.js and Bun runtimes evaluate routes dynamically without static evaluation failures.
+
+---
+
 # v0.5.305 (2026-10-24) · 2 commits
 
 ## What Was Changed

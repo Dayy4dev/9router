@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import {
-
-export const dynamic = "force-dynamic";
   getProviderConnections,
   updateProviderConnection,
 } from "@/lib/localDb";
+
+export const dynamic = "force-dynamic";
 
 const MODEL_LOCK_PREFIX = "modelLock_";
 

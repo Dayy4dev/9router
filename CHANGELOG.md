@@ -1,3 +1,12 @@
+# v0.5.309 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Fix Syntax Errors in API Route Imports:**
+  - Repositioned `export const dynamic = "force-dynamic"` to follow multiline import blocks in `src/app/api/models/availability/route.js`, `src/app/api/oauth/zed/import/route.js`, and `src/app/api/cli-tools/grok-build-settings/route.js`, fixing syntax errors ("cannot import as reserved word") during Webpack and Bun compilation.
+
+---
+
 # v0.5.308 (2026-10-24) · 2 commits
 
 ## What Was Changed

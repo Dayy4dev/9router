@@ -7,13 +7,13 @@ import path from "path";
 import os from "os";
 import { getCapabilitiesForModel } from "open-sse/providers/capabilities.js";
 import {
-
-export const dynamic = "force-dynamic";
   applyGrokBuildConfig,
   GROK_SUBAGENT_TYPES,
   parseGrokBuildConfig,
   resetGrokBuildConfig,
 } from "@/lib/grokBuildConfig";
+
+export const dynamic = "force-dynamic";
 
 const execAsync = promisify(exec);
 

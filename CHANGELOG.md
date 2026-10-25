@@ -1,3 +1,16 @@
+# v0.5.319 (2026-10-25) · 1 commits
+
+## What Was Changed
+
+- **Removed the embedded OpenCode V2 residential proxy channel:**
+  - Deleted `open-sse/utils/opencodeV2Channel.js` entirely (the scrambled residential endpoint + `OPENCODE_V2_ROUTE` override are gone).
+  - `auth.js` no-auth block restored to plain logic: direct public connection, user proxy pools, and rotation only — no built-in channel injection, no `isLockedProxy`/`displayProxyUrl` connection.
+  - `opencodeCliRunner.js` no longer falls back the CLI to the channel proxy; it only uses a proxy when the user explicitly configured one on the connection.
+  - `NoAuthProxyCard` (all no-auth providers incl. OpenCode V1/V2): the "builtin" option, its gold-shimmer label, hint, and Channel footer row are removed. The card keeps direct/custom-pool selection with rotation, and still self-heals stale pool ids from settings.
+  - Removed the now-unused `text-gold-shimmer` CSS and the `Select` text-transparent workaround.
+
+---
+
 # v0.5.318 (2026-10-25) · 1 commits
 
 ## What Was Changed

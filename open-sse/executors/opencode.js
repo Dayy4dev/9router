@@ -430,24 +430,23 @@ export class OpenCodeExecutor extends BaseExecutor {
     };
     const opencodeBin = findOpencodeBinary();
     const hasClientTools = Array.isArray(body?.tools) && body.tools.length > 0;
-    if (opencodeBin && !hasClientTools) {
+    const promptText = (!hasClientTools && opencodeBin) ? formatOpencodeCliPrompt(body) : "";
+    const isSuitableForCli = opencodeBin && !hasClientTools && promptText && promptText.length < 24000;
+    if (isSuitableForCli) {
       try {
         const rawModel = baseModelId(model || body?.model);
         const targetModel = `opencode/${rawModel}`;
-        const promptText = formatOpencodeCliPrompt(body);
 
-        if (promptText) {
-          return await executeOpencodeCli({
-            opencodeBin,
-            targetModel,
-            promptText,
-            proxyOptions: effectiveProxyOptions,
-            signal,
-            log,
-            rawModel,
-            providerTag: "OPENCODE",
-          });
-        }
+        return await executeOpencodeCli({
+          opencodeBin,
+          targetModel,
+          promptText,
+          proxyOptions: effectiveProxyOptions,
+          signal,
+          log,
+          rawModel,
+          providerTag: "OPENCODE",
+        });
       } catch (err) {
         log?.warn?.("OPENCODE", `CLI engine spawn failed, falling back to network wire: ${err.message}`);
       }

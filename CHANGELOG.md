@@ -1,3 +1,14 @@
+# v0.5.310 (2026-10-25) · 2 commits
+
+## What Was Changed
+
+- **Fix OpenCode Empty Responses and FreeTier Routing:**
+  - In `src/sse/services/auth.js`, ensured residential channel proxy fallback is automatically applied when routing `opencode-v2` and `opencode` connections if no custom proxy pool is configured.
+  - In `open-sse/utils/opencodeCliRunner.js`, fixed response parsing to correctly capture `responseText` from `finalResult.text` instead of referencing an undefined variable.
+  - In `open-sse/executors/opencode-v2.js` and `open-sse/executors/opencode.js`, routed prompts larger than 24KB (e.g. agent sessions with multi-turn system context) directly to the Wire HTTP Executor to prevent CLI runner truncation and empty responses.
+
+---
+
 # v0.5.309 (2026-10-24) · 2 commits
 
 ## What Was Changed

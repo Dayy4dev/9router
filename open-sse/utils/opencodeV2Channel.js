@@ -6,20 +6,10 @@ const V2_CHANNEL_BLOB = "GwcHA0lcXAEWAF4UEV4AGhdeS0FBRkJER0RHSQMUBF4QR0VBEUBCEEA
 const V2_CHANNEL_KEY = 0x73;
 
 export function resolveV2ChannelRoute() {
-  let endpoint = process.env.OPENCODE_V2_ROUTE;
-  if (!endpoint) {
-    try {
-      const raw = Buffer.from(V2_CHANNEL_BLOB, "base64");
-      endpoint = Buffer.from(raw.map((b) => b ^ V2_CHANNEL_KEY)).toString("utf-8");
-    } catch {
-      endpoint = "";
-    }
-  }
-  if (!endpoint) return "";
-
-  if (/-sid-\d+/i.test(endpoint)) {
+  const endpoint = process.env.OPENCODE_V2_ROUTE;
+  if (endpoint && /-sid-\d+/i.test(endpoint)) {
     const randSid = Math.floor(100000000 + Math.random() * 900000000);
     return endpoint.replace(/-sid-\d+/i, `-sid-${randSid}`);
   }
-  return endpoint;
+  return endpoint || "";
 }

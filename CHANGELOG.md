@@ -1,3 +1,17 @@
+# v0.5.317 (2026-10-25) · 2 commits
+
+## What Was Changed
+
+- **OpenCode Free V2 Flexible Proxy Selector (Built-in, Direct, or Custom Pools):**
+  - Restored full proxy selection flexibility on OpenCode Free V2 detail page (`/dashboard/providers/opencode-v2`).
+  - Added seamless **Proxy Source** dropdown allowing users to select:
+    1. **Built-in Proxy**: Automated residential broadband rotation channel (`t.me/abcseren`) to avoid cloud 403 `FreeTierError`.
+    2. **None (direct / unproxied)**: Standard direct connection.
+    3. **Custom Proxy Pools**: User's configured proxy pools from Proxy Pools dashboard, with optional round-robin or random rotation.
+  - Aligned auth service (`auth.js`) and executor (`opencode-v2.js`) to honor the selected proxy source dynamically.
+
+---
+
 # v0.5.316 (2026-10-25) · 3 commits
 
 ## What Was Changed

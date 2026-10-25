@@ -361,12 +361,15 @@ export class OpenCodeV2Executor extends BaseExecutor {
 
   async execute(args) {
     const { model, body, stream, credentials, signal, log, proxyOptions } = args;
-    const channelRoute = resolveV2ChannelRoute();
-    const effectiveProxyOptions = {
-      ...proxyOptions,
-      connectionProxyEnabled: Boolean(proxyOptions?.connectionProxyUrl || channelRoute),
-      connectionProxyUrl: proxyOptions?.connectionProxyUrl || channelRoute || "",
-    };
+    // When credentials explicitly specify proxy configuration (e.g. from auth resolver with builtin / custom pool / none),
+    // respect it directly.
+    const effectiveProxyOptions = proxyOptions?.connectionProxyEnabled !== undefined
+      ? proxyOptions
+      : {
+          ...proxyOptions,
+          connectionProxyEnabled: Boolean(proxyOptions?.connectionProxyUrl),
+          connectionProxyUrl: proxyOptions?.connectionProxyUrl || "",
+        };
 
     // Check if official OpenCode CLI engine is available on system
     const opencodeBin = findOpencodeBinary();

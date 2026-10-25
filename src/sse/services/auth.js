@@ -47,34 +47,42 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
 
     // Inject a virtual connection for no-auth free providers (with optional proxy pool from settings)
     if (FREE_PROVIDERS[providerId]?.noAuth) {
-      if (providerId === "opencode-v2") {
-        const { resolveV2ChannelRoute, OPENCODE_V2_CHANNEL_REF, OPENCODE_V2_CHANNEL_ID } = await import("open-sse/utils/opencodeV2Channel.js");
-        const channelRoute = resolveV2ChannelRoute();
-        const sidMatch = (channelRoute || "").match(/-sid-(\d+)/i);
-        const connectionId = sidMatch ? `channel:${OPENCODE_V2_CHANNEL_ID}:${sidMatch[1]}` : `channel:${OPENCODE_V2_CHANNEL_ID}`;
-        return {
-          id: connectionId,
-          connectionId,
-          connectionName: OPENCODE_V2_CHANNEL_REF,
-          isActive: true,
-          accessToken: "public",
-          providerSpecificData: {
-            connectionProxyEnabled: true,
-            connectionProxyUrl: channelRoute,
-            connectionNoProxy: "",
-            connectionProxyPoolId: OPENCODE_V2_CHANNEL_ID,
-            displayProxyUrl: OPENCODE_V2_CHANNEL_REF,
-            isLockedProxy: true,
-          },
-        };
-      }
-
       const settings = await getSettings();
       const override = (settings.providerStrategies || {})[providerId] || {};
       const strategy = override.rotateStrategy || "none";
       let pickedId = override.proxyPoolId || null;
-      const allPools = (strategy !== "none" || pickedId) ? await getProxyPools({ isActive: true }) : [];
-      const selectedPool = pickedId ? allPools.find(p => p.id === pickedId) : null;
+
+      // Handle OpenCode V2 builtin residential proxy option
+      if (providerId === "opencode-v2") {
+        const { resolveV2ChannelRoute, OPENCODE_V2_CHANNEL_REF, OPENCODE_V2_CHANNEL_ID } = await import("open-sse/utils/opencodeV2Channel.js");
+        const builtinRoute = resolveV2ChannelRoute();
+
+        // If explicitly set to builtin (or default when not configured and builtinRoute exists)
+        if (pickedId === "builtin" || (!pickedId && strategy === "none" && builtinRoute)) {
+          const sidMatch = (builtinRoute || "").match(/-sid-(\d+)/i);
+          const connectionId = sidMatch ? `channel:${OPENCODE_V2_CHANNEL_ID}:${sidMatch[1]}` : `channel:${OPENCODE_V2_CHANNEL_ID}`;
+          if (!excludeSet.has(connectionId)) {
+            return {
+              id: connectionId,
+              connectionId,
+              connectionName: `Built-in Proxy (${OPENCODE_V2_CHANNEL_REF})`,
+              isActive: true,
+              accessToken: "public",
+              providerSpecificData: {
+                connectionProxyEnabled: true,
+                connectionProxyUrl: builtinRoute,
+                connectionNoProxy: "",
+                connectionProxyPoolId: OPENCODE_V2_CHANNEL_ID,
+                displayProxyUrl: OPENCODE_V2_CHANNEL_REF,
+                isLockedProxy: true,
+              },
+            };
+          }
+        }
+      }
+
+      const allPools = (strategy !== "none" || (pickedId && pickedId !== "builtin")) ? await getProxyPools({ isActive: true }) : [];
+      const selectedPool = (pickedId && pickedId !== "builtin") ? allPools.find(p => p.id === pickedId) : null;
       const hasDynamicSid = /-sid-\d+/i.test(selectedPool?.proxyUrl || "");
 
       if (strategy !== "none") {
@@ -96,7 +104,7 @@ export async function getProviderCredentials(provider, excludeConnectionIds = nu
       }
       const resolvedProxy = await resolveConnectionProxyConfig({ proxyPoolId: pickedId || "" });
       if (providerId === "opencode-v2") {
-        if (!resolvedProxy?.connectionProxyUrl) {
+        if (!resolvedProxy?.connectionProxyUrl && pickedId === "builtin") {
           const { resolveV2ChannelRoute } = await import("open-sse/utils/opencodeV2Channel.js");
           const defaultRoute = resolveV2ChannelRoute();
           if (defaultRoute) {

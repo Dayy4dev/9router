@@ -1,3 +1,13 @@
+# v0.5.312 (2026-10-25) · 2 commits
+
+## What Was Changed
+
+- **Harmonize Usage Theme Tokens and Mobile Responsiveness:**
+  - Standardized card backgrounds, borders, and token colors across `OverviewCards.js`, `UsageStats.js`, `ProviderTopology.js`, and `UsageChart.js` to strictly use official design tokens (`var(--color-surface)`, `border-border-subtle`, `text-info`, `text-success`, `text-warning`).
+  - Perfected mobile responsive styling with automatic stacking, touch-friendly tap targets, zero horizontal overflow, and responsive table layout with wrap-safe model names and badge metadata.
+
+---
+
 # v0.5.311 (2026-10-25) · 2 commits
 
 ## What Was Changed

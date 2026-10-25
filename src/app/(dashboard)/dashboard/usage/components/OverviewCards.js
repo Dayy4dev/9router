@@ -20,13 +20,13 @@ const fmtCost = (n) => `$${(n || 0).toFixed(2)}`;
  */
 function TrendCard({ label, value, title, icon, tone = "", footnote, trend }) {
   return (
-    <Card className="flex min-w-0 flex-col gap-2 p-3 sm:p-3.5 bg-surface/90 border border-border/80 hover:border-border transition-all shadow-xs">
+    <Card className="flex min-w-0 flex-col gap-2 p-3 sm:p-4 bg-surface border border-border-subtle hover:border-border transition-colors">
       <div className="flex items-center justify-between gap-2">
         <span className="text-text-muted text-[11px] font-semibold uppercase tracking-wider truncate">
           {label}
         </span>
         {icon && (
-          <span className="material-symbols-outlined text-[15px] text-text-muted/60 select-none">
+          <span className="material-symbols-outlined text-[16px] text-text-subtle select-none">
             {icon}
           </span>
         )}
@@ -40,15 +40,15 @@ function TrendCard({ label, value, title, icon, tone = "", footnote, trend }) {
 
       {trend && Array.isArray(trend) && trend.length >= 2 ? (
         <div className="w-full h-6 my-0.5">
-          <Sparkline values={trend} height={24} stroke={tone ? undefined : "var(--primary)"} />
+          <Sparkline values={trend} height={24} stroke={tone ? undefined : "var(--color-primary)"} />
         </div>
       ) : (
         <div className="w-full h-6 my-0.5 flex items-center">
-          <div className="w-full h-[1px] bg-border/40" />
+          <div className="w-full h-[1px] bg-border-subtle" />
         </div>
       )}
 
-      <div className="flex min-h-[1.25rem] items-center text-[10px] sm:text-[11px] text-text-muted mt-auto pt-1 border-t border-border/30">
+      <div className="flex min-h-[1.25rem] items-center text-[10px] sm:text-[11px] text-text-muted mt-auto pt-1.5 border-t border-border-subtle">
         {footnote || <span className="text-transparent select-none">-</span>}
       </div>
     </Card>
@@ -98,7 +98,7 @@ export default function OverviewCards({ stats, trends }) {
         value={fmt(stats.totalCachedTokens)}
         title={fmt(stats.totalCachedTokens)}
         icon="bolt"
-        tone="text-sky-400"
+        tone="text-info"
         trend={t.cached}
         footnote={cacheHitRate > 0 ? (
           <Badge variant="info" size="sm" className="font-mono text-[10px]">{cacheHitRate.toFixed(1)}% cache hit</Badge>
@@ -111,7 +111,7 @@ export default function OverviewCards({ stats, trends }) {
         value={fmt(stats.totalCompletionTokens)}
         title={fmt(stats.totalCompletionTokens)}
         icon="arrow_downward"
-        tone="text-emerald-400"
+        tone="text-success"
         trend={t.output}
         footnote={<span>Generated completion</span>}
       />
@@ -120,7 +120,7 @@ export default function OverviewCards({ stats, trends }) {
         value={`~${fmtCost(stats.totalCost)}`}
         title={`~${fmtCost(stats.totalCost)}`}
         icon="payments"
-        tone="text-amber-400"
+        tone="text-warning"
         trend={t.cost}
         footnote={<span className="text-text-muted/70">Rate estimate, not billing</span>}
       />

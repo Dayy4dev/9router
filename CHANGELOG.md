@@ -1,3 +1,13 @@
+# v0.5.307 (2026-10-24) · 2 commits
+
+## What Was Changed
+
+- **Native JS Inlining for OpenCode V2 Tool Definitions (`opencodeV2Defs.js`):**
+  - Converted `opencodeV2Defs.json` into an ES module export `opencodeV2Defs.js` imported directly by `opencodeV2Fingerprint.js`, eliminating runtime filesystem dependency on disk paths and solving `403 FreeTierError` across Next.js, Bun, and standalone deployments.
+  - Implemented tool name collision aliasing and rename map tracking (`takeRenamedToolNamesV2`) in OpenCode V2 fingerprinting so caller agent tools and OpenCode fingerprint tools co-exist cleanly without 403 rejections.
+
+---
+
 # v0.5.306 (2026-10-24) · 2 commits
 
 ## What Was Changed

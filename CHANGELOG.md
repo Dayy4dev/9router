@@ -1,3 +1,13 @@
+# v0.5.313 (2026-10-25) · 2 commits
+
+## What Was Changed
+
+- **Clean Up Theme Inconsistencies Across All Dashboard Pages:**
+  - Audited and replaced rogue ad-hoc utility classes (`bg-black/5 dark:bg-white/5`, `bg-gray-500/10`, `text-zinc-*`, hardcoded `text-white` overlays) with system tokens (`bg-surface-2`, `border-border-subtle`, `text-text-main`, `text-text-muted`) across Endpoint, Basic Chat, Arena, CLI Tools, Profile, Error Log, and Console Log pages.
+  - Aligned chip borders, command code blocks, tooltips, and terminal viewer surfaces with the 9Router glassmorphism dark palette.
+
+---
+
 # v0.5.312 (2026-10-25) · 2 commits
 
 ## What Was Changed

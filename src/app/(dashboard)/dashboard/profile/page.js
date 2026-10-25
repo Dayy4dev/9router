@@ -1243,7 +1243,7 @@ export default function ProfilePage() {
                     className={cn(
                       "flex-1 py-1.5 px-3 rounded-md font-medium text-xs sm:text-sm transition-all text-center",
                       ssoTypeTab === "saml"
-                        ? "bg-white dark:bg-white/10 text-text-main shadow-sm"
+                        ? "bg-surface text-text-main shadow-sm border border-border-subtle"
                         : "text-text-muted hover:text-text-main"
                     )}
                   >
@@ -1255,7 +1255,7 @@ export default function ProfilePage() {
                     className={cn(
                       "flex-1 py-1.5 px-3 rounded-md font-medium text-xs sm:text-sm transition-all text-center",
                       ssoTypeTab === "oidc"
-                        ? "bg-white dark:bg-white/10 text-text-main shadow-sm"
+                        ? "bg-surface text-text-main shadow-sm border border-border-subtle"
                         : "text-text-muted hover:text-text-main"
                     )}
                   >

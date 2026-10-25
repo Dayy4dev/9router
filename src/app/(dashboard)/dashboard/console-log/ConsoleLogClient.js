@@ -220,7 +220,7 @@ export default function ConsoleLogClient() {
         {/* Terminal Body */}
         <div
           ref={logRef}
-          className="p-3 font-mono text-xs h-[calc(100dvh-270px)] md:h-[calc(100dvh-230px)] overflow-y-auto bg-black/90 text-zinc-200 select-text custom-scrollbar"
+          className="p-3 font-mono text-xs h-[calc(100dvh-270px)] md:h-[calc(100dvh-230px)] overflow-y-auto bg-surface-2 text-text-main select-text custom-scrollbar border border-border-subtle rounded-[var(--r-control)]"
         >
           {filteredLogs.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-text-muted/60 gap-2">

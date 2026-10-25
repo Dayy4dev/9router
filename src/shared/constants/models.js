@@ -46,11 +46,7 @@ export const CAPACITY_META = {
   vision: { mark: "vision", label: "Vision", desc: "Supports image input" },
   // search: temporarily hidden (feature not wired yet)
   reasoning: { mark: "reasoning", label: "Reasoning", desc: "Supports reasoning / thinking" },
-  imageVision: { mark: "imageVision", label: "OCR Image", desc: "Auto Image-to-Text OCR script" },
-  thinkDeeper: { mark: "thinkDeeper", label: "Adaptive CoT", desc: "Adaptive Thinking & Superpowers Chain of Thought" },
-  jsonGuard: { mark: "jsonGuard", label: "JSON Guard", desc: "JSON Guard & Schema Protector" },
-  openaiToolBridge: { mark: "openaiToolBridge", label: "Tool Bridge", desc: "Universal Tool Calling Bridge" },
-  antiSlop: { mark: "antiSlop", label: "Anti Slop", desc: "Anti-Slop Natural Output" },
+  adaptiveThinking: { mark: "adaptiveThinking", label: "Adaptive Thinking", desc: "Adaptive Thinking & Multi-Framework Cognitive Architecture" },
 };
 
 // Realtime STT transport markers accepted on custom models - single source of
@@ -106,24 +102,8 @@ export function pluginMarksFor(entry) {
 // Tooltip text and colour for each plugin mark. Kept beside CUSTOM_PLUGIN_KEYS so
 // a plugin cannot have a key with no mark to draw or no label to explain it.
 export const PLUGIN_MARK_META = {
-  imageVision: {
-    label: "OCR Image",
-    desc: "OCR Auto Image-to-Text: Automatically transcribes and converts text inside images for text-only models",
-  },
-  thinkDeeper: {
-    label: "Adaptive CoT",
-    desc: "Adaptive Thinking & Superpowers CoT: Deep multi-step reasoning combining Superpowers exploration and Chain of Thought",
-  },
-  jsonGuard: {
-    label: "JSON Guard",
-    desc: "JSON Guard: Ensures output is valid JSON, strips markdown code fences, and protects tool-call schemas",
-  },
-  openaiToolBridge: {
-    label: "Tool Bridge",
-    desc: "Universal Tool Bridge: Bridges Function Calling / Tools for text-only models without native tool support",
-  },
-  antiSlop: {
-    label: "Anti Slop",
-    desc: "Anti-Slop Natural: Strips generic AI boilerplate and robotic preambles without repetitive jargon",
+  adaptiveThinking: {
+    label: "Adaptive Thinking",
+    desc: "Adaptive Thinking & Cognitive Architecture: Multi-agent reasoning synthesis combining Depth Protocol, Superpowers, Adversaria, and First Principles",
   },
 };

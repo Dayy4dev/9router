@@ -115,11 +115,11 @@ export default function NoAuthProxyCard({ providerId }) {
               {copiedCmd && <span className="text-emerald-400 font-sans">Copied!</span>}
             </div>
             <div className="flex items-center justify-between gap-2 p-2 rounded bg-black/80 text-emerald-400 border border-white/10 select-all">
-              <span>npm install -g opencode-ai</span>
+              <span>npm install -g @opencode/cli</span>
               <button
                 type="button"
                 onClick={() => {
-                  navigator.clipboard.writeText("npm install -g opencode-ai");
+                  navigator.clipboard.writeText("npm install -g @opencode/cli");
                   setCopiedCmd(true);
                   setTimeout(() => setCopiedCmd(false), 2000);
                 }}

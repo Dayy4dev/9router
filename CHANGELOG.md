@@ -1,3 +1,18 @@
+# v0.5.315 (2026-10-25) · 1 commit
+
+## What Was Changed
+
+- **Fix OpenCode Executor Wiring, Fallback Spam, and CLI Process Lifecycle:**
+  - **CLI Tool-Calling Bridge**: Removed the condition bypassing the local CLI when client tools are present; wired prompt formatting and OpenAI `tool_calls` response streaming into `@opencode/cli run` so agent requests with tools execute through the local engine.
+  - **Prompt Piping via Stdin**: Switched prompt delivery to `stdin` stream instead of command-line arguments to eliminate Windows `ENAMETOOLONG: name too long, uv_spawn` crashes.
+  - **Process Management & Concurrency Cap**: Added `MAX_CONCURRENT_CLI = 3` concurrency limiter to queue parallel requests, a 90s hard execution deadline, and cross-platform process tree cleanup (`taskkill /F /T` on Windows, `pkill -P` + `SIGKILL` on POSIX) on abort and server shutdown.
+  - **Auth Fallback Loop**: Fixed `getProviderCredentials` in `auth.js` to inspect `excludeSet.has("noauth")`, terminating immediately instead of looping 15+ times when the unproxied public connection is rejected.
+  - **Network Channel Routing**: Updated `resolveV2ChannelRoute()` to use `OPENCODE_V2_ROUTE` when configured and default to a direct connection, removing the dead hardcoded proxy returning HTTP 407.
+  - **Dashboard Provider View**: Mapped `opencode-v1` to `opencode` in provider detail resolution so `/dashboard/providers/opencode-v1` renders properly.
+  - **Build Fix**: Added `src/app/not-found.js` to prevent Next 14 Windows NFT build trace failure.
+
+---
+
 # v0.5.314 (2026-10-25) · 2 commits
 
 ## What Was Changed

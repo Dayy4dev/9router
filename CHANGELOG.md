@@ -1,3 +1,15 @@
+# v0.5.311 (2026-10-25) · 2 commits
+
+## What Was Changed
+
+- **Usage & Analytics Command Center Redesign:**
+  - Redesigned overview KPI cards (`OverviewCards.js`) with structured metric icons (`dns`, `arrow_upward`, `bolt`, `arrow_downward`, `payments`), purposeful semantic color accents, neutral white input token values, and contextual sparkline indicators.
+  - Revamped `Live Requests Stream` table in `UsageStats.js` with live pulsing telemetry dots, dedicated provider/channel badges, and cleaner monospace token counters.
+  - Aligned height of `ProviderTopology` graph to match the live stream card (`420px`), eliminating dead vertical space.
+  - Upgraded chart empty state in `UsageChart.js` with an informative dashed container and actionable telemetry guidance.
+
+---
+
 # v0.5.310 (2026-10-25) · 2 commits
 
 ## What Was Changed

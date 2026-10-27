@@ -45,7 +45,7 @@ export default function ProviderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const providerId = resolveProviderId(params.id);
-  const isOpenCode = providerId === "opencode" || providerId === "opencode-v2";
+  const isOpenCode = providerId === "opencode";
   const { getCaps } = useModelCaps();
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1581,18 +1581,9 @@ export default function ProviderDetailPage() {
                 </a>
               )}
             </div>
-            {providerId === "opencode-v2" && !opencodeInstalled ? (
-              <div className="flex items-center gap-2 mt-1">
-                <Badge variant="warning" size="sm" dot>
-                  Need Configuration
-                </Badge>
-                <span className="text-xs text-amber-500/90 font-medium">OpenCode CLI binary not found on host</span>
-              </div>
-            ) : (
-              <p className="text-text-muted">
-                {connections.length} connection{connections.length === 1 ? "" : "s"}
-              </p>
-            )}
+            <p className="text-text-muted">
+              {connections.length} connection{connections.length === 1 ? "" : "s"}
+            </p>
           </div>
         </div>
       </div>

@@ -36,7 +36,6 @@ import p33 from "./coqui.js";
 import p34 from "./cursor.js";
 import p35 from "./dahl.js";
 import p36 from "./deepgram.js";
-import p37 from "./deepseek-web.js";
 import p38 from "./deepseek.js";
 import p39 from "./devin-cli.js";
 import p40 from "./edge-tts.js";
@@ -48,7 +47,6 @@ import p45 from "./firecrawl.js";
 import p46 from "./fireworks.js";
 import p47 from "./fish-audio.js";
 import p48 from "./gemini-cli.js";
-import p49 from "./gemini-web.js";
 import p50 from "./gemini.js";
 import p51 from "./github.js";
 import p52 from "./gitlab.js";
@@ -67,7 +65,6 @@ import p64 from "./jina-reader.js";
 import p65 from "./kilo-gateway.js";
 import p66 from "./kilocode.js";
 import p67 from "./kimchi.js";
-import p68 from "./kimi-web.js";
 import p69 from "./kimi.js";
 import p70 from "./kiro.js";
 import p71 from "./linkup.js";
@@ -148,11 +145,7 @@ import p147 from "./minimax-code-global.js";
 import p148 from "./bedrock.js";
 import p149 from "./bedrock-xai.js";
 import p150 from "./nous.js";
-import p151 from "./opencode-v2.js";
-import p152 from "./muse-web.js";
-import p153 from "./chatgpt-web.js";
 import p154 from "./veoaifree-web.js";
-import p155 from "./uc-web.js";
 import p156 from "./runcrate.js";
 export default [
   p0,
@@ -192,7 +185,6 @@ export default [
   p34,
   p35,
   p36,
-  p37,
   p38,
   p39,
   p40,
@@ -204,7 +196,6 @@ export default [
   p46,
   p47,
   p48,
-  p49,
   p50,
   p51,
   p52,
@@ -223,7 +214,6 @@ export default [
   p65,
   p66,
   p67,
-  p68,
   p69,
   p70,
   p71,
@@ -304,10 +294,6 @@ export default [
   p148,
   p149,
   p150,
-  p151,
-  p152,
-  p153,
   p154,
-  p155,
   p156,
 ];

@@ -1410,8 +1410,8 @@ export default function ProviderDetailPage() {
           const notAdded = uniqueAvailable.filter(
             (m) => !addedFullModels.has(`${providerStorageAlias}/${m.id}`) && !addedFullModels.has(m.id)
           );
-          const freeSuggested = notAdded.filter((m) => m.isFree === true);
-          const paidSuggested = notAdded.filter((m) => m.isFree !== true);
+          const freeSuggested = notAdded.filter((m) => m.isFree === true || m.id.endsWith("-free"));
+          const paidSuggested = notAdded.filter((m) => m.isFree !== true && !m.id.endsWith("-free"));
 
           if (notAdded.length === 0 && !suggestedModelsError) return null;
           return (

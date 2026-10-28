@@ -693,7 +693,10 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
   // arrived is a finished completion rather than SSE. Recover the call the model
   // declared in its own prose, then replay the completion as chunks so a
   // streaming client still receives the stream it asked for.
-  if (toolBridgeNeedsWholeReply && !isEventStreamResponse(providerResponse)) {
+  //
+  // Only for a streaming client: a JSON client takes the non-streaming path
+  // below, where the same recovery runs and hands back one JSON document.
+  if (stream && toolBridgeNeedsWholeReply && !isEventStreamResponse(providerResponse)) {
     const bridgedBody = await readJsonBody(providerResponse);
     if (bridgedBody) {
       if (isChatCompletionBody(bridgedBody)) {

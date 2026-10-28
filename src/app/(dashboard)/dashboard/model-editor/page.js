@@ -1,12 +1,26 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import PropTypes from "prop-types";
 import { Card, Button, Modal, Input, ModelSelectModal, Toggle } from "@/shared/components";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { useModelCaps } from "@/shared/hooks/useModelCaps";
 import { findStudioCycle, describeStudioCycle } from "@/shared/utils/studioComboGuard";
 
 const NAME_RE = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/;
+
+// Fields the bulk editor may write, and how each one reads to the operator.
+const MODEL_BULK_LABELS = {
+  inputMultiplier: "Input multiplier (0 = none)",
+  outputMultiplier: "Output multiplier (0 = none)",
+  contextWindow: "Context window (0 = provider default)",
+};
+
+const MODEL_BULK_PLACEHOLDERS = {
+  inputMultiplier: "e.g. 2",
+  outputMultiplier: "e.g. 5",
+  contextWindow: "e.g. 200000",
+};
 
 function formatTokens(n) {
   const value = Number(n) || 0;
@@ -182,6 +196,11 @@ function ModelStudioContent({ antiProbe = true }) {
   const [duplicating, setDuplicating] = useState(null);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(null);
+  // Bulk edit: which models are ticked, and whether the dialog is open. Same
+  // shape as the API-key page - nothing is written until Apply, and only the
+  // fields the operator ticks are sent.
+  const [selectedNames, setSelectedNames] = useState(() => new Set());
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
   const { copied: copiedName, copy } = useCopyToClipboard(1800);
 
   const fetchData = useCallback(async () => {
@@ -193,6 +212,14 @@ function ModelStudioContent({ antiProbe = true }) {
         fetch("/api/models/alias").then((r) => (r.ok ? r.json() : { aliases: {} })).catch(() => ({ aliases: {} })),
       ]);
       setModels(studioRes.models || []);
+      // A model deleted (or renamed) elsewhere must not stay ticked: a later
+      // Apply would otherwise report it missing every time.
+      const alive = new Set((studioRes.models || []).map((m) => m.callName));
+      setSelectedNames((prev) => {
+        if (!prev.size) return prev;
+        const next = new Set([...prev].filter((name) => alive.has(name)));
+        return next.size === prev.size ? prev : next;
+      });
       setProviderNodes((nodesRes.nodes || []).filter((n) => n.type !== "custom-embedding"));
       setActiveProviders(providersRes.connections || []);
       setModelAliases(aliasesRes.aliases || {});
@@ -251,6 +278,34 @@ function ModelStudioContent({ antiProbe = true }) {
     }
   };
 
+  const toggleSelected = (name) =>
+    setSelectedNames((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+
+  const handleBulkApply = async (patch) => {
+    const names = Array.from(selectedNames);
+    const res = await fetch("/api/model-editor/bulk", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ names, patch }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Failed to apply bulk changes");
+    if (Array.isArray(data.missing) && data.missing.length) {
+      setSelectedNames((prev) => {
+        const next = new Set(prev);
+        for (const name of data.missing) next.delete(name);
+        return next;
+      });
+    }
+    setShowBulkEdit(false);
+    await fetchData();
+  };
+
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -264,6 +319,40 @@ function ModelStudioContent({ antiProbe = true }) {
           Add Model
         </Button>
       </div>
+
+      {selectedNames.size > 1 && (
+        // Same shape as the API-key page: a toolbar that only offers itself for
+        // more than one row, because one model already has its own editor.
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-full border border-border-subtle bg-surface-2/70 py-1 pl-3 pr-1 backdrop-blur-sm">
+          <span className="flex items-center gap-2 text-xs text-text-muted">
+            <span className="inline-flex min-w-[22px] items-center justify-center rounded-full bg-primary/15 px-1.5 py-0.5 text-[11px] font-semibold tabular-nums text-primary">
+              {selectedNames.size}
+            </span>
+            models selected
+          </span>
+          <div className="flex items-center gap-0.5">
+            {selectedNames.size < models.length && (
+              <button
+                type="button"
+                onClick={() => setSelectedNames(new Set(models.map((m) => m.callName)))}
+                className="rounded-full px-2.5 py-1.5 text-xs text-text-muted transition-colors hover:bg-surface hover:text-text-main"
+              >
+                Select all {models.length}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setSelectedNames(new Set())}
+              className="rounded-full px-2.5 py-1.5 text-xs text-text-muted transition-colors hover:bg-surface hover:text-text-main"
+            >
+              Clear
+            </button>
+            <Button size="sm" variant="primary" onClick={() => setShowBulkEdit(true)}>
+              Bulk edit
+            </Button>
+          </div>
+        </div>
+      )}
 
       {loading ? (
         <Card padding="md">
@@ -287,6 +376,13 @@ function ModelStudioContent({ antiProbe = true }) {
           {models.map((model) => (
             <Card key={model.callName} padding="md" className="flex min-w-0 flex-col gap-3">
               <div className="flex min-w-0 items-start justify-between gap-2">
+                <input
+                  type="checkbox"
+                  checked={selectedNames.has(model.callName)}
+                  onChange={() => toggleSelected(model.callName)}
+                  className="mt-1 size-4 shrink-0 accent-brand-500"
+                  aria-label={`Select ${model.callName}`}
+                />
                 <div className="min-w-0 flex-1">
                   <button
                     type="button"
@@ -316,9 +412,9 @@ function ModelStudioContent({ antiProbe = true }) {
                   <button
                     onClick={() => openDuplicate(model)}
                     title="Duplicate"
-                    className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                    className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all"
                   >
-                    <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                    <span className="material-symbols-outlined text-[14px]">content_copy</span>
                   </button>
                   <button
                     onClick={() => openEdit(model)}
@@ -398,9 +494,116 @@ function ModelStudioContent({ antiProbe = true }) {
           }}
         />
       )}
+
+      {showBulkEdit && (
+        <BulkEditModels
+          count={selectedNames.size}
+          onApply={handleBulkApply}
+          onClose={() => setShowBulkEdit(false)}
+        />
+      )}
     </>
   );
 }
+
+/**
+ * Bulk edit models: write one field to every selected model in one call.
+ * Each field is opt-in (checkbox): fields left off are not touched, so the form
+ * never rewrites what the user did not mean to change. Same shape as the API-key
+ * bulk editor.
+ */
+function BulkEditModels({ count, onApply, onClose }) {
+  const [fields, setFields] = useState({
+    inputMultiplier: { on: false, value: "" },
+    outputMultiplier: { on: false, value: "" },
+    contextWindow: { on: false, value: "" },
+  });
+  const [applying, setApplying] = useState(false);
+  const [error, setError] = useState("");
+
+  const toggle = (name) =>
+    setFields((prev) => ({ ...prev, [name]: { ...prev[name], on: !prev[name].on } }));
+  const setValue = (name, value) =>
+    setFields((prev) => ({ ...prev, [name]: { ...prev[name], value } }));
+
+  const handleApply = async () => {
+    const patch = {};
+    for (const [name, { on, value }] of Object.entries(fields)) {
+      if (!on) continue;
+      const n = Number(value);
+      if (!Number.isFinite(n) || n < 0) {
+        setError(`${MODEL_BULK_LABELS[name]} must be a number of 0 or more`);
+        return;
+      }
+      patch[name] = n;
+    }
+    if (!Object.keys(patch).length) {
+      setError("Enable at least one field to change");
+      return;
+    }
+    setError("");
+    setApplying(true);
+    try {
+      await onApply(patch);
+      onClose();
+    } catch (err) {
+      setError(err?.message || "Failed to apply bulk changes");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <Modal isOpen onClose={onClose} title={`Bulk edit ${count} model${count === 1 ? "" : "s"}`}>
+      <div className="flex flex-col gap-3">
+        {Object.keys(fields).map((name) => (
+          <div key={name} className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={fields[name].on}
+              onChange={() => toggle(name)}
+              className="mt-1.5 size-4 shrink-0 accent-brand-500"
+              aria-label={`Change ${MODEL_BULK_LABELS[name]}`}
+            />
+            <div className="flex-1 min-w-0">
+              <label className="text-sm font-medium text-text-main block mb-1">
+                {MODEL_BULK_LABELS[name]}
+              </label>
+              <Input
+                type="number"
+                step="0.1"
+                min="0"
+                value={fields[name].value}
+                onChange={(e) => setValue(name, e.target.value)}
+                disabled={!fields[name].on}
+                placeholder={MODEL_BULK_PLACEHOLDERS[name]}
+              />
+            </div>
+          </div>
+        ))}
+
+        {error && (
+          <p className="text-xs text-red-500" role="alert">{error}</p>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <Button variant="secondary" onClick={onClose} disabled={applying}>
+            Cancel
+          </Button>
+          <Button onClick={handleApply} loading={applying}>
+            Apply to {count} model{count === 1 ? "" : "s"}
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+BulkEditModels.propTypes = {
+  count: PropTypes.number.isRequired,
+  onApply: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired,
+};
 
 function StudioFormModal({
   antiProbe = true,

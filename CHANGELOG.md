@@ -1,3 +1,18 @@
+# v0.5.324 (2026-10-28)
+
+## Fixes
+- **Proxy pools — bulk import dropped entries**: the import job skipped a pasted line whenever its NAME was already taken, and the client names every line after its host, so a list pointing at one host:port with rotating credentials imported only the first row. Duplicates are now decided by the proxy URL (scheme and host lowercased, port made explicit, credentials kept as part of the identity), and a repeated name merely gets a `#2`, `#3` suffix so the rows stay tellable apart. A genuine duplicate URL is still skipped, and the run now reports it as `skipped N duplicate` instead of `skipped N existing`.
+
+## Features
+- **Custom models — bulk edit**: Model Studio rows have a checkbox, and selecting more than one raises a toolbar with **Select all** / **Clear** / **Bulk edit**. The dialog writes input multiplier, output multiplier and context window to every selected model in one call (`PATCH /api/model-editor/bulk`). Only those three fields are accepted - the callable name is the model id clients send and the target decides which upstream answers, so neither is re-pointed by a bulk action. Models that disappeared between the tick and the Apply are reported back and dropped from the selection instead of failing the call.
+- **Custom models — duplicate icon**: the row's duplicate button now matches the API-key copy button (same padding, hover tint and 14px glyph) instead of its own larger style.
+
+## Testing
+- `tests/unit/proxy-bulk-import.test.js` (5 cases) drives the real job store + SQLite: repeated names all import, duplicate URLs are skipped, spelling variants collapse, and a URL stored by an earlier run is skipped.
+- `tests/unit/model-editor-bulk.test.js` (5 cases): patch applies to every selected model, untouched fields survive, `0` clears a multiplier, non-whitelisted fields are refused, missing models are reported.
+
+---
+
 # v0.5.323 (2026-10-28)
 
 ## Features

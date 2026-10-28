@@ -47,6 +47,7 @@ import p45 from "./firecrawl.js";
 import p46 from "./fireworks.js";
 import p47 from "./fish-audio.js";
 import p48 from "./gemini-cli.js";
+import p49 from "./gemini-web.js";
 import p50 from "./gemini.js";
 import p51 from "./github.js";
 import p52 from "./gitlab.js";
@@ -196,6 +197,7 @@ export default [
   p46,
   p47,
   p48,
+  p49,
   p50,
   p51,
   p52,

@@ -1,3 +1,28 @@
+# v0.5.322 (2026-10-28)
+
+## Features
+- **Gemini Web (cookie)**: restore the `gemini-web` provider (aliases `gweb`, `gemini-cookie`) with a fresh reverse-engineered implementation. The executor talks directly to `gemini.google.com/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate`, auto-fetches the XSRF token (`SNlM0e`) from `/app`, and rotates the session on 429.
+- **Gemini Web models** (live hex IDs from `batchexecute?rpcids=otAQ7b`):
+  - `gemini-3.5-flash-lite` (hex `8c46e95b1a07cecc`, mode 6) — no cookie required
+  - `gemini-3.8-flash` (hex `56fdd199312815e2`, mode 1) — default
+  - `gemini-3.1-pro` (hex `e6fa609c3fa255c0`, mode 3)
+  - `gemini-4-argon` (hex `95a4c0abcba24364`, mode 8)
+  - `-thinking` variants for all four (inner[80]=2 + header slot 15)
+  - Legacy aliases: `gemini-3.6-flash`, `gemini-3.7-flash` resolve to `gemini-3.8-flash`
+- **Gemini Web cookie capture**: auto-capture from Chromium via CDP (domains `gemini.google.com`, cookies `__Secure-1PSID` + `__Secure-1PSIDTS`).
+- **Gemini Web validation**: `POST /api/providers/validate` now probes the cookie by fetching `/app` and checking for `SNlM0e` / `BardChatUi`.
+- **Gemini Web tool bridge**: OpenAI `tools` array is encoded into the prompt and parsed back from prose (via `webCookieToolBridge.js`) — same pattern as the old implementation.
+
+## Fixes
+- **Gemini Web hex drift**: the old hardcoded hexes (`fbb127bbb056c959`, `cf41b0e0dd7d53e5`, `9d8ca3786ebdfbea`) no longer match the live catalogue. The new implementation uses the current hexes and falls back to the old ones via `LEGACY_HEX` mapping.
+- **Gemini Web model selection**: the server ignores `inner[]` mode slots when no model header is sent — every request silently lands on Flash-Lite. The new executor always sends `x-goog-ext-525001261-jspb` with the correct hex.
+
+## Testing
+- Unit tests restored: `tests/unit/gemini-web-tools.test.js` (25/25 passing)
+- Direct executor test: all 4 models respond via the user's cookie (Flash-Lite 42s, Flash 27s, Pro 7s, Argon 36s)
+
+---
+
 # v0.5.321 (2026-10-27)
 
 ## Breaking Changes

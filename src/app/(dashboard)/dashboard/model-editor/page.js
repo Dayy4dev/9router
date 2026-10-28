@@ -179,6 +179,7 @@ function ModelStudioContent({ antiProbe = true }) {
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [duplicating, setDuplicating] = useState(null);
   const [saving, setSaving] = useState(false);
   const [removing, setRemoving] = useState(null);
   const { copied: copiedName, copy } = useCopyToClipboard(1800);
@@ -209,12 +210,35 @@ function ModelStudioContent({ antiProbe = true }) {
 
   const openCreate = () => {
     setEditing(null);
+    setDuplicating(null);
     setShowForm(true);
   };
 
   const openEdit = (model) => {
+    setDuplicating(null);
     setEditing(model);
     setShowForm(true);
+  };
+
+  // Duplicate: open the create form carrying every rule of the source model
+  // (target, context window, multipliers, system prompt) under a fresh name, so a
+  // variant never starts from an empty form. createDuplicateName keeps the name
+  // unique because the call name IS the model id clients send.
+  const openDuplicate = (model) => {
+    setEditing(null);
+    setDuplicating(model);
+    setShowForm(true);
+  };
+
+  const createDuplicateName = (sourceName) => {
+    const taken = new Set(models.map((m) => String(m.callName || "").toLowerCase()));
+    const base = `${sourceName}-copy`;
+    if (!taken.has(base.toLowerCase())) return base;
+    for (let n = 2; n < 100; n++) {
+      const candidate = `${base}-${n}`;
+      if (!taken.has(candidate.toLowerCase())) return candidate;
+    }
+    return `${base}-${Date.now().toString(36)}`;
   };
 
   const handleDelete = async (model) => {
@@ -290,6 +314,13 @@ function ModelStudioContent({ antiProbe = true }) {
                 </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <button
+                    onClick={() => openDuplicate(model)}
+                    title="Duplicate"
+                    className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                  <button
                     onClick={() => openEdit(model)}
                     title="Edit"
                     className="p-1.5 rounded-lg text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
@@ -351,8 +382,11 @@ function ModelStudioContent({ antiProbe = true }) {
 
       {showForm && (
         <StudioFormModal
+          key={editing?.callName || duplicating?.callName || "new"}
           antiProbe={antiProbe}
           editing={editing}
+          duplicating={duplicating}
+          duplicateName={duplicating ? createDuplicateName(duplicating.callName) : ""}
           activeProviders={activeProviders}
           modelAliases={modelAliases}
           saving={saving}
@@ -371,6 +405,8 @@ function ModelStudioContent({ antiProbe = true }) {
 function StudioFormModal({
   antiProbe = true,
   editing,
+  duplicating,
+  duplicateName = "",
   activeProviders,
   modelAliases,
   saving,
@@ -380,35 +416,38 @@ function StudioFormModal({
 }) {
   const { getCaps } = useModelCaps();
   const [showPicker, setShowPicker] = useState(false);
-  const [callName, setCallName] = useState(editing?.callName || "");
-  const [displayName, setDisplayName] = useState(editing?.displayName || "");
+  // A duplicate opens with the source model's rules already filled in, so the
+  // only thing left to decide is the new name.
+  const source = editing || duplicating || null;
+  const [callName, setCallName] = useState(editing?.callName || duplicateName || "");
+  const [displayName, setDisplayName] = useState(source?.displayName || "");
   // Label this model claims in a model listing (owned_by). Free-form; blank means
   // "present itself as the model name clients call".
-  const [ownedBy, setOwnedBy] = useState(editing?.ownedBy || "");
+  const [ownedBy, setOwnedBy] = useState(source?.ownedBy || "");
   // The record stores both: `targetModel` is the resolved router target
   // (provider id), `targetLabel` is what the user actually picked. Editing has
   // to start from the label, otherwise saving writes the resolved prefix back
   // and the picker's own spelling ("oc/...") is lost on every round trip.
   const [targetModel, setTargetModel] = useState(
-    editing?.targetLabel || editing?.targetModel || ""
+    source?.targetLabel || source?.targetModel || ""
   );
   // True while the user has typed their own number: the suggestion then stops
   // overriding, but stays visible so a stale value is obvious.
   const [contextTouched, setContextTouched] = useState(
-    editing ? !!editing.contextWindow : false
+    source ? !!source.contextWindow : false
   );
   const [combos, setCombos] = useState([]);
   const [siblings, setSiblings] = useState([]);
   const [contextWindow, setContextWindow] = useState(
-    editing?.contextWindow ? String(editing.contextWindow) : ""
+    source?.contextWindow ? String(source.contextWindow) : ""
   );
   const [inputMultiplier, setInputMultiplier] = useState(
-    editing?.inputMultiplier ? String(editing.inputMultiplier) : ""
+    source?.inputMultiplier ? String(source.inputMultiplier) : ""
   );
   const [outputMultiplier, setOutputMultiplier] = useState(
-    editing?.outputMultiplier ? String(editing.outputMultiplier) : ""
+    source?.outputMultiplier ? String(source.outputMultiplier) : ""
   );
-  const [systemPrompt, setSystemPrompt] = useState(editing?.systemPrompt || "");
+  const [systemPrompt, setSystemPrompt] = useState(source?.systemPrompt || "");
 
   useEffect(() => {
     let alive = true;
@@ -510,7 +549,7 @@ function StudioFormModal({
       <Modal
         isOpen
         onClose={onClose}
-        title={editing ? `Edit ${editing.callName}` : "Add Model"}
+        title={editing ? `Edit ${editing.callName}` : duplicating ? `Duplicate ${duplicating.callName}` : "Add Model"}
       >
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">

@@ -1,3 +1,22 @@
+# v0.5.323 (2026-10-28)
+
+## Features
+- **Plugins — Tool Calling Bridge**: a new custom plugin that gives function calling to upstreams which have none (browser-session providers, and any model the capability table reports as text-only). The request's `tools` are folded into the prompt (schema, call format, highest-priority reminder appended last), assistant `tool_calls` and `role:"tool"` turns are flattened into readable prose, and the `tools` array is dropped so an upstream that rejects it never sees it. The reply is parsed back into standard `tool_calls`.
+  - Response parsing runs two passes: the shapes models invent on their own (`open-sse/translator/concerns/toolBridge.js`) and the two formats the bridge itself instructs (` ```tool_call ` fence and `<<TOOL_CALL>>` marker). A call naming a tool the client never offered is dropped instead of invented.
+  - Because a tool call can only be recovered from a whole reply, a bridged turn is fetched non-streaming and the JSON completion is replayed as SSE, so a streaming client still receives its stream.
+  - Models with a native tool lane are left untouched — their real schema is never replaced by prompt text.
+  - Enabled per model on the Plugins page; advertises `tools:true` in `GET /api/models` and draws a "Tool Calling" plugin mark.
+- **API keys — bulk edit**: the bulk dialog now covers every field the endpoint accepts; added `Budget counted in` (tokens / USD / requests), `Daily USD limit` and `Request limit`, and a **Select all N** shortcut in the selection bar. The key material, the secret value and the permission map stay out of bulk edits on purpose.
+- **Custom models — duplicate**: every model in Model Studio has a copy button that opens the create form pre-filled with the source model's rules (target, context window, input/output multiplier, system prompt, `owned_by`) under a unique name (`<name>-copy`, `-copy-2`, …).
+
+## Fixes
+- **Build**: the plugin runtime resolves the browser-session provider list through a lazy import. Importing the provider registry eagerly pulled every provider module into the plugin module's init graph, which crashed the build worker (SIGABRT) while static pages were generated.
+
+## Testing
+- New `tests/unit/tool-calling-bridge.test.js`: 10 cases over the request rewrite, the dispatch rules (browser session vs native lane), and the response-side recovery.
+
+---
+
 # v0.5.322 (2026-10-28)
 
 ## Features

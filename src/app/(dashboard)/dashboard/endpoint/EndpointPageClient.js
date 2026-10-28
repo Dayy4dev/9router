@@ -1578,6 +1578,15 @@ const scopedModelPatterns =
               {selectedKeyIds.size} key{selectedKeyIds.size === 1 ? "" : "s"} selected
             </span>
             <div className="flex items-center gap-2">
+              {selectedKeyIds.size < keys.length && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedKeyIds(new Set(keys.map((k) => k.id)))}
+                  className="text-xs text-text-muted hover:text-text-main transition-colors"
+                >
+                  Select all {keys.length}
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedKeyIds(new Set())}

@@ -1,4 +1,14 @@
-# v0.5.338 (2026-10-29) · 1 commit
+# v0.5.339 (2026-10-29) · 1 commit
+
+## Fixes
+- **No screen prints a provider id any more.** `humanizeCompatId` used to append the uuid (`OpenAI Compatible (330688af)`); that suffix is still a database key, just a shorter one, so the label is now the family alone (`OpenAI Compatible`). Two unnamed compatible nodes that would collide are numbered by `dedupeLabels` (`OpenAI Compatible`, `OpenAI Compatible 2`) instead of being split by id.
+- **The Logs tab printed the raw provider id in caps.** `getRecentLogs` uppercased `r.provider`, so the row read `OPENAI-COMPATIBLE-CHAT-330688AF`. It resolves through `labelForProvider` and no longer uppercases the label.
+- **The request log rows are objects, not pipe-joined strings.** An account or model containing ` | ` shifted every later column and the row disappeared from the table; the API returns fields and the client renders them, still accepting a pipe string so an in-flight cached response cannot blank the table.
+- **Provider tooltips repeated the id the label had already replaced.** `Recent Requests` and the provider filter in the quota tab carried `title={provider}` with the raw id; the tooltip now shows the same label as the text.
+- **The model picker could still head a group with an id.** A provider missing from the static registry fell back to `{ name: providerId }`, so a compatible node still opened a `openai-compatible-chat-…` heading; the fallback runs through `resolveProviderName` and the quota card's title does too.
+- **Every successful log row pulsed as if it were pending.** The status column compared against uppercase (`OK`/`FAILED`) while the stored values are lowercase, so `ok` matched nothing and fell into the pending branch; the comparison folds case and the cell prints the status uppercased.
+
+# # v0.5.338 (2026-10-29) · 1 commit
 
 ## Fixes
 - **The activity heatmap fit a desktop card, not a phone.** 24 buckets of `14px + 3px gap` plus a 28px day gutter measure 441px, so on a 390px viewport 42 cells sat past the card edge with no scroll container to reach them. The block is one CSS grid now (`repeat(24, minmax(0, 14px))`), so cells shrink on a narrow screen instead of overflowing, and the hour ruler prints at 10px like the rest of the shell.

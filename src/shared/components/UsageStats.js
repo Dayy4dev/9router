@@ -133,7 +133,6 @@ function RecentRequests({ requests = [] }) {
                         {!showResolved && r.provider && (
                           <span
                             className="w-fit rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-text-muted/90"
-                            title={r.provider}
                           >
                             {r.providerName || r.provider}
                           </span>

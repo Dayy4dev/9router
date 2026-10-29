@@ -408,7 +408,8 @@ export default function ModelSelectModal({
       // heading fell back to the storage alias ("gemini-web") and their real
       // model list never reached the picker.
       const registryInfo = allProviders[providerId] || WEB_COOKIE_PROVIDERS[providerId];
-      const providerInfo = registryInfo || { name: providerId, color: "#666" };
+      // An unregistered compatible node used to head its group with the raw id.
+      const providerInfo = registryInfo || { name: resolveProviderName(providerId) || providerId, color: "#666" };
       const isCustomProvider = isOpenAICompatibleProvider(providerId) || isAnthropicCompatibleProvider(providerId);
 
       // For provider-as-model kinds (webSearch/webFetch): emit a single entry where value === providerId

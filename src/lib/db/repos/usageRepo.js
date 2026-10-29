@@ -4,7 +4,7 @@ import { parseJson, stringifyJson } from "../helpers/jsonCol.js";
 import { getMeta, setMeta } from "../helpers/metaStore.js";
 
 import { matchesAllowedModels as matchesModelPatterns, parseAllowedModels } from "./apiKeysRepo.js";
-import { humanizeCompatId } from "../../../shared/utils/providerDisplay.js";
+import { dedupeLabels, humanizeCompatId } from "../../../shared/utils/providerDisplay.js";
 
 function maskApiKey(key) {
   if (!key || typeof key !== "string") return null;
@@ -461,6 +461,12 @@ export async function getProviderLookups({ force = false } = {}) {
   try { allApiKeys = await getApiKeys(); } catch {}
   const apiKeyMap = {};
   for (const k of allApiKeys) apiKeyMap[k.key] = { name: k.name, id: k.id, createdAt: k.createdAt };
+
+  // Two compatible nodes with no user-chosen name both humanize to the same
+  // family label; number them instead of printing any part of the id.
+  for (const [id, label] of dedupeLabels(Object.entries(providerNameMap).map(([pid, plabel]) => ({ id: pid, label: plabel })))) {
+    providerNameMap[id] = label;
+  }
 
   const value = { connectionMap, providerNameMap, apiKeyMap };
   providerLookupsCache.value = value;
@@ -1204,15 +1210,21 @@ export async function getRecentLogs(limit = 200) {
       for (const c of connections) connMap[c.id] = c.name || c.email || "";
     } catch {}
 
+    const { providerNameMap } = await getProviderLookups();
+
+    // Objects, not pipe-joined strings: an account or model containing " | "
+    // used to shift every later column and drop the row.
     return rows.map((r) => {
-      const ts = formatLogDate(new Date(r.timestamp));
-      const p = r.provider?.toUpperCase() || "-";
-      const m = r.model || "-";
-      const account = connMap[r.connectionId] || (r.connectionId ? r.connectionId.slice(0, 8) : "-");
       const tk = r.tokens ? parseJson(r.tokens, {}) : {};
-      const sent = r.promptTokens ?? tk.prompt_tokens ?? "-";
-      const received = r.completionTokens ?? tk.completion_tokens ?? "-";
-      return `${ts} | ${m} | ${p} | ${account} | ${sent} | ${received} | ${r.status || "-"}`;
+      return {
+        ts: formatLogDate(new Date(r.timestamp)),
+        model: r.model || "-",
+        provider: labelForProvider(providerNameMap, r.provider) || "-",
+        account: connMap[r.connectionId] || (r.connectionId ? r.connectionId.slice(0, 8) : "-"),
+        sent: r.promptTokens ?? tk.prompt_tokens ?? "-",
+        received: r.completionTokens ?? tk.completion_tokens ?? "-",
+        status: r.status || "-",
+      };
     });
   } catch (e) {
     console.error("[usageRepo] getRecentLogs failed:", e.message);

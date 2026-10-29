@@ -1,3 +1,11 @@
+# v0.5.333 (2026-10-29) · 1 commit
+
+## Fixes
+- **Gemini Web now honours the connection proxy.** `fetchSessionParams` and the `StreamGenerate` POST called the bare global `fetch`, so a proxy configured on the `gemini-web` connection was silently ignored — the request always left from the host's own IP. Both calls now go through `proxyAwareFetch` with the connection's proxy options, which is the only way to run a browser-session cookie from a host Google treats differently from the login IP.
+- **`fetch failed` now names the cause.** A 502 read `Gemini session fetch failed: fetch failed`, which is the same text for blocked egress, dead DNS, a reset connection and a broken TLS chain. The error now appends undici's `err.cause` code, e.g. `fetch failed (ENOTFOUND)` or `fetch failed (ECONNRESET)`, so the operator can tell a network fault from a rejected cookie in one glance.
+- **One IPv4 retry for hosts with a broken IPv6 route.** Containers that resolve AAAA records but cannot reach them (Railway among them) failed the connect phase while the same request worked from a laptop. A connect-phase failure (`ENETUNREACH`, `EHOSTUNREACH`, `EAI_AGAIN`, `ENOTFOUND`, `ECONNREFUSED`, `ETIMEDOUT`, `UND_ERR_CONNECT_TIMEOUT`) now retries once over an IPv4-pinned dispatcher before the error is reported. Proxied requests are exempt: the proxy resolves DNS on its side.
+- Verified on a live cookie: `gemini-3.5-flash-lite` returned `200` with `"OK"` in 20s through the new path.
+
 # v0.5.332 (2026-10-29) · 1 commit
 
 ## Fixes

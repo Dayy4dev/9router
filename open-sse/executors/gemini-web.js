@@ -20,6 +20,7 @@
 //    executor answered 400 "Gemini Web does not support OpenAI function tools".
 
 import { BaseExecutor } from "./base.js";
+import { proxyAwareFetch } from "../utils/proxyFetch.js";
 import { createHash } from "node:crypto";
 import {
   buildToolInstructions,
@@ -349,19 +350,19 @@ export function parseStreamReasoning(raw) {
 const SESSION_TTL_MS = 10 * 60 * 1000;
 const sessionCache = new Map(); // cookie -> { at, bl, expiresAt }
 
-async function fetchSessionParams(cookie, force = false) {
+async function fetchSessionParams(cookie, force = false, proxyOptions = null) {
   const hit = sessionCache.get(cookie);
   const now = Date.now();
   if (!force && hit && hit.expiresAt > now) return { at: hit.at, bl: hit.bl };
 
-  const res = await fetch(GEMINI_URL, {
+  const res = await geminiFetch(GEMINI_URL, {
     headers: {
       Cookie: cookie,
       "User-Agent": GEMINI_USER_AGENT,
       Accept: "text/html",
       "Accept-Language": "en-US,en;q=0.9",
     },
-  });
+  }, proxyOptions);
   if (!res.ok) return null;
   const html = await res.text();
   const m = html.match(/"SNlM0e":"([^"]+)"/) || html.match(/SNlM0e\\?":\\?"([^"\\]+)/);
@@ -400,6 +401,54 @@ function errorResponse(status, message) {
     JSON.stringify({ error: { message, type: "upstream_error" } }),
     { status, headers: { "Content-Type": "application/json" } }
   );
+}
+
+/**
+ * `fetch failed` alone hides every actionable detail: undici puts the real
+ * reason (ENOTFOUND, ECONNRESET, CERT_HAS_EXPIRED, ...) on err.cause. Without
+ * it a dead egress IP and a mangled cookie look identical to the operator.
+ */
+function describeFetchError(err) {
+  if (!(err instanceof Error)) return "unknown";
+  const cause = err.cause;
+  const detail = cause?.code || cause?.message;
+  if (!detail) return err.message;
+  return `${err.message} (${detail})`;
+}
+
+// Containers with a broken IPv6 route (Railway among them) fail the connect
+// phase for hosts that advertise AAAA records, which surfaces as a bare
+// "fetch failed" while the same request works from a laptop. Retrying once over
+// IPv4 turns that deployment bug into a working request.
+const IPV4_RETRY_CODES = new Set([
+  "ENETUNREACH",
+  "EHOSTUNREACH",
+  "EAI_AGAIN",
+  "ENOTFOUND",
+  "ECONNREFUSED",
+  "ETIMEDOUT",
+  "UND_ERR_CONNECT_TIMEOUT",
+]);
+let ipv4Dispatcher = null;
+
+async function ipv4Fetch(url, options) {
+  if (!ipv4Dispatcher) {
+    const { Agent } = await import("undici");
+    ipv4Dispatcher = new Agent({ connect: { family: 4 } });
+  }
+  return fetch(url, { ...options, dispatcher: ipv4Dispatcher });
+}
+
+async function geminiFetch(url, options, proxyOptions) {
+  try {
+    return await proxyAwareFetch(url, options, proxyOptions);
+  } catch (err) {
+    const code = err?.cause?.code || err?.code;
+    if (!IPV4_RETRY_CODES.has(code)) throw err;
+    const proxied = proxyOptions?.connectionProxyUrl || proxyOptions?.url;
+    if (proxied) throw err;
+    return ipv4Fetch(url, options);
+  }
 }
 
 /**
@@ -468,7 +517,7 @@ export class GeminiWebExecutor extends BaseExecutor {
     }
   }
 
-  async execute({ model, body, stream, credentials, signal, log }) {
+  async execute({ model, body, stream, credentials, signal, log, proxyOptions = null }) {
     const bodyObj = body || {};
     const rawCreds = credentials || {};
     const cookie = normalizeGeminiCookieInput(rawCreds.apiKey || rawCreds.cookie || "");
@@ -486,10 +535,10 @@ export class GeminiWebExecutor extends BaseExecutor {
 
     let session;
     try {
-      session = await fetchSessionParams(cookie);
+      session = await fetchSessionParams(cookie, false, proxyOptions);
     } catch (err) {
       return {
-        response: errorResponse(502, `Gemini session fetch failed: ${err instanceof Error ? err.message : "unknown"}`),
+        response: errorResponse(502, `Gemini session fetch failed: ${describeFetchError(err)}`),
         url: GEMINI_URL,
         headers: {},
         transformedBody: body,
@@ -568,7 +617,7 @@ export class GeminiWebExecutor extends BaseExecutor {
       // it the server answers 400 immediately. It is bound to the cookie
       // session, so it has to be fetched per request rather than cached.
       if (session.at) form.set("at", session.at);
-      upstream = await fetch(`${STREAM_URL}?${params.toString()}`, {
+      upstream = await geminiFetch(`${STREAM_URL}?${params.toString()}`, {
         method: "POST",
         headers: {
           ...headers,
@@ -576,10 +625,10 @@ export class GeminiWebExecutor extends BaseExecutor {
         },
         body: form.toString(),
         signal: signal ?? undefined,
-      });
+      }, proxyOptions);
     } catch (err) {
       return {
-        response: errorResponse(502, `Gemini fetch failed: ${err instanceof Error ? err.message : "unknown"}`),
+        response: errorResponse(502, `Gemini fetch failed: ${describeFetchError(err)}`),
         url: GEMINI_URL,
         headers: {},
         transformedBody: body,

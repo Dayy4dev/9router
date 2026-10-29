@@ -55,6 +55,9 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
   const [region, setRegion] = useState(defaultRegion);
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  // The badge alone said "Invalid" with no reason, so a rejected cookie looked
+  // identical to a typo, an outage, or the wrong provider form.
+  const [validationError, setValidationError] = useState(null);
   const [saving, setSaving] = useState(false);
   const bulkPlaceholder = isCloudflareAi
     ? `name1|sk-key1|acc123456\nname2|sk-key2|def789012\nsk-key-only-auto-named`
@@ -119,8 +122,10 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
       });
       const data = await res.json();
       setValidationResult(data.valid ? "success" : "failed");
-    } catch {
+      setValidationError(data.valid ? data.warning || null : data.error || "Validation failed");
+    } catch (err) {
       setValidationResult("failed");
+      setValidationError(err.message || "Validation request failed");
     } finally {
       setValidating(false);
     }
@@ -149,8 +154,10 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
         const data = await res.json();
         isValid = !!data.valid;
         setValidationResult(isValid ? "success" : "failed");
-      } catch {
+        setValidationError(isValid ? data.warning || null : data.error || "Validation failed");
+      } catch (err) {
         setValidationResult("failed");
+        setValidationError(err.message || "Validation request failed");
       } finally {
         setValidating(false);
       }
@@ -374,9 +381,14 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
           </p>
         )}
         {validationResult && (
-          <Badge variant={validationResult === "success" ? "success" : "error"}>
-            {validationResult === "success" ? "Valid" : "Invalid"}
-          </Badge>
+          <div className="flex flex-col gap-1">
+            <Badge variant={validationResult === "success" ? "success" : "error"}>
+              {validationResult === "success" ? "Valid" : "Invalid"}
+            </Badge>
+            {validationError && (
+              <p className="text-xs text-text-muted break-words">{validationError}</p>
+            )}
+          </div>
         )}
         {error && (
           <p className="text-xs text-red-500 break-words">{error}</p>

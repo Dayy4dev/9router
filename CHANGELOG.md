@@ -1,3 +1,12 @@
+# v0.5.332 (2026-10-29) · 1 commit
+
+## Fixes
+- **A live Gemini Web cookie no longer reports "invalid".** The connection Test button ran a chat completion, but the cookie is a browser session, not a bearer token: `gemini-web` had no case in the test path and fell through to `"Provider test not supported"`, which the modal rendered as a red *Failed* badge and the card stored as `testStatus: error`. Testing now runs the same session probe the Check button uses — fetch `gemini.google.com/app` and require the `SNlM0e` bootstrap — so a valid cookie passes in about a second instead of waiting on the chat queue.
+- **Cookie pastes are normalized before they are judged.** A raw `__Secure-1PSID` value, a `Cookie: a=b; c=d` header, quoted values, and both JSON export shapes (flat map and `{ cookies: [...] }`) now reach the request identically; previously a quoted or prefixed paste was rejected as an invalid session.
+- **The rejection reason is shown, not just "Invalid".** Both the Add and Edit modals print the validator's message under the badge (signed-out page, HTTP status, missing session cookie, network timeout), and a failed *Test* shows the upstream error instead of a bare *Failed*.
+- **A missing `__Secure-1PSIDTS` is surfaced as a warning, not a failure.** The cookie still validates, but the connection is flagged because the session cannot rotate and dies once Google re-issues the timestamp.
+- Tests: `tests/unit/gemini-web-cookie.test.js` covers normalization of all five paste shapes plus accept, signed-out, non-200, network-failure and missing-session branches.
+
 # v0.5.331 (2026-10-29) · 1 commit
 
 ## Fixes

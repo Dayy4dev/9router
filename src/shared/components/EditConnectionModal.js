@@ -27,8 +27,10 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
   const [region, setRegion] = useState("");
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  const [testError, setTestError] = useState(null);
   const [validating, setValidating] = useState(false);
   const [validationResult, setValidationResult] = useState(null);
+  const [validationError, setValidationError] = useState(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -67,7 +69,9 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
         setRegion(savedRegion);
       }
       setTestResult(null);
+      setTestError(null);
       setValidationResult(null);
+      setValidationError(null);
     }
   }, [connection, isOpen]);
 
@@ -99,12 +103,15 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
     if (!connection?.provider) return;
     setTesting(true);
     setTestResult(null);
+    setTestError(null);
     try {
       const res = await fetch(`/api/providers/${connection.id}/test`, { method: "POST" });
       const data = await res.json();
       setTestResult(data.valid ? "success" : "failed");
-    } catch {
+      setTestError(data.valid ? data.warning || null : data.error || "Connection test failed");
+    } catch (err) {
       setTestResult("failed");
+      setTestError(err.message || "Connection test failed");
     } finally {
       setTesting(false);
     }
@@ -114,6 +121,7 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
     if (!connection?.provider || !formData.apiKey) return;
     setValidating(true);
     setValidationResult(null);
+    setValidationError(null);
     try {
       const res = await fetch("/api/providers/validate", {
         method: "POST",
@@ -129,8 +137,10 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
       });
       const data = await res.json();
       setValidationResult(data.valid ? "success" : "failed");
-    } catch {
+      setValidationError(data.valid ? data.warning || null : data.error || "Validation failed");
+    } catch (err) {
       setValidationResult("failed");
+      setValidationError(err.message || "Validation request failed");
     } finally {
       setValidating(false);
     }
@@ -248,9 +258,14 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
               </div>
             </div>
             {validationResult && (
-              <Badge variant={validationResult === "success" ? "success" : "error"}>
-                {validationResult === "success" ? "Valid" : "Invalid"}
-              </Badge>
+              <div className="flex flex-col gap-1">
+                <Badge variant={validationResult === "success" ? "success" : "error"}>
+                  {validationResult === "success" ? "Valid" : "Invalid"}
+                </Badge>
+                {validationError && (
+                  <p className="text-xs text-text-muted break-words">{validationError}</p>
+                )}
+              </div>
             )}
           </>
         )}
@@ -353,9 +368,12 @@ export default function EditConnectionModal({ isOpen, connection, proxyPools, on
               {testing ? "Testing..." : "Test Connection"}
             </Button>
             {testResult && (
-              <Badge variant={testResult === "success" ? "success" : "error"}>
-                {testResult === "success" ? "Valid" : "Failed"}
-              </Badge>
+              <div className="flex flex-col gap-1">
+                <Badge variant={testResult === "success" ? "success" : "error"}>
+                  {testResult === "success" ? "Valid" : "Failed"}
+                </Badge>
+                {testError && <p className="text-xs text-text-muted break-words">{testError}</p>}
+              </div>
             )}
           </div>
         )}

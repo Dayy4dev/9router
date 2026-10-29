@@ -384,26 +384,24 @@ function ModelStudioContent({ antiProbe = true }) {
                   aria-label={`Select ${model.callName}`}
                 />
                 <div className="min-w-0 flex-1">
-                  <button
-                    type="button"
-                    onClick={() => copy(model.callName, model.callName)}
-                    title="Copy model name"
-                    className="flex items-center gap-2 min-w-0 max-w-full text-left group"
-                  >
+                  {/* Same copy affordance as an API-key row: a small always-visible
+                      icon button that swaps to a check, instead of a hover-only
+                      glyph plus a "Copied" label. */}
+                  <div className="flex min-w-0 items-center gap-1">
                     <code className="font-mono text-sm font-semibold text-primary truncate">
                       {model.callName}
                     </code>
-                    {copiedName === model.callName ? (
-                      <span className="flex shrink-0 items-center gap-1 text-[11px] font-medium text-green-500">
-                        <span className="material-symbols-outlined text-[14px]">check</span>
-                        Copied
+                    <button
+                      type="button"
+                      onClick={() => copy(model.callName, model.callName)}
+                      title="Copy model name"
+                      className="p-1 hover:bg-black/5 dark:hover:bg-white/5 rounded text-text-muted hover:text-primary transition-all shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">
+                        {copiedName === model.callName ? "check" : "content_copy"}
                       </span>
-                    ) : (
-                      <span className="material-symbols-outlined text-[14px] shrink-0 text-text-muted opacity-0 transition-opacity group-hover:opacity-100">
-                        content_copy
-                      </span>
-                    )}
-                  </button>
+                    </button>
+                  </div>
                   {model.displayName && model.displayName !== model.callName && (
                     <p className="text-xs text-text-muted mt-0.5 truncate">{model.displayName}</p>
                   )}

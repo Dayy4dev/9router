@@ -1,3 +1,10 @@
+# v0.5.325 (2026-10-28)
+
+## Fixes
+- **Copy button consistency**: every model-row copy control now uses the same button as the API-key list (`p-1`, `rounded`, `hover:bg-black/5 dark:hover:bg-white/5`, `hover:text-primary`, `transition-all`, 14px glyph). That covers Model Studio's name copy, the provider page's model rows, the compatible-provider section, the passthrough section and the providers card. The bespoke hover tooltips ("Copy" / "Copied!" floating label) and their hover-only reveal are gone, so the affordance is always visible and identical in both places. Model Studio's name copy also no longer swaps to a green "Copied" text label — it flips the glyph to a check, exactly like the API-key row.
+
+---
+
 # v0.5.324 (2026-10-28)
 
 ## Fixes

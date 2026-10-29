@@ -448,7 +448,6 @@ export async function getProviderLookups({ force = false } = {}) {
   const connectionMap = {};
   for (const c of allConnections) connectionMap[c.id] = c.name || c.email || c.id;
 
-  const { humanizeCompatId } = await import("../../../shared/utils/providerDisplay.js");
   const providerNameMap = {};
   try {
     const nodes = await getProviderNodes();

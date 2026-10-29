@@ -1,3 +1,12 @@
+# v0.5.338 (2026-10-29) · 1 commit
+
+## Fixes
+- **The activity heatmap fit a desktop card, not a phone.** 24 buckets of `14px + 3px gap` plus a 28px day gutter measure 441px, so on a 390px viewport 42 cells sat past the card edge with no scroll container to reach them. The block is one CSS grid now (`repeat(24, minmax(0, 14px))`), so cells shrink on a narrow screen instead of overflowing, and the hour ruler prints at 10px like the rest of the shell.
+- **The Savings tab showed numbers for a report that has no rows.** With zero savings the card still printed `Avg 0 / active day` next to a "nothing saved in this period" chart, and a model filter box sat above an empty table. The summary chips and the filter are hidden until there is data behind them.
+
+## Internal
+- Dropped the leftover `await import()` of `humanizeCompatId` inside `getProviderLookups`; the symbol is already a static import, so the dynamic one only re-resolved the same module.
+
 # v0.5.337 (2026-10-29) · 1 commit
 
 ## Fixes

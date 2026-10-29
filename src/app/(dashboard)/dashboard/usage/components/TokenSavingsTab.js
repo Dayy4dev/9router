@@ -189,7 +189,7 @@ export default function TokenSavingsTab({ period }) {
         <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
           <div className="text-sm font-medium text-text-main">Daily savings</div>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-text-muted">
-            {stats.peakDate ? (
+            {data.totals.savedTokens === 0 ? null : stats.peakDate ? (
               <span>
                 Peak <span className="text-emerald-400">{fmt(stats.peakTokens)}</span> on {shortDate(stats.peakDate)}
               </span>
@@ -212,12 +212,14 @@ export default function TokenSavingsTab({ period }) {
               </span>
             ) : null}
           </div>
-          <input
-            value={modelFilter}
-            onChange={(e) => setModelFilter(e.target.value)}
-            placeholder="Filter models..."
-            className="w-full rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-sm text-text-main placeholder:text-text-muted sm:w-56"
-          />
+          {models.length > 0 ? (
+            <input
+              value={modelFilter}
+              onChange={(e) => setModelFilter(e.target.value)}
+              placeholder="Filter models..."
+              className="w-full rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-sm text-text-main placeholder:text-text-muted sm:w-56"
+            />
+          ) : null}
         </div>
         {rows.length === 0 ? (
           <div className="text-sm text-text-muted">

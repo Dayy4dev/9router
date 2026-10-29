@@ -1,3 +1,8 @@
+# v0.5.336 (2026-10-29) · 1 commit
+
+## Fixes
+- **The notification count was the one piece of text under 10px in the sidebar.** The unread badge rendered at 9px in a 15px circle, so a two-digit count was unreadable at a glance; it is 10px in a 16px circle now, which is the smallest size the rest of the shell uses.
+
 # v0.5.335 (2026-10-29) · 1 commit
 
 ## Fixes

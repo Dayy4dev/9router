@@ -27,6 +27,7 @@ import {
   buildToolReminder,
   extractText as textFromContent,
   hasTools as bodyHasTools,
+  selectableTools,
 } from "open-sse/executors/webCookieToolBridge.js";
 import { extractImageBuffer, convertImageToTextScript } from "./imageTextExtractor.js";
 
@@ -337,7 +338,8 @@ export function applyToolCallingBridge(body, sourceFormat) {
 
   const instructions = buildToolInstructions(body, "fenced");
   if (!instructions) return false;
-  const reminder = buildToolReminder("fenced");
+  const { mode, forced } = selectableTools(body);
+  const reminder = buildToolReminder("fenced", { mode, forced });
 
   const catalogue = {
     ...(Array.isArray(body.tools) ? { tools: body.tools } : {}),

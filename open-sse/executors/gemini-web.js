@@ -29,6 +29,7 @@ import {
   hasTools,
   parseToolCallReply,
   renderToolTranscript,
+  selectableTools,
 } from "./webCookieToolBridge.js";
 
 const GEMINI_URL = "https://gemini.google.com/app";
@@ -249,7 +250,8 @@ export function buildPromptWithTools(messages, body) {
   const toolMode = hasTools(body);
   if (!toolMode) return { prompt: buildGeminiPrompt(messages), toolMode: false };
   const instructions = buildToolInstructions(body, "fenced");
-  const reminder = buildToolReminder("fenced");
+  const { mode, forced } = selectableTools(body);
+  const reminder = buildToolReminder("fenced", { mode, forced });
   const transcript = renderToolTranscript(messages, "fenced");
   const base = buildGeminiPrompt(messages);
   const parts = [];

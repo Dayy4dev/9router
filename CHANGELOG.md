@@ -1,3 +1,21 @@
+# v0.5.335 (2026-10-29) · 1 commit
+
+## Fixes
+- **The Savings tab names the model, not a node id.** `byModel` was keyed by the raw provider id, so a compatible node printed `openai-compatible-chat-330688af` as if it were a model name. The bucket is now split into provider and model, the API resolves the provider through `getProviderDisplayName`, and the row reads `gpt-5.1` with `OpenAI Compatible (330688af)` beneath it. The same lookup now labels `recentRequests`, `activeRequests`, the by-provider breakdown (`stats.providerLabels`) and the provider bar chart, which used to fall back to the raw id whenever `providerNodes` was empty.
+- **The Daily Savings chart has a floor and a scale.** Every bar was drawn at full strength, so a day with 950 tokens looked identical to the 128K peak and the whole strip read as "green box". Empty days are now a muted track, active days are emerald proportional to the peak, and the peak alone is drawn at full strength; tick labels are absolutely centred so a 25px slot cannot clip `Oct 23`, and neighbouring ticks step aside when the peak takes its own label.
+- **Cached tokens show up again in Recent Requests.** Five inline `||` chains only knew `cache_read_input_tokens` and `cached_tokens`, so a request that reported `prompt_tokens_details.cached_tokens`, `cachedContentTokenCount` or `prompt_cache_hit_tokens` rendered no badge at all. One `cacheReadTokens` helper now walks every spelling plus the nested details object, and the row prints the badge (verified against one seeded row per spelling: 640 / 960 / 512).
+- **A rewritten model on another provider is no longer printed twice.** `gweb/gemini-4-argon → gemini-web/gemini-4-argon` said the same thing twice; the arrow now appears only when the model name itself changed, and the resolved line drops the redundant provider prefix.
+- **The provider bar chart survives long labels.** Bars are horizontal, the axis takes the base name (`OpenAI Compatible`, not the 26-character node label), and a custom tick renderer keeps each label on one line — Recharts used to wrap it onto three lines that overlapped the neighbouring rows.
+
+## Performance
+- **Usage aggregation is memoized.** Each stats call ran three dynamic imports and then scanned every connection, node and API key to build the display names. `getProviderLookups` builds the three maps once and serves them for 15s, and the redundant `getConnectionMapCached` cache (same data, second copy, never invalidated) is gone.
+- **One shared stats snapshot per burst for the stream.** Every open tab subscribed to `/api/usage/stream` and each emitter tick asked the database to re-aggregate the whole period per connection, so three tabs meant three identical aggregations. A 750ms shared memo keeps updates live while a burst costs one aggregation.
+- **One ticker for every relative timestamp.** `TimeAgo` mounted a `setInterval` per row; twenty rows meant twenty timers waking a second apart and re-rendering twenty components. A single 1s ticker now drives all of them and stops when the last subscriber unmounts, and the stream client drops an SSE payload identical to the one already rendered instead of re-setting state.
+
+## Tests
+- `tests/unit/token-saver-savings.test.js` asserts the split model shape (`model`, `provider`, `key`), the gap-filled 30-day series and the empty-report case.
+- Two stale assertions that failed before this change were rewritten to the current behaviour: the empty state string in `UsageStats.js` and the `jev-1.13-free` decision (it belongs in the registry, the suggestion filter is what drops it).
+
 # v0.5.334 (2026-10-29) · 1 commit
 
 ## Fixes

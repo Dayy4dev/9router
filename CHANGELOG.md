@@ -1,3 +1,9 @@
+# v0.5.331 (2026-10-29) · 1 commit
+
+## Fixes
+- **The model picker no longer opens a group for a provider that is not connected.** Custom-model rows outlive the connection they were created against: when a provider is removed (or a model is registered against an alias that was never set up here), the fallback that groups leftover custom models still rendered them under a heading for that absent provider — so the picker listed a provider the dashboard does not have, holding rows that cannot route anywhere. The alias is now traced back to its built-in provider, and the group is dropped when that provider has no active connection (compatible nodes stay exempt: they legitimately run without a stored key).
+- **Custom-model groups use the provider's display name.** A group built from leftover custom rows fell back to the storage alias, so a connected provider appeared as `gemini-web` instead of `Gemini Web` — a name nobody recognises from the dashboard. The registry entry now supplies the label and accent color, with the alias kept only as an internal key.
+
 # v0.5.330 (2026-10-29) · 1 commit
 
 ## Fixes

@@ -1,3 +1,19 @@
+# v0.5.328 (2026-10-29) · 1 commit
+
+## Fixes
+- **No built-in emoji left in the UI.** Emoji were rendered by the OS font, so the same screen looked different on Windows, macOS, Linux and Android, ignored the design tokens, and fell back to blank boxes when the system emoji font was missing. Every one is gone:
+  - Usage stats: the cached-token `⚡` in Recent requests is now the `bolt` glyph from the icon subset inside the same info chip, so it takes the chip's colour and size.
+  - Quota bars, quota table, provider cooldowns, connection cards, combo latency: `🟢/🟡/🔴/💰/⏱` replaced by token-coloured dots (`bg-success` / `bg-warning` / `bg-danger`), `schedule` and `bolt` glyphs.
+  - Language switcher, header language button and the Xiaomi region picker no longer use flag emoji (which render as bare letters on Windows). New `LocaleBadge` component draws the locale/region code as a chip: `border-border-subtle`, `bg-surface-2`, uppercase, tracked, 9-11px. Variants that shared a code stay distinct: `zh-CN`/`zh-TW` show 简/繁, `pt-BR`/`pt-PT` show BR/PT.
+  - Modals, update panel, marketplace, `GetStarted`, SAML guide, media example cards, MITM/Cowork cards: `✅ 🌐 🔑 🔐 ✓ ✕ ⚠️ 📝 🔷 🟢 🛡️ ☁️` replaced with `check` / `check_circle` / `language` / `key` / `lock` / `close` / `warning` / `edit_note` / `cloud` / `security` / `verified_user` / `shield_lock`.
+  - OAuth result popups and the MiMo login page draw their success/failure marks as inline SVG instead of `✓`.
+  - Translation catalogs (`public/i18n/literals/*.json`, all 34 locales) carried emoji in both keys and values (`⚠️ Risk Notice…`, `✓ Confirm Add`, `📝 Configure providers…`). Every key was rewritten emoji-free so the cleaned UI strings still hit their translations instead of falling back to English.
+  - Logs and console-log viewers strip emoji from upstream log lines at render time (`stripEmoji`), so provider messages and older log files can't reintroduce them; copy still returns the raw line.
+  - `getStatusEmoji()` deleted (dead export), `RISK_NOTICE` no longer starts with a warning emoji.
+- Tests: `tests/unit/no-emoji-ui.test.js` fails the build if any emoji reappears under `src/app` or `src/shared`, asserts `locales.js` ships codes instead of flags, and covers `stripEmoji`.
+
+---
+
 # v0.5.327 (2026-10-29)
 
 ## Fixes

@@ -121,8 +121,9 @@ function RecentRequests({ requests = [] }) {
                         <span className="text-text-main font-medium">{fmt(r.promptTokens)}↑</span>
                         <span className="text-success font-medium">{fmt(r.completionTokens)}↓</span>
                         {r.cachedTokens > 0 && (
-                          <span className="text-[10px] text-info bg-info/10 px-1.5 py-0.5 rounded leading-none border border-info/20" title={`${fmt(r.cachedTokens)} cached tokens`}>
-                            ⚡{fmt(r.cachedTokens)}
+                          <span className="inline-flex items-center gap-1 text-[10px] text-info bg-info/10 px-1.5 py-0.5 rounded leading-none border border-info/20" title={`${fmt(r.cachedTokens)} cached tokens`}>
+                            <span className="material-symbols-outlined text-[11px] leading-none">bolt</span>
+                            {fmt(r.cachedTokens)}
                           </span>
                         )}
                       </div>

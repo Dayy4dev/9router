@@ -1,3 +1,14 @@
+# v0.5.326 (2026-10-29)
+
+## Fixes
+- **Hide Raw Errors now hides every error, not most of them.** The toggle was threaded into two call sites inside `chatCore`, so any error built elsewhere — the all-accounts-rate-limited reply, combo exhaustion, the API-key gates, provider/executor responses, the non-SSE upstream body, the 404 "no credentials serving this model" — shipped the upstream text verbatim. That is why a `[model] [403]: {"error":{"message":"Model ... is not allowed for this API key"}} (reset after 2m)` still reached the client with the toggle on.
+  - `unavailableResponse()` grew a `hideError` parameter, so the "reset after Ns" reply masks its message while still sending the `retry-after` header.
+  - Every handler (`chat`, `fetch`, `images`, `embeddings`, `search`, `stt`, `tts`, `videos`, `systemone`) now masks at its public boundary via the new `maskHiddenError()` helper: any >=400 JSON body has `error.message` replaced, whichever branch produced it. Status code, `type` and `code` survive, so a client can still tell a 401 from a 503 — only the text goes.
+  - `hideError` reached the streaming path too: the abort-terminal error frame (`buildStreamErrorBytes`) and the non-SSE upstream body now honour it instead of leaking the upstream `<title>` text.
+  - Tests: `tests/unit/error-log-hide-error.test.js` covers `unavailableResponse` (masked message, `retry-after` kept) and the masked SSE frame.
+
+---
+
 # v0.5.325 (2026-10-28)
 
 ## Fixes

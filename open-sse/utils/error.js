@@ -1,5 +1,9 @@
 import { ERROR_TYPES, DEFAULT_ERROR_MESSAGES } from "../config/errorConfig.js";
 
+// What the client is allowed to read when Hide Raw Errors is on: the status
+// code, the error type and the fact that something failed - never the message.
+export const HIDDEN_ERROR_MESSAGE = "There is an error but this error is hidden, try checking your error log.";
+
 /**
  * Build OpenAI-compatible error response body
  * @param {number} statusCode - HTTP status code
@@ -14,9 +18,7 @@ export function buildErrorBody(statusCode, message, hideError = false) {
       : { type: "invalid_request_error", code: "" });
 
   const rawMessage = message || DEFAULT_ERROR_MESSAGES[statusCode] || "An error occurred";
-  const finalMessage = hideError
-    ? "There is an error but this error is hidden, try checking your error log."
-    : rawMessage;
+  const finalMessage = hideError ? HIDDEN_ERROR_MESSAGE : rawMessage;
 
   return {
     error: {
@@ -123,9 +125,11 @@ export function createErrorResult(statusCode, message, resetsAtMs, extraHeaders 
  * @param {string} retryAfterHuman - Human-readable retry info e.g. "reset after 30s"
  * @returns {Response}
  */
-export function unavailableResponse(statusCode, message, retryAfter, retryAfterHuman, extraHeaders = null) {
+export function unavailableResponse(statusCode, message, retryAfter, retryAfterHuman, extraHeaders = null, hideError = false) {
   const retryAfterSec = Math.max(Math.ceil((new Date(retryAfter).getTime() - Date.now()) / 1000), 1);
-  const msg = `${message} (${retryAfterHuman})`;
+  const msg = hideError
+    ? buildErrorBody(statusCode, message, true).error.message
+    : `${message} (${retryAfterHuman})`;
   return new Response(
     JSON.stringify({ error: { message: msg } }),
     {
@@ -138,6 +142,43 @@ export function unavailableResponse(statusCode, message, retryAfter, retryAfterH
       }
     }
   );
+}
+
+/**
+ * Mask a client-facing error body when Hide Raw Errors is on.
+ *
+ * The toggle used to be threaded into a handful of call sites, so any path that
+ * forgot the flag (combo fallbacks, executor-built responses, auth gates) still
+ * shipped the upstream message. Masking at the handler boundary instead makes
+ * the guarantee unconditional: no error detail leaves the server, whichever
+ * branch produced the response. Status code, error type and code stay, so a
+ * caller can still tell a 401 from a 503; only the message is replaced.
+ *
+ * Successful responses - including 200 SSE streams - pass through untouched.
+ */
+export async function maskHiddenError(response, hideError) {
+  if (!hideError || !response || response.status < 400) return response;
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return response;
+
+  let body;
+  try {
+    body = await response.clone().json();
+  } catch {
+    return response;
+  }
+  if (!body || typeof body !== "object" || !body.error) return response;
+
+  const error = typeof body.error === "object"
+    ? { ...body.error, message: HIDDEN_ERROR_MESSAGE }
+    : HIDDEN_ERROR_MESSAGE;
+  const headers = new Headers(response.headers);
+  headers.delete("content-length");
+  return new Response(JSON.stringify({ ...body, error }), {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
 }
 
 /**

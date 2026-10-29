@@ -1,3 +1,11 @@
+# v0.5.334 (2026-10-29) · 1 commit
+
+## Fixes
+- **PSID and PSIDTS are separate fields.** The `gemini-web` Add and Edit forms asked for one opaque `Cookie Value`, so a user who only has `__Secure-1PSID` had to leave a field looking half-filled and never found out that the timestamp part is optional. The form now asks for `__Secure-1PSID` (required) and `__Secure-1PSIDTS (optional)` separately and composes the cookie header itself; Save stays disabled until a PSID exists, because a timestamp alone cannot authenticate.
+- **Editing the timestamp no longer wipes the session.** `PUT /api/providers/:id` only ever wrote `apiKey` for `authType: "apikey"`, so a `gemini-web` connection could not be re-keyed at all. It now accepts a cookie edit and decides what to persist: a paste that carries its own `__Secure-1PSID` replaces the cookie, while a timestamp-only entry merges into the stored one instead of being written verbatim — the previous behaviour would have saved a cookie without the part that authenticates.
+- **Other Google cookies survive an edit.** `SAPISID`, `__Secure-3PSID`, `__Secure-1PSIDCC` and anything else in a pasted header are carried through the split/compose round trip. The executor signs `Authorization` from `SAPISID`, so dropping the extras while editing would have downgraded a working credential.
+- Unit tests: 16 cases for split, compose, merge and the persist decision (`tests/unit/gemini-cookie-fields.test.js`).
+
 # v0.5.333 (2026-10-29) · 1 commit
 
 ## Fixes

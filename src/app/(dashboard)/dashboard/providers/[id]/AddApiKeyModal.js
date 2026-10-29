@@ -14,11 +14,14 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
   const isOllamaLocal = provider === "ollama-local";
   const isCookie = authType === "cookie";
   const isXaiApiKey = provider === "xai" && !isCookie;
-  const credentialLabel = isCookie ? "Cookie Value" : provider === "qoder" || provider === "qoder-cn" ? "Personal Access Token (PAT)" : "API Key";
+  const credentialLabel = isCookie
+    ? (provider === "gemini-web" ? "Session" : "Cookie Value")
+    : provider === "qoder" || provider === "qoder-cn" ? "Personal Access Token (PAT)" : "API Key";
   const credentialPlaceholder = isCookie
     ? (provider === "gemini-web" ? "__Secure-1PSID value" : "eyJhbGciOi...")
     : (isXaiApiKey ? "xai-..." : provider === "qoder" || provider === "qoder-cn" ? "pt-..." : "");
 
+  const isGeminiWeb = provider === "gemini-web";
   const isAzure = provider === "azure";
   const isCloudflareAi = provider === "cloudflare-ai";
   // Capability, not identity: gating this on `provider === "bedrock"` left bedrock-xai with no
@@ -39,6 +42,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
     proxyPoolId: NONE_PROXY_POOL_VALUE,
     ollamaHostUrl: "",
   });
+  const [geminiParts, setGeminiParts] = useState({ psid: "", psidts: "", extra: "" });
   const [azureData, setAzureData] = useState({
     azureEndpoint: "",
     apiVersion: "2024-10-01-preview",
@@ -105,12 +109,32 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
   // handleSubmit's early return both read it; encoding the rule twice is what let Save look
   // clickable while silently doing nothing for profile-only Bedrock connections.
   const apiKeySatisfied = () => {
+    // A timestamp without a PSID cannot authenticate; Save must stay disabled.
+    if (isGeminiWeb) return !!geminiParts.psid;
     const psd = buildProviderSpecificData();
     if (apiKeyOptionalWith && psd?.[apiKeyOptionalWith]) return true;
     // AWS static keys are a pair: a secret alone saves a connection that can never sign.
     if (usesAwsCredentialForm) return !!formData.apiKey && !!psd?.accessKeyId;
     return !!formData.apiKey;
   };
+
+  // PSID alone authenticates the shell; PSIDTS is only what keeps the session alive when Google
+  // rotates the timestamp. Splitting them means the second field can honestly stay empty instead
+  // of forcing a user who only has PSID to paste a half-cookie that looks broken.
+  const updateGeminiPart = (field, rawValue) => {
+    const parsed = splitGeminiCookie(rawValue);
+    const next = { ...geminiParts };
+    if (field === "psid") {
+      next.psid = parsed.psid || rawValue.trim();
+      if (parsed.psidts) next.psidts = parsed.psidts;
+      if (parsed.extra) next.extra = parsed.extra;
+    } else {
+      next.psidts = parsed.psidts || rawValue.trim();
+    }
+    setGeminiParts(next);
+    setFormData((prev) => ({ ...prev, apiKey: composeGeminiCookie(next) }));
+  };
+
 
   const handleValidate = async () => {
     setValidating(true);
@@ -264,7 +288,7 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
       <div className="flex flex-col gap-4">
         {/* Mode switcher. Hidden for AWS credentials: bulk lines carry only a key, so a
             Bedrock entry would be saved with no access key id or profile and never work. */}
-        {!usesAwsCredentialForm && (
+        {!usesAwsCredentialForm && !isGeminiWeb && (
           <div className="flex gap-2">
             <Button size="sm" variant={mode === "single" ? "primary" : "ghost"} onClick={() => { setMode("single"); setBulkResult(null); }}>Single</Button>
             <Button size="sm" variant={mode === "bulk" ? "primary" : "ghost"} onClick={() => { setMode("bulk"); setBulkResult(null); }}>Bulk Add</Button>
@@ -324,7 +348,35 @@ export default function AddApiKeyModal({ isOpen, provider, providerName, isCompa
             </div>
           </div>
         )}
-        {!isOllamaLocal && (
+        {isGeminiWeb && (
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <Input
+                label="__Secure-1PSID"
+                type="text"
+                value={geminiParts.psid}
+                onChange={(e) => updateGeminiPart("psid", e.target.value)}
+                placeholder="g.a000..."
+                hint="Required. The session value from gemini.google.com/app."
+                className="flex-1"
+              />
+              <div className="pt-6">
+                <Button onClick={handleValidate} disabled={!apiKeySatisfied() || validating || saving} variant="secondary">
+                  {validating ? "Checking..." : "Check"}
+                </Button>
+              </div>
+            </div>
+            <Input
+              label="__Secure-1PSIDTS (optional)"
+              type="text"
+              value={geminiParts.psidts}
+              onChange={(e) => updateGeminiPart("psidts", e.target.value)}
+              placeholder="Optional - leave empty if you only have PSID"
+              hint="Optional. With it the session survives Google rotating the timestamp; without it the cookie dies at the next rotation."
+            />
+          </div>
+        )}
+        {!isOllamaLocal && !isGeminiWeb && (
           <div className="flex gap-2">
             <Input
               label={credentialLabel}

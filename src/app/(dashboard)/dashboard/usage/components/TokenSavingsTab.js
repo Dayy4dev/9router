@@ -90,12 +90,12 @@ function DailyBars({ daily, peak }) {
                       {money(d.savedCost)} · {d.requests} req
                     </div>
                   </div>
-                  <div className="relative mt-1 h-3 text-[10px] leading-3 text-text-muted">
+                  <div className="relative mt-1 text-[10px] leading-3 text-text-muted">
                     {showLabel && (
                       // Centred and absolutely positioned: a slot is only ~25px
                       // wide at 30 days, so an inline label would be clipped.
                       <span className="absolute left-1/2 -translate-x-1/2 whitespace-nowrap">
-                        {isPeak ? shortDate(d.date) : shortDate(d.date).replace(/^\w+ /, "")}
+                        {shortDate(d.date)}
                       </span>
                     )}
                   </div>

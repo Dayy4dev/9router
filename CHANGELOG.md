@@ -1,3 +1,8 @@
+# v0.5.337 (2026-10-29) · 1 commit
+
+## Fixes
+- **The savings axis printed bare day numbers.** Every tick except the peak was stripped to its day-of-month (`30 4 8 12 16 20 24`), which reads like an hour axis rather than a date axis — the strip was there to stop a tick being clipped when labels sat inline in a ~25px slot, but they have been absolutely centred with room to spare since the tick-spacing fix, so `Oct 4` fits. Ticks print the full short date again.
+
 # v0.5.336 (2026-10-29) · 1 commit
 
 ## Fixes

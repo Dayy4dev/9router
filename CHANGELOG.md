@@ -1,3 +1,9 @@
+# v0.5.329 (2026-10-29) · 1 commit
+
+## Fixes
+- **Gemini Web replies were cut off after the first frame.** `readGeminiStream` stopped as soon as the accumulated buffer parsed, but every mid-stream frame already carries the answer so far, so text stopped mid-sentence (`"1, 2, 3, 4, 5,"` for a count to 40) and tool-call JSON arrived half-written — which is why tool calling silently came back as plain text instead of `tool_calls`. The reader now keeps consuming until Google sends its terminal `["e",...]` frame (30s idle / 150s hard ceiling still apply), so replies and `finish_reason: "tool_calls"` come through whole.
+- Tests: `tests/unit/gemini-web-stream-full.test.js` feeds a fake stream with a partial frame followed by the full one and asserts the complete answer and an intact ```` ```tool_call ```` fence come out; the old reader fails both cases.
+
 # v0.5.328 (2026-10-29) · 1 commit
 
 ## Fixes

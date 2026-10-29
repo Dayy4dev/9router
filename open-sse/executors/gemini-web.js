@@ -412,7 +412,9 @@ function errorResponse(status, message) {
  * silence after the last byte, and a hard 150s ceiling (measured replies on this
  * box run 4-45s, but the same prompt has been observed at 108s).
  */
-async function readGeminiStream(res, externalSignal) {
+const END_FRAME_RE = /\[\["e",\d+/;
+
+export async function readGeminiStream(res, externalSignal) {
   if (!res.body) return "";
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
@@ -435,10 +437,10 @@ async function readGeminiStream(res, externalSignal) {
       lastData = Date.now();
       gotFirst = true;
       buf += decoder.decode(r.value, { stream: true });
-      // Stop on the first frame that carries an actual answer. Partial frames
-      // do not parse (parseStreamResponse walks complete wrb.fr lines), so a
-      // successful parse here means the reply is complete enough to return.
-      if (parseStreamResponse(buf)) break;
+      // Each mid-stream frame carries the answer so far, so parsing the first
+      // parseable frame returns a half-written reply - and cut tool-call JSON in
+      // half. Read until Google sends its terminal `["e",...]` frame instead.
+      if (END_FRAME_RE.test(buf)) break;
     }
   } catch {
     // Timeout/abort below: whatever accumulated is what we can use.
@@ -626,18 +628,23 @@ export class GeminiWebExecutor extends BaseExecutor {
       const base = { id, object: "chat.completion.chunk", created, model: modelId };
       const readable = new ReadableStream({
         start(controller) {
-          const push = (obj) => controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
-          if (reasoning) push({ ...base, choices: [{ index: 0, delta: { reasoning_content: reasoning } }] });
-          if (content) push({ ...base, choices: [{ index: 0, delta: { content } }] });
+          const push = (delta, finishReason) =>
+            controller.enqueue(
+              encoder.encode(
+                `data: ${JSON.stringify({ ...base, choices: [{ index: 0, delta, ...(finishReason ? { finish_reason: finishReason } : {}) }] })}\n\n`
+              )
+            );
+          if (reasoning) push({ reasoning_content: reasoning }, null);
+          if (content) push({ content }, null);
           let sentCalls = false;
           if (calls.length) {
             sentCalls = emitToolCallChunks(
-              (delta) => push({ ...base, choices: [{ index: 0, delta }] }),
-              () => push({ ...base, choices: [{ index: 0, delta: { role: "assistant", content: "" } }] }),
+              (delta, finishReason) => push(delta, finishReason),
+              () => push({ role: "assistant", content: "" }, null),
               calls
             );
           }
-          if (!sentCalls) push({ ...base, choices: [{ index: 0, delta: {}, finish_reason: "stop" }] });
+          if (!sentCalls) push({}, "stop");
           controller.enqueue(encoder.encode("data: [DONE]\n\n"));
           controller.close();
         },

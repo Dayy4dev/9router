@@ -1,3 +1,13 @@
+# v0.5.327 (2026-10-29)
+
+## Fixes
+- **Hide Raw Errors also covers upstream error frames inside a stream and non-JSON error bodies.** Two remaining ways a provider's own wording reached the client with the toggle on:
+  - A provider that answers `200` and then sends `data: {"error":{...}}` mid-stream. In passthrough mode (same client and provider format) the frame was forwarded verbatim; in translate mode it was silently dropped, so the client saw a truncated stream with no explanation. Now `createSSEStream` takes `hideError`, rewrites the frame's message and forwards it masked — a real error frame in the client's format instead of silence.
+  - An upstream HTML/text error page (Cloudflare 5xx, gateway HTML). `maskHiddenError()` only touched `application/json`, so the page went through untouched. It now rebuilds any text body as a masked JSON error, keeping the status and headers such as `retry-after`.
+- Tests: `tests/unit/stream-error-frame-hide.test.js` covers passthrough masking, the translate-mode error frame (OpenAI and Claude clients), the toggle-off passthrough, an HTML body rebuilt as masked JSON, and `retry-after` surviving a masked 429.
+
+---
+
 # v0.5.326 (2026-10-29)
 
 ## Fixes

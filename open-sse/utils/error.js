@@ -5,6 +5,30 @@ import { ERROR_TYPES, DEFAULT_ERROR_MESSAGES } from "../config/errorConfig.js";
 export const HIDDEN_ERROR_MESSAGE = "There is an error but this error is hidden, try checking your error log.";
 
 /**
+ * Replace the message inside an already-parsed error object with the hidden
+ * placeholder, keeping type/code intact. Handles the OpenAI shape
+ * (`{ message }`), the Anthropic shape (`{ type, error: { message } }`) and a
+ * bare string. Mutates and returns the object.
+ * @param {any} err - parsed error object or string
+ * @returns {any} the same error, masked
+ */
+export function maskErrorPayload(err) {
+  if (!err) return err;
+  if (typeof err === "string") return HIDDEN_ERROR_MESSAGE;
+  if (typeof err !== "object") return err;
+  if (typeof err.message === "string") {
+    err.message = HIDDEN_ERROR_MESSAGE;
+  }
+  if (err.error && typeof err.error === "object" && typeof err.error.message === "string") {
+    err.error.message = HIDDEN_ERROR_MESSAGE;
+  }
+  if (typeof err.detail === "string") {
+    err.detail = HIDDEN_ERROR_MESSAGE;
+  }
+  return err;
+}
+
+/**
  * Build OpenAI-compatible error response body
  * @param {number} statusCode - HTTP status code
  * @param {string} message - Error message
@@ -159,26 +183,46 @@ export function unavailableResponse(statusCode, message, retryAfter, retryAfterH
 export async function maskHiddenError(response, hideError) {
   if (!hideError || !response || response.status < 400) return response;
   const contentType = response.headers.get("content-type") || "";
-  if (!contentType.includes("application/json")) return response;
 
-  let body;
-  try {
-    body = await response.clone().json();
-  } catch {
-    return response;
+  const rebuild = (payload) => {
+    const headers = new Headers(response.headers);
+    headers.delete("content-length");
+    headers.set("content-type", "application/json");
+    return new Response(JSON.stringify(payload), {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
+  };
+
+  let body = null;
+  if (contentType.includes("application/json")) {
+    try {
+      body = await response.clone().json();
+    } catch {
+      body = null;
+    }
   }
-  if (!body || typeof body !== "object" || !body.error) return response;
 
-  const error = typeof body.error === "object"
-    ? { ...body.error, message: HIDDEN_ERROR_MESSAGE }
-    : HIDDEN_ERROR_MESSAGE;
-  const headers = new Headers(response.headers);
-  headers.delete("content-length");
-  return new Response(JSON.stringify({ ...body, error }), {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  if (body && typeof body === "object") {
+    // Nothing named `error` to mask - leave the payload alone.
+    if (!body.error) return response;
+    const error = typeof body.error === "object"
+      ? { ...body.error, message: HIDDEN_ERROR_MESSAGE }
+      : HIDDEN_ERROR_MESSAGE;
+    return rebuild({ ...body, error });
+  }
+
+  // Not JSON, or not parseable: an upstream HTML/text error page would leak the
+  // provider's wording verbatim, so rebuild it as a masked JSON error instead.
+  let text = "";
+  try {
+    text = (await response.clone().text()).trim();
+  } catch {
+    text = "";
+  }
+  if (!text) return response;
+  return rebuild(buildErrorBody(response.status, text, true));
 }
 
 /**

@@ -1,3 +1,15 @@
+# v0.5.340 (2026-10-29) · 1 commit
+
+## Features
+- **OpenCode Free V2 (`oc2`) — the lane that works with no proxy.** The V1 lane reaches `opencode.ai` three different ways before it sends a wire request: it spawns the host `opencode` CLI, then a Bun transport sidecar, then an egress probe that re-tests the direct IP. On a host without the CLI and without `bun` each of those fails slowly, and the request that finally goes out rides Node's OpenSSL ClientHello — which the free tier refuses or black-holes, so the call sits until the 60s connect timeout. That is the "timeout terus, tapi di decolua jalan" symptom: decolua's lane sends the wire request straight through `opencodeTlsFetch`, whose cipher list matches Bun's, and nothing else runs first.
+
+## Fixes
+- **The TLS client existed but was never wired into the request.** `BaseExecutor` only uses `directFetch` when a subclass passes it, and the V1 executor never did, so `opencodeTlsFetch` was dead code on every path. The V2 executor passes it exactly as decolua does (`directFetch: (url, options) => opencodeTlsFetch(...)`) and keeps proxy handling untouched: with a proxy configured the proxy wins, without one the impersonated client is used.
+- **`wreq-js` was missing from the install.** It is the optional dependency behind the impersonating client; without it the TLS path throws `OpencodeTlsUnavailableError` and the caller silently falls back to native fetch — back to the gate. Added to `optionalDependencies` (the lazy loader can still fetch it into `<DATA_DIR>/runtime`).
+
+## Internal
+- V2 is a separate registry entry (`opencode-v2`, alias `oc2`, "OpenCode Free V2") and a separate executor, so the V1 lane keeps its CLI/sidecar/egress behaviour untouched. Verified direct, no proxy: `big-pickle` answered `200` in 1.3s with `OK`.
+
 # v0.5.339 (2026-10-29) · 1 commit
 
 ## Fixes

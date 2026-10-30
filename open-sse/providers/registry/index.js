@@ -87,6 +87,7 @@ import p88 from "./openai.js";
 import p89 from "./opencode-go.js";
 import p90 from "./opencode-zen.js";
 import p91 from "./opencode.js";
+import p91b from "./opencode-v2.js";
 import p92 from "./openrouter.js";
 import p93 from "./perplexity-agent.js";
 import p94 from "./perplexity.js";
@@ -237,6 +238,7 @@ export default [
   p89,
   p90,
   p91,
+  p91b,
   p92,
   p93,
   p94,

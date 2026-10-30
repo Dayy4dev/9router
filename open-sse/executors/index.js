@@ -14,6 +14,7 @@ import { VertexExecutor } from "./vertex.js";
 import { OpenCodeExecutor } from "./opencode.js";
 import { OpenCodeGoExecutor } from "./opencode-go.js";
 import { OpenCodeZenExecutor } from "./opencode-zen.js";
+import { OpenCodeV2Executor } from "./opencodeV2.js";
 import { GrokCliExecutor } from "./grok-cli.js";
 import { OllamaLocalExecutor } from "./ollama-local.js";
 import { CommandCodeExecutor } from "./commandcode.js";
@@ -51,6 +52,8 @@ const executors = {
   oc: new OpenCodeExecutor(),
   "opencode-go": new OpenCodeGoExecutor(),
   "opencode-zen": new OpenCodeZenExecutor(),
+  "opencode-v2": new OpenCodeV2Executor(),
+  oc2: new OpenCodeV2Executor(),
   "grok-cli": new GrokCliExecutor(),
   gcli: new GrokCliExecutor(), // Alias
   gb: new GrokCliExecutor(), // Alias (Grok Build)

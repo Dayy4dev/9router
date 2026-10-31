@@ -1,3 +1,8 @@
+# v0.5.344 (2026-10-29) · 1 commit
+
+## UI
+- **The lane marker is a muted suffix, not a chip.** "USING CLI" read like a status flag and the green box competed with the connection badges, so it is now "With CLI" in plain muted text after the name (`OpenCode Free · With CLI`). No border, no fill; it reads as part of the title instead of a second status.
+
 # v0.5.343 (2026-10-29) · 1 commit
 
 ## UI

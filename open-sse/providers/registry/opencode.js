@@ -6,7 +6,7 @@ export default {
   uiAlias: "oc",
   display: {
     name: "OpenCode Free",
-    tag: "USING CLI",
+    tag: "With CLI",
     icon: "terminal",
     color: "#E87040",
     textIcon: "OC",

@@ -800,8 +800,8 @@ function ProviderCard({ providerId, provider, stats, authType, onToggle, opencod
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="truncate font-semibold">{provider.name}</h3>
                 {provider.tag && (
-                  <span className="inline-flex items-center rounded-[var(--r-chip)] border border-success/50 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
-                    {provider.tag}
+                  <span className="shrink-0 text-[11px] font-medium text-text-muted">
+                    · {provider.tag}
                   </span>
                 )}
               </div>
@@ -945,8 +945,8 @@ function ApiKeyProviderCard({
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="truncate font-semibold">{provider.name}</h3>
                 {provider.tag && (
-                  <span className="inline-flex items-center rounded-[var(--r-chip)] border border-success/50 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
-                    {provider.tag}
+                  <span className="shrink-0 text-[11px] font-medium text-text-muted">
+                    · {provider.tag}
                   </span>
                 )}
               </div>

@@ -857,9 +857,10 @@ export default function PromptInjectionPage() {
                   key={tpl.name}
                   type="button"
                   onClick={() => applyTemplate(tpl)}
-                  className="px-2.5 py-1 text-[11px] rounded-lg border border-border-subtle bg-surface-2 hover:bg-surface-3 hover:border-primary/40 text-text-main transition-colors text-left"
+                  className="px-2.5 py-1 text-[11px] rounded-lg border border-border-subtle bg-surface-2 hover:bg-surface-3 hover:border-primary/40 text-text-main transition-colors text-left inline-flex items-center gap-1"
                 >
-                  ⚡ {tpl.name}
+                  <span className="material-symbols-outlined text-[13px] text-primary">bolt</span>
+                  {tpl.name}
                 </button>
               ))}
             </div>

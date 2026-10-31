@@ -36,7 +36,6 @@ import p33 from "./coqui.js";
 import p34 from "./cursor.js";
 import p35 from "./dahl.js";
 import p36 from "./deepgram.js";
-import p37 from "./deepseek-web.js";
 import p38 from "./deepseek.js";
 import p39 from "./devin-cli.js";
 import p40 from "./edge-tts.js";
@@ -67,7 +66,6 @@ import p64 from "./jina-reader.js";
 import p65 from "./kilo-gateway.js";
 import p66 from "./kilocode.js";
 import p67 from "./kimchi.js";
-import p68 from "./kimi-web.js";
 import p69 from "./kimi.js";
 import p70 from "./kiro.js";
 import p71 from "./linkup.js";
@@ -89,6 +87,7 @@ import p88 from "./openai.js";
 import p89 from "./opencode-go.js";
 import p90 from "./opencode-zen.js";
 import p91 from "./opencode.js";
+import p91b from "./opencode-v2.js";
 import p92 from "./openrouter.js";
 import p93 from "./perplexity-agent.js";
 import p94 from "./perplexity.js";
@@ -114,8 +113,6 @@ import p113 from "./tinyfish.js";
 import p114 from "./together.js";
 import p115 from "./tokenharbor.js";
 import p116 from "./tokenrouter.js";
-
-
 import p117 from "./topaz.js";
 import p118 from "./tortoise.js";
 import p119 from "./trae.js";
@@ -150,7 +147,8 @@ import p147 from "./minimax-code-global.js";
 import p148 from "./bedrock.js";
 import p149 from "./bedrock-xai.js";
 import p150 from "./nous.js";
-import p151 from "./opencode-v2.js";
+import p154 from "./veoaifree-web.js";
+import p156 from "./runcrate.js";
 export default [
   p0,
   p1,
@@ -189,7 +187,6 @@ export default [
   p34,
   p35,
   p36,
-  p37,
   p38,
   p39,
   p40,
@@ -220,7 +217,6 @@ export default [
   p65,
   p66,
   p67,
-  p68,
   p69,
   p70,
   p71,
@@ -242,6 +238,7 @@ export default [
   p89,
   p90,
   p91,
+  p91b,
   p92,
   p93,
   p94,
@@ -301,5 +298,6 @@ export default [
   p148,
   p149,
   p150,
-  p151,
+  p154,
+  p156,
 ];

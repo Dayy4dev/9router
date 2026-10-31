@@ -18,20 +18,24 @@
 // Speed Mode (plugin 3) and Context Squeezer (plugin 5) removed per user configuration.
 
 import { getSettings } from "@/lib/localDb";
-import { matchesModel } from "@/shared/utils/pluginModelMatch";
 import { FORMATS } from "open-sse/translator/formats.js";
 import { getCapabilitiesForModel } from "open-sse/providers/capabilities.js";
-import { applyAntiSlop } from "open-sse/rtk/antislop.js";
+import { matchesModel } from "@/shared/utils/pluginModelMatch.js";
 import { injectSystemPrompt } from "open-sse/rtk/systemInject.js";
+import {
+  buildToolInstructions,
+  buildToolReminder,
+  extractText as textFromContent,
+  hasTools as bodyHasTools,
+  selectableTools,
+} from "open-sse/executors/webCookieToolBridge.js";
 import { extractImageBuffer, convertImageToTextScript } from "./imageTextExtractor.js";
 
 // Default plugin state for fresh installs / missing settings
 const DEFAULT_PLUGINS = {
+  adaptiveThinking: { enabled: false, models: [], level: "full" },
   imageVision: { enabled: false, models: [] },
-  thinkDeeper: { enabled: false, models: [] },
-  jsonGuard: { enabled: false, models: [] },
   openaiToolBridge: { enabled: false, models: [] },
-  antiSlop: { enabled: false, models: [] },
 };
 
 // Cached plugin settings to avoid DB hits on every stream chunk
@@ -76,7 +80,53 @@ export function modelKeysToTest(requestedModel, provider, model) {
 }
 
 /**
- * Image Vision / OCR Auto Image-to-Text - REAL Scripting Implementation.
+ * Adaptive Thinking & Multi-Framework Cognitive Architecture.
+ *
+ * Real synthesized cognitive protocol derived from:
+ * 1. Depth Protocol v2.0 (Kshitijpalsinghtomar/depth-skills): Interrupts premature closure,
+ *    demands root problem reframing, minimum 3 distinct hypothesis branches, and explicit failure envelope boundaries.
+ * 2. Adversaria Dialectic Engine (damionrashford/Adversaria): Dissoi Logoi & Crucible red-team elenchus,
+ *    hostile challenge, and truth survivor verification before answering.
+ * 3. Thinking Frameworks & First Principles (tjboudreaux/cc-thinking-skills):
+ *    Separates physics/math/measured facts from conventional assumptions, discarding false limits.
+ * 4. Superpowers Methodology (obra/superpowers):
+ *    Systematic step-by-step verification, complexity reduction, and grounded evidence.
+ */
+export const ADAPTIVE_THINKING_COGNITIVE_ARCHITECTURE = `[Cognitive Architecture: Multi-Framework Adaptive Thinking Active]
+You are operating under an integrated multi-agent cognitive architecture synthesized from verified agent reasoning frameworks (The Depth Protocol v2.0, Adversaria Dialectic Engine, First Principles Decomposition, and Superpowers).
+
+🛑 Core Mandate: INTERRUPT PREMATURE CLOSURE.
+Do not emit the statistically familiar, first-match surface response. The easy pattern-matched answer is a local optimum. You must systematically explore, stress-test, and verify before delivering.
+
+Before presenting your final answer, execute this structured reasoning protocol:
+
+<thinking_process>
+1. REFRAME & DECONSTRUCT (Depth Protocol & First Principles):
+   - Uncover the true root objective behind the user's prompt (translate the prompt to actual problem structure).
+   - Classify claimed constraints: Separate hard facts (math, logic, measured limits) from artificial conventions or analogies. Discard unsupported assumptions.
+
+2. HYPOTHESIS DIVERGENCE (Multi-Branch Exploration):
+   - Formulate at least 2 to 3 genuinely distinct approaches that disagree on what they optimize for (e.g. simplicity vs performance vs fault tolerance).
+   - Identify what each approach assumes, what it sacrifices, and the precise conditions under which it fails.
+
+3. ADVERSARIAL STRESS-TEST (Crucible & Dissoi Logoi):
+   - Mount the strongest possible critique against your preferred approach: What does it get right in common scenarios but fail at in critical edge cases?
+   - Conduct a self-directed Red Team challenge: Attempt to break your own logic. If an approach fails this test, revise or replace it.
+
+4. FAILURE ENVELOPE & BOUNDARIES (Systematic Superpowers):
+   - State the operational boundaries: Where does this solution break (scale limits, boundary inputs, environmental shifts)?
+   - Identify any blind spot the user might not be actively considering.
+
+5. GROUNDED SYNTHESIS:
+   - Deliver the verified resolution concisely, clearly, and directly without filler, fluff, or unwarranted hesitation.
+</thinking_process>
+
+Adaptive Depth Tuning:
+- For trivial greetings or simple lookups: Keep internal verification lightweight and deliver directly.
+- For non-trivial engineering, architecture, logic, code, or strategic problems: Enforce the complete multi-framework thinking protocol thoroughly.`;
+
+/**
+ * Image Vision / OCR Auto Image-to-Text.
  *
  * Scans incoming messages for image blocks. Converts image content into
  * structured OCR text transcripts via automated scripting.
@@ -152,31 +202,10 @@ export async function applyImageVision(body, caps = null) {
   return true;
 }
 
-/**
- * Adaptive Thinking & Superpowers Chain-of-Thought - REAL implementation.
- *
- * Combines Superpowers multi-perspective exploration, hypothesis stress-testing,
- * and adaptive Chain-of-Thought with native provider reasoning parameters.
- */
-const ADAPTIVE_THINKING_SUPERPOWERS_PERSONA = `[Skill: Adaptive Thinking & Superpowers Chain-of-Thought Active]
-You are equipped with advanced analytical superpowers and multi-step reasoning capabilities. For any non-trivial question, follow this adaptive reasoning protocol before formulating your final answer:
-
-<thinking_process>
-1. Problem Deconstruction: Identify core objectives, constraints, explicit requirements, and implicit nuances.
-2. Hypothesis & Strategy: Consider 2-3 viable solution paths. Formulate hypotheses and identify potential pitfalls or edge cases.
-3. Step-by-Step Resolution: Execute the selected strategy systematically. Show explicit intermediate logic, calculations, or code steps.
-4. Self-Verification & Reflection: Stress-test intermediate findings against constraints. Check for logical consistency, boundary conditions, or unstated assumptions.
-5. Synthesis: Deliver the final answer clearly, concisely, and directly, fully grounded in the verified reasoning steps.
-</thinking_process>
-
-Adaptive Depth Rule:
-- For simple greetings, factual lookups, or straightforward tasks: keep reasoning lightweight and answer directly.
-- For complex code, math, system architecture, or logical puzzles: engage the full multi-phase thinking process thoroughly.`;
-
-export function applyThinkDeeper(body, sourceFormat) {
+export function applyAdaptiveThinking(body, sourceFormat) {
   if (!body) return;
 
-  // Provider-native reasoning depth parameters
+  // 1. Native Provider Reasoning Parameters
   if (sourceFormat === FORMATS.CLAUDE) {
     body.thinking = {
       type: "enabled",
@@ -189,87 +218,157 @@ export function applyThinkDeeper(body, sourceFormat) {
     }
   }
 
-  // Inject Superpowers CoT persona
-  injectSystemPrompt(body, sourceFormat, ADAPTIVE_THINKING_SUPERPOWERS_PERSONA);
+  // 2. Multi-Framework Cognitive Architecture Injection
+  injectSystemPrompt(body, sourceFormat, ADAPTIVE_THINKING_COGNITIVE_ARCHITECTURE);
 }
 
 /* ------------------------------------------------------------------ *
- * JSON Guard - request side
+ * Tool Calling Bridge (OpenAI Tool Bridge)
+ *
+ * A web-session/chat-only upstream has no function calling at all: it takes a
+ * plain prompt and answers with prose. The client asking for tools then either
+ * gets a prose answer it cannot execute or a hard 400. The bridge closes the gap
+ * at the application level, the same way the OpenAI translators already reshape
+ * a request that speaks a different wire format:
+ *
+ *   1. REQUEST SIDE - the tool catalogue is folded into the prompt (schema,
+ *      call format, a highest-priority reminder), assistant tool_calls become
+ *      tool_call blocks and role:"tool" turns become result markers, and the
+ *      `tools` array is dropped so an upstream that rejects it never sees it.
+ *      The catalogue is stashed on the body for the response side.
+ *   2. RESPONSE SIDE - the reply's own prose is parsed back into standard
+ *      `tool_calls` (open-sse/translator/concerns/toolBridge.js), so the client
+ *      sees ordinary OpenAI output and its handlers run unchanged.
+ *
+ * Two call formats are produced because upstreams differ in what they obey; the
+ * parser accepts both either way.
  * ------------------------------------------------------------------ */
 
-export function applyJsonGuardRequest(body, sourceFormat) {
-  if (!body) return false;
+const BRIDGE_FENCE_OPEN = "```tool_call";
+const BRIDGE_FENCE_CLOSE = "```";
+const BRIDGE_RESULT_MARKER = "<<TOOL_RESULT>>";
 
-  const alreadyAsked =
-    body.response_format?.type === "json_object" ||
-    body.response_format?.type === "json_schema";
-  if (alreadyAsked) return false;
+// Providers whose transport is a browser session rather than an API: they have
+// no tools lane whatever the capability table says (a model pattern match would
+// otherwise report tools:true for a chat-only web endpoint).
+//
+// Loaded lazily and cached: the registry pulls in every provider module, and a
+// static import of it here drags that whole graph into the plugin module's eager
+// init - which is enough to blow up the build worker while static pages generate.
+let webSessionProvidersPromise = null;
 
-  const haystack = [
-    typeof body.system === "string" ? body.system : "",
-    Array.isArray(body.messages)
-      ? body.messages
-          .filter((m) => m?.role === "system" || m?.role === "user")
-          .slice(0, 4)
-          .map((m) => (typeof m.content === "string" ? m.content : ""))
-          .join(" ")
-      : "",
-  ]
-    .join(" ")
-    .slice(0, 4000);
+function loadWebSessionProviders() {
+  if (!webSessionProvidersPromise) {
+    webSessionProvidersPromise = import("open-sse/providers/registry/index.js")
+      .then(({ default: registry }) => {
+        const set = new Set();
+        for (const entry of Array.isArray(registry) ? registry : []) {
+          if (entry?.category !== "webCookie") continue;
+          for (const name of [entry.id, entry.alias, entry.uiAlias, ...(entry.aliases || [])]) {
+            if (name) set.add(String(name));
+          }
+        }
+        return set;
+      })
+      .catch(() => new Set());
+  }
+  return webSessionProvidersPromise;
+}
 
-  const wantsJson =
-    /\b(?:respond|reply|answer|return|output|produce)\b[^.!?]{0,40}\bjson\b/i.test(haystack) ||
-    /\bjson\s+only\b/i.test(haystack) ||
-    /\bonly\s+(?:output|return)\s+json\b/i.test(haystack);
-  if (!wantsJson) return false;
+export async function isWebSessionProvider(provider) {
+  const known = await loadWebSessionProviders();
+  return known.has(String(provider || ""));
+}
 
-  if (sourceFormat === FORMATS.CLAUDE) {
-    if (typeof body.system === "string" && !body.system.includes("valid JSON")) {
-      body.system = `${body.system}\n\nJSON Guard is active: answer with one valid JSON value and nothing else - no prose, no markdown fence.`;
-    } else {
-      const sysIdx = Array.isArray(body.messages) ? body.messages.findIndex((m) => m.role === "system") : -1;
-      const note = "JSON Guard is active: answer with one valid JSON value and nothing else - no prose, no markdown fence.";
-      if (sysIdx >= 0 && typeof body.messages[sysIdx].content === "string") {
-        body.messages[sysIdx].content = `${body.messages[sysIdx].content}\n\n${note}`;
-      } else {
-        body.messages = [{ role: "system", content: note }, ...(body.messages || [])];
-      }
+function bridgeCallBlock(name, argsRaw) {
+  let args = argsRaw;
+  if (args && typeof args === "object") args = JSON.stringify(args);
+  if (typeof args !== "string" || !args.trim()) args = "{}";
+  return `${BRIDGE_FENCE_OPEN}\n{"name": ${JSON.stringify(String(name || ""))}, "arguments": ${args}}\n${BRIDGE_FENCE_CLOSE}`;
+}
+
+/** Append text to a message body that may be a string or a block array. */
+function appendText(content, text) {
+  if (typeof content === "string") return content ? `${content}\n\n${text}` : text;
+  if (Array.isArray(content)) return [...content, { type: "text", text }];
+  return text;
+}
+
+/**
+ * Rewrite an exchange that uses `role:"tool"` / assistant `tool_calls` into one
+ * a chat-only upstream reads as prose. Without this the translated body still
+ * carries turns the upstream has never seen.
+ */
+function flattenToolTurns(messages) {
+  const out = [];
+  for (const msg of messages) {
+    if (!msg || typeof msg !== "object") {
+      out.push(msg);
+      continue;
     }
-  } else {
-    body.response_format = { type: "json_object" };
+    if (msg.role === "assistant" && Array.isArray(msg.tool_calls) && msg.tool_calls.length) {
+      const text = textFromContent(msg.content);
+      const blocks = msg.tool_calls
+        .map((tc) => bridgeCallBlock(tc?.function?.name, tc?.function?.arguments))
+        .join("\n");
+      const { tool_calls: _dropped, ...rest } = msg;
+      out.push({ ...rest, role: "assistant", content: text ? `${text}\n${blocks}` : blocks });
+      continue;
+    }
+    if (msg.role === "tool") {
+      const text = textFromContent(msg.content);
+      out.push({
+        role: "user",
+        content: `${BRIDGE_RESULT_MARKER} ${msg.name || "tool"}: ${text} ${BRIDGE_RESULT_MARKER}`,
+      });
+      continue;
+    }
+    out.push(msg);
   }
-  return true;
+  return out;
 }
 
-/* ------------------------------------------------------------------ *
- * OpenAI Tool Bridge - request side
- * ------------------------------------------------------------------ */
+/**
+ * Fold the request's tools into the prompt. Returns true when the request was
+ * rewritten (i.e. it carried tools and the catalogue was non-empty).
+ */
+export function applyToolCallingBridge(body, sourceFormat) {
+  if (!body || typeof body !== "object") return false;
+  if (!bodyHasTools(body)) return false;
 
-export function applyOpenAIToolBridgeRequest(body, provider, model) {
-  if (!body) return false;
-  if (!Array.isArray(body.tools) || !body.tools.length) {
-    if (!Array.isArray(body.functions) || !body.functions.length) return false;
-  }
-  body._openaiToolBridge = {
-    provider,
-    model,
-    tools: Array.isArray(body.tools) ? body.tools : [],
-    functions: Array.isArray(body.functions) ? body.functions : [],
+  const instructions = buildToolInstructions(body, "fenced");
+  if (!instructions) return false;
+  const { mode, forced } = selectableTools(body);
+  const reminder = buildToolReminder("fenced", { mode, forced });
+
+  const catalogue = {
+    ...(Array.isArray(body.tools) ? { tools: body.tools } : {}),
+    ...(Array.isArray(body.functions) ? { functions: body.functions } : {}),
   };
 
-  let caps = null;
-  try {
-    caps = getCapabilitiesForModel(provider, model);
-  } catch {
-    caps = null;
+  if (Array.isArray(body.messages)) body.messages = flattenToolTurns(body.messages);
+
+  injectSystemPrompt(body, sourceFormat, instructions);
+
+  // The reminder has to be the LAST thing the model reads: a long agent system
+  // prompt that also talks about running commands drowns a leading rule, and the
+  // model then answers "I have no tools" or prints a shell block for the user.
+  const messages = Array.isArray(body.messages) ? body.messages : null;
+  const last = messages?.[messages.length - 1];
+  if (messages?.length && last) {
+    last.content = appendText(last.content, reminder);
+  } else {
+    injectSystemPrompt(body, sourceFormat, reminder);
   }
-  if (caps && caps.tools === false) {
-    delete body.tools;
-    delete body.tool_choice;
-    if (Array.isArray(body.functions)) body.functions = [];
-    return true;
-  }
+
+  // The response side reads the catalogue from here, because `tools` is gone.
+  body._openaiToolBridge = { ...catalogue, bridged: true };
+  delete body.tools;
+  delete body.functions;
+  delete body.tool_choice;
+  delete body.toolChoice;
+  delete body.parallel_tool_calls;
+
   return true;
 }
 
@@ -290,11 +389,11 @@ export async function applyCustomPlugins(body, provider, model, sourceFormat, re
   }
 
   const result = {
+    isAdaptiveThinkingActive: false,
     isVisionActive: false,
     isThinkDeeperActive: false,
-    isJsonGuardActive: false,
     isToolBridgeActive: false,
-    isAntiSlopActive: false,
+    isToolBridgeRewritten: false,
   };
 
   if (config.imageVision?.enabled && checkMatch(config.imageVision.models)) {
@@ -302,23 +401,22 @@ export async function applyCustomPlugins(body, provider, model, sourceFormat, re
     await applyImageVision(body, caps);
   }
 
-  if (config.thinkDeeper?.enabled && checkMatch(config.thinkDeeper.models)) {
-    result.isThinkDeeperActive = true;
-    applyThinkDeeper(body, sourceFormat);
-  }
-
-  if (config.jsonGuard?.enabled && checkMatch(config.jsonGuard.models)) {
-    result.isJsonGuardActive = true;
-    applyJsonGuardRequest(body, sourceFormat);
+  if (config.adaptiveThinking?.enabled && checkMatch(config.adaptiveThinking.models)) {
+    result.isAdaptiveThinkingActive = true;
+    result.isThinkDeeperActive = true; // backward compat with existing loggers/badges
+    applyAdaptiveThinking(body, sourceFormat);
   }
 
   if (config.openaiToolBridge?.enabled && checkMatch(config.openaiToolBridge.models)) {
-    result.isToolBridgeActive = applyOpenAIToolBridgeRequest(body, provider, model);
-  }
-
-  if (config.antiSlop?.enabled && checkMatch(config.antiSlop.models)) {
-    result.isAntiSlopActive = true;
-    applyAntiSlop(body, sourceFormat, config.antiSlop.level);
+    result.isToolBridgeActive = true;
+    // A native tool lane is left alone: rewriting a request that already works
+    // would trade a real schema for prompt text. Only an upstream with no tools
+    // lane at all (a browser session, or a model whose capabilities say so) gets
+    // the prompt rewrite, and those requests are fetched whole so the reply can
+    // be parsed back into calls.
+    if (caps?.tools === false || (await isWebSessionProvider(provider))) {
+      result.isToolBridgeRewritten = applyToolCallingBridge(body, sourceFormat);
+    }
   }
 
   return result;

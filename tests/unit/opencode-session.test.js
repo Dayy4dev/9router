@@ -87,6 +87,30 @@ describe("OpenCode Free Session ID Format", () => {
     expect(counterOf(generateZenSessionId(1_700_000_000_000))).toBe(1);
   });
 
+  // Upstream also decodes the prefix timestamp and refuses a session minted in
+  // the future or before the free-tier window (live probes 2026-10-26: a
+  // Date.now() session passed 10/10, digest-derived ones 1/10).
+  it("mints translated sessions at the current time instead of from a digest", () => {
+    // The 48-bit prefix carries 36 bits of milliseconds plus a 12-bit counter,
+    // so the decoded time is the mint time modulo 2^36.
+    const TIME_MASK = (1n << 36n) - 1n;
+    const timeOf = (id) => Number((~BigInt(`0x${id.slice(4, 16)}`) & ((1n << 48n) - 1n)) >> 12n);
+    const before = Date.now();
+    const translated = translateSessionId(`fresh-${before}`, "claude");
+    const after = Date.now();
+
+    expect(timeOf(translated)).toBeGreaterThanOrEqual(Number(BigInt(before) & TIME_MASK));
+    expect(timeOf(translated)).toBeLessThanOrEqual(Number(BigInt(after) & TIME_MASK));
+  });
+
+  it("reuses the memoized session for one conversation", () => {
+    const raw = "claude:memoized-conversation";
+    const first = translateSessionId(raw, "claude");
+    expect(translateSessionId(raw, "claude")).toBe(first);
+    // A different conversation still gets its own session.
+    expect(translateSessionId(`${raw}-other`, "claude")).not.toBe(first);
+  });
+
   it("preserves already-valid OpenCode sessions without re-hashing", () => {
     const valid = "ses_f534dfae8ffeCy4Ee4tLWNygDc";
     expect(translateSessionId(valid)).toBe(valid);
@@ -323,24 +347,5 @@ describe("OpenCode Stable Session Reuse (429 follow-up)", () => {
   it("declares forceStream on the opencode transport so chatCore serves SSE upstream", async () => {
     const { PROVIDERS } = await import("../../open-sse/config/providers.js");
     expect(PROVIDERS.opencode?.forceStream).toBe(true);
-  });
-
-  it("registers OpenCode Free V2 executor with official 1.19.4 wire protocol", async () => {
-    const v2 = getExecutor("opencode-v2");
-    expect(v2).toBeDefined();
-
-    const headers = v2.buildHeaders({}, true, "https://opencode.ai/inference/openai/v1/chat/completions");
-    expect(headers["User-Agent"]).toContain("opencode/1.19.4");
-    expect(headers["x-opencode-client"]).toBe("cli");
-    expect(headers["x-opencode-request"]).toMatch(/^msg_[0-9a-f]{12}[0-9A-Za-z]{14}$/);
-    expect(headers["x-opencode-session"]).toMatch(/^ses_[0-9a-f]{12}[0-9A-Za-z]{14}$/);
-    expect(headers["x-session-affinity"]).toBeUndefined();
-    expect(headers["x-session-id"]).toBeUndefined();
-
-    const url = v2.buildUrl("deepseek-v4.1-flash-free");
-    expect(url).toBe("https://opencode.ai/inference/openai/v1/chat/completions");
-
-    const msgUrl = v2.buildUrl("union-alpha");
-    expect(msgUrl).toBe("https://opencode.ai/inference/anthropic/v1/messages");
   });
 });

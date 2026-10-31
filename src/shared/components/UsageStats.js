@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef, useReducer } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { FREE_PROVIDERS, AI_PROVIDERS } from "@/shared/constants/providers";
 
@@ -32,15 +32,31 @@ function timeAgo(timestamp) {
   return `${Math.floor(diff / 86400)}d ago`;
 }
 
-// Auto-update time display every second without re-rendering parent
+// One second-ticker for every relative timestamp on the page. Each row used to
+// own its own setInterval, so a twenty-row stream kept twenty timers waking
+// React while live stats were already re-rendering the same subtree.
+const tickSubscribers = new Set();
+let tickInterval = null;
+
+function subscribeTick(notify) {
+  tickSubscribers.add(notify);
+  if (!tickInterval) {
+    tickInterval = setInterval(() => {
+      for (const subscriber of tickSubscribers) subscriber();
+    }, 1000);
+  }
+  return () => {
+    tickSubscribers.delete(notify);
+    if (tickSubscribers.size === 0 && tickInterval) {
+      clearInterval(tickInterval);
+      tickInterval = null;
+    }
+  };
+}
+
 function TimeAgo({ timestamp }) {
-  const [, setTick] = useState(0);
-  
-  useEffect(() => {
-    const timer = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  
+  const [, tick] = useReducer((n) => n + 1, 0);
+  useEffect(() => subscribeTick(tick), []);
   return <>{timeAgo(timestamp)}</>;
 }
 
@@ -56,57 +72,86 @@ function TopologyUnavailableNote() {
 
 function RecentRequests({ requests = [] }) {
   return (
-    <Card className="flex min-w-0 flex-col overflow-hidden" padding="none" style={{ height: 480 }}>
+    <Card className="flex min-w-0 flex-col overflow-hidden bg-surface border border-border-subtle" padding="none" style={{ height: 420 }}>
       {/* Header */}
-      <div className="px-4 py-3 border-b border-border shrink-0 flex items-center justify-between">
-        <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Recent Requests</span>
-        <span className="text-[11px] text-text-muted font-mono">{requests.length} logged</span>
+      <div className="px-3 sm:px-4 py-2.5 border-b border-border-subtle shrink-0 flex items-center justify-between bg-surface-2/40">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-base text-text-muted">stream</span>
+          <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">Live Requests Stream</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="inline-block size-1.5 rounded-full bg-success animate-pulse" />
+          <span className="text-xs text-text-muted font-mono">{requests.length} logged</span>
+        </div>
       </div>
 
       {!requests.length ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2 px-4 text-center">
-          <span className="text-text-muted text-sm">No requests yet.</span>
-          <a href="/dashboard/endpoint" className="text-xs text-primary hover:underline">
-            Create an API key or send a request to get started
+          <span className="text-text-muted text-sm">No requests logged for this timeframe.</span>
+          <a href="/dashboard/endpoint" className="text-xs text-primary hover:underline font-medium">
+            Send an API request to see real-time streaming metrics →
           </a>
         </div>
       ) : (
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <table className="w-full border-collapse text-xs">
-            <thead className="sticky top-0 bg-surface border-b border-border z-10">
+            <thead className="sticky top-0 bg-surface/95 backdrop-blur-xs border-b border-border-subtle z-10">
               <tr>
-                <th className="py-2.5 pl-3 pr-1 text-center font-semibold text-text-muted w-6" title="Status">
-                  <span className="material-symbols-outlined text-[12px] leading-none select-none text-text-muted/60">fiber_manual_record</span>
+                <th className="py-2.5 pl-3 pr-1 text-center font-semibold text-text-muted w-8" title="Status">
+                  <span className="material-symbols-outlined text-xs leading-none select-none text-text-muted/60">radio_button_checked</span>
                 </th>
-                <th className="py-2.5 px-2 text-left font-semibold text-text-muted">Model</th>
+                <th className="py-2.5 px-2 text-left font-semibold text-text-muted">Model & Channel</th>
                 <th className="py-2.5 px-2 text-right font-semibold text-text-muted whitespace-nowrap">Tokens (In / Out)</th>
                 <th className="py-2.5 pl-2 pr-3 text-right font-semibold text-text-muted w-20">Time</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border/40">
+            <tbody className="divide-y divide-border-subtle/50">
               {requests.map((r, i) => {
                 const ok = !r.status || r.status === "ok" || r.status === "success";
                 const cleanModel = (r.model || "unknown").replace(/^\/+/, "");
+                const bareModel = (m) => String(m || "").replace(/^[^/]+\//, "");
+                // A request can be rewritten to the same model on another
+                // provider (gweb/gemini-4-argon -> gemini-web/gemini-4-argon).
+                // Only a different model name is worth an arrow; the provider
+                // chip already says which account served it.
+                const showResolved = Boolean(bareModel(r.resolvedModel)) && bareModel(r.resolvedModel) !== bareModel(r.model);
                 return (
-                  <tr key={i} className="hover:bg-sidebar/40 transition-colors">
+                  <tr key={i} className="hover:bg-bg-hover transition-colors group">
                     <td className="py-2.5 pl-3 pr-1 text-center align-middle">
-                      <span className={`inline-block size-2 rounded-full ${ok ? "bg-emerald-500" : "bg-rose-500"}`} />
+                      <span className={`inline-block size-2.5 rounded-full ${ok ? "bg-success" : "bg-danger"}`} />
                     </td>
-                    <td className="py-2.5 px-2 font-mono text-xs text-text-main align-middle min-w-0" title={cleanModel}>
-                      <div className="truncate max-w-[130px] sm:max-w-[220px]">{cleanModel}</div>
-                    </td>
-                    <td className="py-2.5 px-2 text-right whitespace-nowrap align-middle">
-                      <div className="inline-flex items-center gap-1 font-mono text-xs">
-                        <span className="text-primary font-medium">{fmt(r.promptTokens)}↑</span>
-                        <span className="text-emerald-500 font-medium">{fmt(r.completionTokens)}↓</span>
-                        {r.cachedTokens > 0 && (
-                          <span className="text-[10px] text-cyan-600 dark:text-cyan-400 bg-cyan-500/10 px-1 py-0.5 rounded leading-none" title={`${fmt(r.cachedTokens)} cached tokens`}>
-                            ↻{fmt(r.cachedTokens)}
+                    <td className="py-2.5 px-2 font-mono text-xs text-text-main align-middle min-w-0">
+                      <div className="flex flex-col gap-1">
+                        <span className="truncate max-w-full font-medium text-text-main group-hover:text-primary transition-colors" title={cleanModel}>
+                          {cleanModel}
+                        </span>
+                        {showResolved && (
+                          <span className="truncate max-w-full text-[10px] text-text-muted" title={`${r.providerName || r.provider}/${bareModel(r.resolvedModel)}`}>
+                            → {r.providerName || r.provider}/{bareModel(r.resolvedModel)}
+                          </span>
+                        )}
+                        {!showResolved && r.provider && (
+                          <span
+                            className="w-fit rounded border border-border-subtle bg-surface-2 px-1.5 py-0.5 text-[10px] font-medium text-text-muted/90"
+                          >
+                            {r.providerName || r.provider}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="py-2.5 pl-2 pr-3 text-right text-text-muted whitespace-nowrap align-middle text-[11px] font-mono">
+                    <td className="py-2.5 px-2 text-right whitespace-nowrap align-middle">
+                      <div className="inline-flex items-center gap-2 font-mono text-xs">
+                        <span className="text-text-main font-medium">{fmt(r.promptTokens)}↑</span>
+                        <span className="text-success font-medium">{fmt(r.completionTokens)}↓</span>
+                        {r.cachedTokens > 0 && (
+                          <span className="inline-flex items-center gap-1 text-[10px] text-info bg-info/10 px-1.5 py-0.5 rounded leading-none border border-info/20" title={`${fmt(r.cachedTokens)} cached tokens`}>
+                            <span className="material-symbols-outlined text-[11px] leading-none">bolt</span>
+                            {fmt(r.cachedTokens)}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="py-2.5 pl-2 pr-3 text-right text-text-muted whitespace-nowrap align-middle text-xs font-mono">
                       <TimeAgo timestamp={r.timestamp} />
                     </td>
                   </tr>
@@ -394,7 +439,31 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
     const es = new EventSource(`/api/usage/stream?period=${period}`);
     esRef.current = es;
 
+    // The stream repeats itself: the server rebuilds the same totals between
+    // requests and a reconnecting tab replays the current snapshot. Applying an
+    // identical payload re-renders every chart on the page for nothing, so the
+    // raw frame is compared first.
+    let lastFrame = "";
+    let chartKeyAt = 0;
+    let chartTimer = null;
+    const CHART_MIN_GAP_MS = 10000;
+
+    // Chart data is a separate fetch per bump. Traffic bursts used to bump it on
+    // every completion; one refetch per ten seconds keeps the chart live without
+    // re-querying the database dozens of times a minute.
+    const bumpChart = () => {
+      if (chartTimer) return;
+      const wait = Math.max(0, CHART_MIN_GAP_MS - (Date.now() - chartKeyAt));
+      chartTimer = setTimeout(() => {
+        chartTimer = null;
+        chartKeyAt = Date.now();
+        setChartUpdateKey((k) => k + 1);
+      }, wait);
+    };
+
     es.onmessage = (e) => {
+      if (e.data === lastFrame) return;
+      lastFrame = e.data;
       try {
         const data = JSON.parse(e.data);
         setStats((prev) => {
@@ -410,9 +479,7 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
             pending: data.pending,
           };
         });
-        if (data._type === "full") {
-          setChartUpdateKey((k) => k + 1);
-        }
+        if (data._type === "full") bumpChart();
         if (hasLoadedStats.current) setLoading(false);
       } catch (err) {
         console.error("[SSE CLIENT] parse error:", err);
@@ -421,7 +488,10 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
 
     es.onerror = () => setLoading(false);
 
-    return () => es.close();
+    return () => {
+      if (chartTimer) clearTimeout(chartTimer);
+      es.close();
+    };
   }, [period]);
 
   const toggleSort = useCallback((tableType, field) => {
@@ -655,7 +725,7 @@ export default function UsageStats({ period: periodProp, setPeriod: setPeriodPro
               above stay: those are this key's own requests over time. */}
           {!isApiKeyUser && (stats.byProvider || stats.byModel) && (
             <div className="grid min-w-0 grid-cols-1 gap-2 lg:grid-cols-2">
-              <ProviderBarChart byProvider={stats.byProvider} />
+              <ProviderBarChart byProvider={stats.byProvider} labels={stats.providerLabels} />
               <TopModelsChart byModel={stats.byModel} />
             </div>
           )}

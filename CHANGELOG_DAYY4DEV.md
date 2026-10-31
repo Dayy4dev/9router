@@ -1,3 +1,18 @@
+# v0.5.346 (2026-10-31) · 1 commit
+
+## Features & Improvements
+
+- **Upstream Master Synchronization & Merge (v0.5.306 – v0.5.345)**:
+  - **OpenCode Free Single Card & Dual Lane**: Consolidated direct and CLI lanes into one OpenCode Free provider card with a live hammer toggle (`Direct TLS` vs `With CLI`), TLS client routing, egress tunnel, and residential fallback.
+  - **Gemini Web Cookie Session Restoration**: Reverse-engineered `gemini-web` provider supporting separated `__Secure-1PSID` and `__Secure-1PSIDTS` inputs, session auto-validation, proxy-aware requests, and terminal frame stream completion.
+  - **Tool Calling Bridge Plugin**: Flattened client tools for text-only upstreams into prompt definitions and reconstructed standardized tool calls from model output.
+  - **Local Ollama Extensions**: Built-in TTS engine supporting Phonon voices and normalized `/v1/embeddings` embedding adapter.
+  - **Model Studio Bulk Edit & Duplication**: Batch update input/output token multipliers and context windows, with clone/duplicate buttons for custom models.
+  - **Usage Command Center**: Mobile-responsive hourly heatmap, scaled daily token savings, and memoized metrics caching.
+  - **Global Error Masking**: Comprehensive `Hide Raw Errors` coverage across all streaming SSE frames and non-JSON upstream errors.
+  - **UI Design System Standardization**: Replaced all OS emoji with design tokens, Material Symbols, and `LocaleBadge` chips.
+  - **Preserved Dayy4dev Custom Features**: Zero-config auto-routing dynamic scoring engine with session stickiness, background PRD Builder with notification bell tracking, model test store with latency badges, and collapsible sidebar toggle.
+
 # v0.5.305 (2026-10-25) · 2 commits
 
 ## Features & Improvements

@@ -20,24 +20,21 @@ export async function GET() {
     const disabled = await getDisabledModels();
     const settings = await getSettings().catch(() => ({}));
     const customPlugins = settings?.customPlugins || {};
+    const atEnabled = Boolean(customPlugins.adaptiveThinking?.enabled);
+    const atModels = new Set(customPlugins.adaptiveThinking?.models || []);
     const ivEnabled = Boolean(customPlugins.imageVision?.enabled);
     const ivModels = new Set(customPlugins.imageVision?.models || []);
-    const tdEnabled = Boolean(customPlugins.thinkDeeper?.enabled);
-    const tdModels = new Set(customPlugins.thinkDeeper?.models || []);
-    const jgEnabled = Boolean(customPlugins.jsonGuard?.enabled);
-    const jgModels = new Set(customPlugins.jsonGuard?.models || []);
-    const otbEnabled = Boolean(customPlugins.openaiToolBridge?.enabled);
-    const otbModels = new Set(customPlugins.openaiToolBridge?.models || []);
-    const asEnabled = Boolean(customPlugins.antiSlop?.enabled);
-    const asModels = new Set(customPlugins.antiSlop?.models || []);
+    const tbEnabled = Boolean(customPlugins.openaiToolBridge?.enabled);
+    const tbModels = new Set(customPlugins.openaiToolBridge?.models || []);
 
     // One resolver for every branch below.
     const PLUGIN_SOURCES = [
+      ["adaptiveThinking", atEnabled, atModels, { reasoning: true, adaptiveThinking: true }],
       ["imageVision", ivEnabled, ivModels, { vision: true, imageVision: true }],
-      ["thinkDeeper", tdEnabled, tdModels, { reasoning: true, thinkDeeper: true }],
-      ["jsonGuard", jgEnabled, jgModels, { jsonGuard: true }],
-      ["openaiToolBridge", otbEnabled, otbModels, { openaiToolBridge: true }],
-      ["antiSlop", asEnabled, asModels, { antiSlop: true }],
+      // The bridge turns tools ON for an upstream that has no lane of its own, so
+      // the listing has to say tools:true - a client reads the capability before
+      // it ever sends a tools array.
+      ["openaiToolBridge", tbEnabled, tbModels, { tools: true, openaiToolBridge: true }],
     ];
 
     /**
@@ -196,12 +193,13 @@ export async function GET() {
       if (ivEnabled && names.some((n) => ivModels.has(n))) {
         caps.vision = true;
       }
-      if (tdEnabled && names.some((n) => tdModels.has(n))) {
+      if (atEnabled && names.some((n) => atModels.has(n))) {
         caps.reasoning = true;
-        caps.thinkDeeper = true;
+        caps.adaptiveThinking = true;
       }
-      if (jgEnabled && names.some((n) => jgModels.has(n))) {
-        caps.jsonGuard = true;
+      if (tbEnabled && names.some((n) => tbModels.has(n))) {
+        caps.tools = true;
+        caps.openaiToolBridge = true;
       }
       const pluginMarks = applyPluginMarks(caps, names);
       models.push({

@@ -36,4 +36,11 @@ describe("theme: custom theme color feature", () => {
     const repo = read("src/lib/db/repos/settingsRepo.js");
     expect(repo).toMatch(/themeColor:\s*null/);
   });
+
+  it("ProviderTopology syncs active cable beam and router glow with theme primary color", () => {
+    const topo = read("src/app/(dashboard)/dashboard/usage/components/ProviderTopology.js");
+    expect(topo).toContain("var(--color-primary, #22d3ee)");
+    expect(topo).toContain("var(--color-primary, #f59e0b)");
+    expect(topo).toContain("topology-router-core border-primary");
+  });
 });

@@ -100,9 +100,9 @@ function RouterNode({ data }) {
   const powering = (data.activeCount || 0) > 0;
   return (
     <div
-      className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-[130px] ${
+      className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-[130px] transition-colors duration-300 ${
         powering
-          ? "topology-router-core border-yellow-300 bg-gradient-to-br from-primary/30 via-yellow-400/20 to-cyan-400/25"
+          ? "topology-router-core border-primary bg-gradient-to-br from-primary/35 via-primary/20 to-surface"
           : "border-primary bg-primary/5 shadow-md"
       }`}
     >
@@ -118,11 +118,11 @@ function RouterNode({ data }) {
         loading="lazy"
         decoding="async"
       />
-      <span className={`text-sm font-bold ${powering ? "topology-router-label text-yellow-300" : "text-primary"}`}>
+      <span className={`text-sm font-bold ${powering ? "topology-router-label text-primary" : "text-primary"}`}>
         9Router
       </span>
       {data.activeCount > 0 && (
-        <span className="ml-2 px-1.5 py-0.5 rounded-full bg-yellow-400 text-black text-xs font-bold topology-router-badge">
+        <span className="ml-2 px-1.5 py-0.5 rounded-full bg-primary text-white text-xs font-bold topology-router-badge">
           {data.activeCount}
         </span>
       )}
@@ -176,9 +176,9 @@ function TopologyEdge({
       <path
         d={edgePath}
         fill="none"
-        stroke="#22d3ee"
+        style={{ stroke: "var(--color-primary, #22d3ee)" }}
         strokeWidth={10}
-        strokeOpacity={0.35}
+        strokeOpacity={0.4}
         strokeLinecap="round"
         filter={`url(#${filterId})`}
         className="topology-edge-halo"
@@ -187,7 +187,7 @@ function TopologyEdge({
       <path
         d={edgePath}
         fill="none"
-        stroke="#4ade80"
+        style={{ stroke: "color-mix(in srgb, var(--color-primary, #4ade80) 75%, #ffffff)" }}
         strokeWidth={5}
         strokeOpacity={0.85}
         strokeLinecap="round"
@@ -198,7 +198,7 @@ function TopologyEdge({
       <BaseEdge
         id={id}
         path={edgePath}
-        style={{ stroke: "#f8fafc", strokeWidth: 2.2, opacity: 1 }}
+        style={{ stroke: "#ffffff", strokeWidth: 2.2, opacity: 1 }}
         className="topology-edge-kame"
       />
       {/* Energy orbs */}
@@ -206,9 +206,11 @@ function TopologyEdge({
         <circle
           key={`${id}-p-${i}`}
           r={i % 2 === 0 ? 4 : 2.5}
-          fill={i % 3 === 0 ? "#fde047" : i % 3 === 1 ? "#67e8f9" : "#fff"}
+          style={{
+            fill: i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? "var(--color-primary, #67e8f9)" : "color-mix(in srgb, var(--color-primary, #fde047) 50%, #ffffff)",
+            filter: "drop-shadow(0 0 5px var(--color-primary, #22d3ee))",
+          }}
           opacity={0.95}
-          style={{ filter: "drop-shadow(0 0 4px #22d3ee)" }}
         >
           <animateMotion
             dur={`${0.4 + i * 0.08}s`}
@@ -223,7 +225,7 @@ function TopologyEdge({
         <circle
           key={`${id}-s-${i}`}
           r={1.8}
-          fill="#e0f2fe"
+          style={{ fill: "color-mix(in srgb, var(--color-primary, #e0f2fe) 40%, #ffffff)" }}
           opacity={0}
         >
           <animate

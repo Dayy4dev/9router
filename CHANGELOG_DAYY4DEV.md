@@ -1,4 +1,4 @@
-# v0.5.346 (2026-10-31) · 5 commits
+# v0.5.346 (2026-10-31) · 6 commits
 
 ## Features & Improvements
 
@@ -25,7 +25,8 @@
 ## Fixes
 
 - **Provider Topology Live Edge Colors**:
-  - Connected `ProviderTopology` last-routed edge stroke to `var(--color-primary, #f59e0b)` so connection cables honor the active custom theme accent color instead of staying hardcoded amber/orange.
+  - Connected `ProviderTopology` last-routed edge stroke and active electric particle beam (outer halo, plasma flow, energy orbs, and sparks) to `var(--color-primary)` so active streaming transfers dynamically honor custom theme accent colors while preserving intense white hot-core energy aesthetics.
+  - Synced active router core pulse glow, badge color, and keyframes with `var(--color-primary)`.
 - **API Keys Responsive Layout on Mobile & Small Screens**:
   - Cleaned up duplicate badge elements and uncontained creation date leftover from upstream merge conflict that caused element overlaps and wrapped rows on mobile.
   - Standardized usage and limit monitoring via `LimitBadge` with automatic quota exhaustion alerts and expiry countdown.

@@ -23,9 +23,9 @@ export function ThemeProvider({ children }) {
         const statusRes = await fetch("/api/auth/status", { cache: "no-store" });
         const status = statusRes.ok ? await statusRes.json() : {};
         if (cancelled) return;
-        setServerTheme(themeData.theme || "glass", status.role !== "apikey");
+        setServerTheme(themeData.theme || "glass", status.role !== "apikey", themeData.themeColor || null);
       } catch {
-        if (!cancelled) setServerTheme("glass", false);
+        if (!cancelled) setServerTheme("glass", false, null);
       }
     }
 

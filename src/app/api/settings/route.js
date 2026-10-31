@@ -21,7 +21,7 @@ const PROTECTED_SETTING_KEYS = ["password", "mitmSudoEncrypted"];
 // session must not be able to repaint the dashboard for everyone else by writing
 // it here; /api/theme is the one place an administrator changes it, and it checks
 // the session role too. This is the belt to that route's braces.
-const ADMIN_ONLY_SETTING_KEYS = ["theme"];
+const ADMIN_ONLY_SETTING_KEYS = ["theme", "themeColor"];
 
 export async function GET() {
   try {

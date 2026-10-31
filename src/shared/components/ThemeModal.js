@@ -1,10 +1,21 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import { cn } from "@/shared/utils/cn";
 import useThemeStore, { THEME_IDS } from "@/store/themeStore";
+
+export const COLOR_PRESETS = [
+  { id: "default", label: "Coral", hex: "#E56A4A", isDefault: true },
+  { id: "blue", label: "Blue", hex: "#3B82F6" },
+  { id: "emerald", label: "Emerald", hex: "#10B981" },
+  { id: "purple", label: "Purple", hex: "#8B5CF6" },
+  { id: "rose", label: "Rose", hex: "#EC4899" },
+  { id: "amber", label: "Amber", hex: "#F59E0B" },
+  { id: "cyan", label: "Cyan", hex: "#06B6D4" },
+  { id: "indigo", label: "Indigo", hex: "#6366F1" },
+];
 
 const MODES = [
   {
@@ -35,10 +46,17 @@ const MODES = [
 export default function ThemeModal({ isOpen, onClose }) {
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
+  const themeColor = useThemeStore((state) => state.themeColor);
+  const setThemeColor = useThemeStore((state) => state.setThemeColor);
   // A key-signed session has no theme control: the site-wide mode is an
   // administrator setting, so the picker is replaced by an explanation.
   const canChangeTheme = useThemeStore((state) => state.canChangeTheme);
   const modalRef = useRef(null);
+  const [customHex, setCustomHex] = useState(themeColor || "#E56A4A");
+
+  useEffect(() => {
+    setCustomHex(themeColor || "#E56A4A");
+  }, [themeColor]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -140,6 +158,130 @@ export default function ThemeModal({ isOpen, onClose }) {
               </button>
             );
           })}
+        </div>
+
+        {/* Accent Color Section */}
+        <div className="p-3 pt-2 border-t border-border-subtle flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-text-main flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px] text-primary">palette</span>
+                Theme Accent Color
+              </h3>
+              <p className="text-xs text-text-muted mt-0.5">
+                Choose a curated palette or customize any color freely
+              </p>
+            </div>
+            {themeColor && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (canChangeTheme) {
+                    setThemeColor(null);
+                    setCustomHex("#E56A4A");
+                  }
+                }}
+                disabled={!canChangeTheme}
+                className="text-xs text-text-muted hover:text-primary transition-colors disabled:opacity-50"
+              >
+                Reset default
+              </button>
+            )}
+          </div>
+
+          {/* Color Presets */}
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
+            {COLOR_PRESETS.map((preset) => {
+              const isSelected = (!themeColor && preset.isDefault) || themeColor?.toLowerCase() === preset.hex.toLowerCase();
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => {
+                    if (canChangeTheme) {
+                      setThemeColor(preset.isDefault ? null : preset.hex);
+                      setCustomHex(preset.hex);
+                    }
+                  }}
+                  disabled={!canChangeTheme}
+                  title={preset.label}
+                  className={cn(
+                    "group relative flex flex-col items-center justify-center p-2 rounded-xl border transition-all aspect-square",
+                    isSelected
+                      ? "border-primary bg-primary/10 shadow-sm"
+                      : "border-border-subtle hover:border-border hover:bg-surface-2",
+                    !canChangeTheme && "opacity-50 cursor-not-allowed hover:bg-transparent"
+                  )}
+                >
+                  <span
+                    className="size-6 rounded-full border border-white/20 shadow-inner flex items-center justify-center transition-transform group-hover:scale-110"
+                    style={{ backgroundColor: preset.hex }}
+                  >
+                    {isSelected && (
+                      <span className="material-symbols-outlined text-white text-[14px] drop-shadow-sm font-bold">
+                        check
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-[10px] text-text-muted mt-1 truncate max-w-full">
+                    {preset.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Custom Color Input ("Sesuka Hati") */}
+          <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-surface-2/60 border border-border-subtle">
+            <label
+              className={cn(
+                "relative size-9 rounded-lg border border-border overflow-hidden cursor-pointer shrink-0 shadow-inner transition-transform hover:scale-105",
+                !canChangeTheme && "cursor-not-allowed opacity-50"
+              )}
+              style={{ backgroundColor: customHex || "#E56A4A" }}
+              title="Click to open color picker"
+            >
+              <input
+                type="color"
+                value={customHex || "#E56A4A"}
+                disabled={!canChangeTheme}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomHex(val);
+                  if (canChangeTheme) setThemeColor(val);
+                }}
+                className="opacity-0 absolute inset-0 size-full cursor-pointer disabled:cursor-not-allowed"
+              />
+            </label>
+
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={customHex}
+                  disabled={!canChangeTheme}
+                  placeholder="#E56A4A"
+                  maxLength={7}
+                  onChange={(e) => {
+                    let val = e.target.value;
+                    if (!val.startsWith("#") && val.length > 0) val = "#" + val;
+                    setCustomHex(val);
+                    if (/^#[0-9a-fA-F]{6}$/.test(val) && canChangeTheme) {
+                      setThemeColor(val);
+                    }
+                  }}
+                  className="w-24 px-2 py-1 text-xs font-mono rounded-md bg-surface border border-border text-text-main focus:outline-none focus:border-primary uppercase"
+                />
+                <span className="text-xs text-text-muted">Pick or type any hex</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[11px] text-text-muted font-medium">
+                {themeColor ? "Custom Active" : "Default"}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>,

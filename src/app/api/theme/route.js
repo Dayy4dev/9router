@@ -11,11 +11,11 @@ export async function GET() {
   try {
     const settings = await getSettings();
     return NextResponse.json(
-      { theme: settings.theme === "dark" ? "dark" : "glass" },
+      { theme: settings.theme === "dark" ? "dark" : "glass", themeColor: settings.themeColor || null },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
-    return NextResponse.json({ theme: "glass" }, { status: 200 });
+    return NextResponse.json({ theme: "glass", themeColor: null }, { status: 200 });
   }
 }
 
@@ -37,9 +37,24 @@ export async function POST(request) {
     }
 
     const body = await request.json().catch(() => ({}));
-    const theme = body.theme === "dark" ? "dark" : "glass";
-    await updateSettings({ theme });
-    return NextResponse.json({ theme, ok: true });
+    const updates = {};
+    if (body.theme !== undefined) {
+      updates.theme = body.theme === "dark" ? "dark" : "glass";
+    }
+    if (body.themeColor !== undefined) {
+      if (body.themeColor === null || body.themeColor === "") {
+        updates.themeColor = null;
+      } else if (typeof body.themeColor === "string" && /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(body.themeColor)) {
+        updates.themeColor = body.themeColor;
+      }
+    }
+    await updateSettings(updates);
+    const settings = await getSettings();
+    return NextResponse.json({
+      theme: settings.theme === "dark" ? "dark" : "glass",
+      themeColor: settings.themeColor || null,
+      ok: true,
+    });
   } catch (error) {
     console.log("Error setting theme:", error);
     return NextResponse.json({ error: "Failed to set theme" }, { status: 500 });

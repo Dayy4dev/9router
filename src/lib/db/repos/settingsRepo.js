@@ -39,6 +39,7 @@ const DEFAULT_SETTINGS = {
   // of every browser choosing its own: the value is rendered into the document
   // for all visitors, so the whole site matches what the admin selected.
   theme: "glass",
+  themeColor: null,
   tunnelDashboardAccess: true,
   authMode: "password",
   ssoType: "oidc",

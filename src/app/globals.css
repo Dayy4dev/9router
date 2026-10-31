@@ -62,6 +62,7 @@ html:not(.fonts-loading) .material-symbols-outlined { opacity: 1; transition: op
   /* Primary (legacy alias for backward compat with existing components) */
   --color-primary: var(--color-brand-500);
   --color-primary-hover: var(--color-brand-600);
+  --color-primary-rgb: 229, 106, 74;
 
   /* Surfaces & backgrounds (light) */
   --color-bg: #FDFAF6;
@@ -145,6 +146,7 @@ html:not(.fonts-loading) .material-symbols-outlined { opacity: 1; transition: op
 
   --color-primary: #E56A4A;
   --color-primary-hover: #cc5236;
+  --color-primary-rgb: 229, 106, 74;
 
   /* Surfaces (dark - Claude-like neutral warm) */
   --color-bg: #1a1a1a;
@@ -754,7 +756,7 @@ button:disabled,
 }
 .dark.glass body {
   background-image:
-    radial-gradient(42rem 30rem at 8% 6%, rgba(229, 106, 74, 0.55), transparent 60%),
+    radial-gradient(42rem 30rem at 8% 6%, rgba(var(--color-primary-rgb, 229, 106, 74), 0.55), transparent 60%),
     radial-gradient(40rem 28rem at 94% 8%, rgba(129, 140, 248, 0.5), transparent 58%),
     radial-gradient(46rem 32rem at 78% 96%, rgba(56, 189, 248, 0.42), transparent 60%),
     radial-gradient(34rem 26rem at 22% 78%, rgba(16, 185, 129, 0.28), transparent 62%);

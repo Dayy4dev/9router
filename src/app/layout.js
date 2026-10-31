@@ -36,7 +36,7 @@ export default function RootLayout({ children }) {
             zustand-persist "theme" key and the `dark` class applyTheme() sets. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem('theme')||'null');var t=s&&s.state&&s.state.theme;document.documentElement.classList.add('dark');if(t!=='dark')document.documentElement.classList.add('glass')}catch(e){document.documentElement.classList.add('dark')}`,
+            __html: `try{var s=JSON.parse(localStorage.getItem('theme')||'null');var t=s&&s.state&&s.state.theme;document.documentElement.classList.add('dark');if(t!=='dark')document.documentElement.classList.add('glass');var c=localStorage.getItem('themeColor');if(c){document.documentElement.style.setProperty('--color-primary',c);document.documentElement.style.setProperty('--color-accent',c);document.documentElement.style.setProperty('--color-brand-500',c)}}catch(e){document.documentElement.classList.add('dark')}`,
           }}
         />
         <script

@@ -94,4 +94,14 @@ describe("custom plugin → persona injection", () => {
     // The model's own persona stays in front of the plugin line.
     expect(body.system.startsWith("You are terse.")).toBe(true);
   });
+
+  it("injects antiSlop rules when enabled", async () => {
+    enable({ antiSlop: { enabled: true, models: [MODEL], level: "lite" } });
+    const body = chatBody();
+
+    const result = await applyCustomPlugins(body, "prov", "m1", FORMATS.OPENAI, MODEL);
+
+    expect(result.isAntiSlopActive).toBe(true);
+    expect(systemText(body)).toContain("antislop: rules for AI coding agents");
+  });
 });

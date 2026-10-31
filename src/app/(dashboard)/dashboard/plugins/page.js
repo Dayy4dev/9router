@@ -13,6 +13,33 @@ import { useModelCaps } from "@/shared/hooks/useModelCaps";
 import { useNotificationStore } from "@/store/notificationStore";
 import PluginMark from "@/shared/components/PluginMark";
 import { CUSTOM_PLUGIN_KEYS } from "@/shared/constants/pluginKeys";
+import { ANTISLOP_LEVEL_CHARS } from "open-sse/rtk/antislopPrompt.js";
+
+const approxTokens = (chars) => Math.round(chars / 4).toLocaleString("en-US");
+
+export const ANTISLOP_LEVELS = [
+  {
+    id: "lite",
+    label: "Lite",
+    desc: `Condensed: the purpose test plus a scan for obvious AI patterns. About ${approxTokens(
+      ANTISLOP_LEVEL_CHARS.lite
+    )} tokens per request.`,
+  },
+  {
+    id: "full",
+    label: "Full",
+    desc: `The skill's core text verbatim — all 38 rules, the three dials, Design Read and the delivery gate. About ${approxTokens(
+      ANTISLOP_LEVEL_CHARS.full
+    )} tokens per request.`,
+  },
+  {
+    id: "ultra",
+    label: "Ultra",
+    desc: `Core plus all five concern skills (UI, copy, human, mobile, code), verbatim. About ${approxTokens(
+      ANTISLOP_LEVEL_CHARS.ultra
+    )} tokens per request.`,
+  },
+];
 
 const PLUGINS = [
   {
@@ -33,6 +60,13 @@ const PLUGINS = [
     description:
       "Gives function calling to upstreams that have none. The request's tools are folded into the prompt, the reply's own tool call is parsed back into standard tool_calls, and the client's handlers run unchanged. Select the models whose provider cannot call tools (browser-session providers and any model reported as text-only); leave natively tool-capable models out so their real schema is untouched.",
   },
+  {
+    key: "antiSlop",
+    title: "Anti-Slop Natural AI",
+    levelled: true,
+    description:
+      "Strips generic AI boilerplate, robotic conversational cliches, and repetitive jargon. Injects curated anti-slop guidelines into system prompts so code and generated prose remain crisp, natural, concise, and straight to the point.",
+  },
 ];
 
 function defaultPluginsFrom(stored) {
@@ -42,6 +76,7 @@ function defaultPluginsFrom(stored) {
     out[key] = {
       enabled: Boolean(entry?.enabled),
       models: Array.isArray(entry?.models) ? entry.models.filter(Boolean) : [],
+      ...(key === "antiSlop" ? { level: entry?.level || "full" } : {}),
     };
   }
   return out;
@@ -120,6 +155,23 @@ export default function PluginsPage() {
           [pluginKey]: {
             ...prev[pluginKey],
             enabled,
+          },
+        };
+        savePlugins(updated);
+        return updated;
+      });
+    },
+    [savePlugins]
+  );
+
+  const handleLevelChange = useCallback(
+    (pluginKey, level) => {
+      setCustomPlugins((prev) => {
+        const updated = {
+          ...prev,
+          [pluginKey]: {
+            ...prev[pluginKey],
+            level,
           },
         };
         savePlugins(updated);
@@ -234,6 +286,32 @@ export default function PluginsPage() {
               <p className="text-sm text-text-muted leading-relaxed mb-5">
                 {plugin.description}
               </p>
+
+              {plugin.levelled && isEnabled && (
+                <div className="mb-4 space-y-1.5">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {ANTISLOP_LEVELS.map((lvl) => (
+                      <button
+                        key={lvl.id}
+                        type="button"
+                        onClick={() => handleLevelChange(plugin.key, lvl.id)}
+                        className={`px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+                          (customPlugins[plugin.key]?.level || "full") === lvl.id
+                            ? "bg-primary text-white border-primary"
+                            : "bg-transparent border-border text-text-muted hover:bg-surface-2"
+                        }`}
+                      >
+                        {lvl.label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="text-xs text-text-muted">
+                    {ANTISLOP_LEVELS.find(
+                      (lvl) => lvl.id === (customPlugins[plugin.key]?.level || "full")
+                    )?.desc}
+                  </p>
+                </div>
+              )}
 
               {isEnabled && (
                 <div className="mt-auto pt-4 border-t border-border-subtle">

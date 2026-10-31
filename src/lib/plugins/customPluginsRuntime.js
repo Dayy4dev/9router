@@ -22,6 +22,7 @@ import { FORMATS } from "open-sse/translator/formats.js";
 import { getCapabilitiesForModel } from "open-sse/providers/capabilities.js";
 import { matchesModel } from "@/shared/utils/pluginModelMatch.js";
 import { injectSystemPrompt } from "open-sse/rtk/systemInject.js";
+import { applyAntiSlop } from "open-sse/rtk/antislop.js";
 import {
   buildToolInstructions,
   buildToolReminder,
@@ -36,6 +37,7 @@ const DEFAULT_PLUGINS = {
   adaptiveThinking: { enabled: false, models: [], level: "full" },
   imageVision: { enabled: false, models: [] },
   openaiToolBridge: { enabled: false, models: [] },
+  antiSlop: { enabled: false, models: [], level: "full" },
 };
 
 // Cached plugin settings to avoid DB hits on every stream chunk
@@ -394,6 +396,7 @@ export async function applyCustomPlugins(body, provider, model, sourceFormat, re
     isThinkDeeperActive: false,
     isToolBridgeActive: false,
     isToolBridgeRewritten: false,
+    isAntiSlopActive: false,
   };
 
   if (config.imageVision?.enabled && checkMatch(config.imageVision.models)) {
@@ -417,6 +420,11 @@ export async function applyCustomPlugins(body, provider, model, sourceFormat, re
     if (caps?.tools === false || (await isWebSessionProvider(provider))) {
       result.isToolBridgeRewritten = applyToolCallingBridge(body, sourceFormat);
     }
+  }
+
+  if (config.antiSlop?.enabled && checkMatch(config.antiSlop.models)) {
+    result.isAntiSlopActive = true;
+    applyAntiSlop(body, sourceFormat, config.antiSlop.level);
   }
 
   return result;

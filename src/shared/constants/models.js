@@ -51,6 +51,7 @@ export const CAPACITY_META = {
   // THROUGH the bridge is marked by the plugin mark instead.
   adaptiveThinking: { mark: "adaptiveThinking", label: "Adaptive Thinking", desc: "Adaptive Thinking & Multi-Framework Cognitive Architecture" },
   imageVision: { mark: "imageVision", label: "OCR Image", desc: "Auto Image-to-Text OCR Extractor" },
+  antiSlop: { mark: "antiSlop", label: "Anti Slop", desc: "Anti-Slop Natural Output" },
 };
 
 // Realtime STT transport markers accepted on custom models - single source of
@@ -117,5 +118,9 @@ export const PLUGIN_MARK_META = {
   openaiToolBridge: {
     label: "Tool Calling",
     desc: "Tool Calling Bridge: Folds the request's tools into the prompt and parses the model's own call back into standard tool_calls, giving function calling to upstreams that have none",
+  },
+  antiSlop: {
+    label: "Anti Slop",
+    desc: "Anti-Slop Natural AI: Injects curated anti-slop guidelines into system prompts to produce direct, un-robotic output",
   },
 };

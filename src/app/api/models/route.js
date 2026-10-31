@@ -26,6 +26,8 @@ export async function GET() {
     const ivModels = new Set(customPlugins.imageVision?.models || []);
     const tbEnabled = Boolean(customPlugins.openaiToolBridge?.enabled);
     const tbModels = new Set(customPlugins.openaiToolBridge?.models || []);
+    const asEnabled = Boolean(customPlugins.antiSlop?.enabled);
+    const asModels = new Set(customPlugins.antiSlop?.models || []);
 
     // One resolver for every branch below.
     const PLUGIN_SOURCES = [
@@ -35,6 +37,7 @@ export async function GET() {
       // the listing has to say tools:true - a client reads the capability before
       // it ever sends a tools array.
       ["openaiToolBridge", tbEnabled, tbModels, { tools: true, openaiToolBridge: true }],
+      ["antiSlop", asEnabled, asModels, { antiSlop: true }],
     ];
 
     /**
@@ -200,6 +203,9 @@ export async function GET() {
       if (tbEnabled && names.some((n) => tbModels.has(n))) {
         caps.tools = true;
         caps.openaiToolBridge = true;
+      }
+      if (asEnabled && names.some((n) => asModels.has(n))) {
+        caps.antiSlop = true;
       }
       const pluginMarks = applyPluginMarks(caps, names);
       models.push({

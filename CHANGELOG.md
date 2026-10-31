@@ -1,3 +1,11 @@
+# v0.5.343 (2026-10-29) · 1 commit
+
+## UI
+- **"USING CLI" is a chip, not part of the name.** The label moved out of `display.name` into `display.tag`, so the card and the provider header render it as a green bordered chip next to "OpenCode Free" instead of a parenthetical in the title. Search still matches the plain name.
+
+## Fixes
+- **The Gemini Web cookie field could not be typed into.** `AddApiKeyModal` calls `splitGeminiCookie()` and `composeGeminiCookie()` on every keystroke but never imported them, so the first character threw a `ReferenceError`, React aborted the handler, and the controlled input snapped back to empty — the field looked dead. The edit modal already imported them, which is why an existing session could be edited while a new one could not be added. Import added.
+
 # v0.5.342 (2026-10-29) · 1 commit
 
 ## UI

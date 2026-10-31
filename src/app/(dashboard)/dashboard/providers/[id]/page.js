@@ -1569,6 +1569,11 @@ export default function ProviderDetailPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{providerInfo.name}</h1>
+              {providerInfo.tag && (
+                <span className="inline-flex items-center rounded-[var(--r-chip)] border border-success/50 bg-success/10 px-2 py-0.5 text-xs font-semibold text-success">
+                  {providerInfo.tag}
+                </span>
+              )}
               {(providerInfo.notice?.apiKeyUrl || providerInfo.notice?.signupUrl || providerInfo.website) && (
                 <a
                   href={providerInfo.notice?.apiKeyUrl || providerInfo.notice?.signupUrl || providerInfo.website}

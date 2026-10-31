@@ -797,7 +797,14 @@ function ProviderCard({ providerId, provider, stats, authType, onToggle, opencod
               />
             </div>
             <div className="min-w-0">
-              <h3 className="truncate font-semibold">{provider.name}</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="truncate font-semibold">{provider.name}</h3>
+                {provider.tag && (
+                  <span className="inline-flex items-center rounded-[var(--r-chip)] border border-success/50 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+                    {provider.tag}
+                  </span>
+                )}
+              </div>
               <div className="flex min-w-0 items-center gap-1.5 text-xs flex-wrap">
                 {allDisabled ? (
                   <Badge variant="default" size="sm">
@@ -935,7 +942,14 @@ function ApiKeyProviderCard({
               />
             </div>
             <div className="min-w-0">
-              <h3 className="truncate font-semibold">{provider.name}</h3>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="truncate font-semibold">{provider.name}</h3>
+                {provider.tag && (
+                  <span className="inline-flex items-center rounded-[var(--r-chip)] border border-success/50 bg-success/10 px-2 py-0.5 text-[10px] font-semibold text-success">
+                    {provider.tag}
+                  </span>
+                )}
+              </div>
               <div className="flex min-w-0 items-center gap-1.5 text-xs flex-wrap">
                 {allDisabled ? (
                   <Badge variant="default" size="sm">

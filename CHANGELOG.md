@@ -1,3 +1,8 @@
+# v0.5.345 (2026-10-29) · 1 commit
+
+## Features
+- **One OpenCode Free card with a lane switch.** The direct lane and the CLI lane were two provider cards; they are now one. `opencode-v2` is hidden from the picker and both ids route through `OpenCodeLaneExecutor`, which reads `opencodeCliMode` and delegates to the direct TLS client (default) or the local CLI lane. A hammer button on the card and in the provider header flips the setting and shows which lane is live (`Direct` / `CLI`). Model ids stay `oc/...` and `oc2/...`, so existing client configs keep working.
+
 # v0.5.344 (2026-10-29) · 1 commit
 
 ## UI

@@ -75,6 +75,9 @@ export default function ProviderDetailPage() {
   const [bulkProxyPoolId, setBulkProxyPoolId] = useState("__none__");
   const [bulkUpdatingProxy, setBulkUpdatingProxy] = useState(false);
   const [providerStrategy, setProviderStrategy] = useState(null);
+  // OpenCode Free's lane switch: false = direct request, true = local CLI.
+  const [opencodeCliMode, setOpencodeCliMode] = useState(false);
+  const [switchingLane, setSwitchingLane] = useState(false);
   const [providerStickyLimit, setProviderStickyLimit] = useState("");
   const [thinkingMode, setThinkingMode] = useState("auto");
   const [autoPing, setAutoPing] = useState({ enabled: false, connections: {}, schedules: {} });
@@ -97,6 +100,26 @@ export default function ProviderDetailPage() {
   const [importingQoderModels, setImportingQoderModels] = useState(false);
   const [importingClineModels, setImportingClineModels] = useState(false);
   const { copied, copy } = useCopyToClipboard();
+
+  // The hammer on the OpenCode Free header flips the lane the executor uses.
+  const toggleOpencodeCliMode = async () => {
+    if (switchingLane) return;
+    const next = !opencodeCliMode;
+    setSwitchingLane(true);
+    setOpencodeCliMode(next);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ opencodeCliMode: next }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch {
+      setOpencodeCliMode(!next);
+    } finally {
+      setSwitchingLane(false);
+    }
+  };
 
   const AG_RISK_STORAGE_KEY = "ag_risk_confirmed";
 
@@ -350,6 +373,7 @@ export default function ProviderDetailPage() {
       }
       // Load per-provider strategy override
       const override = (settingsData.providerStrategies || {})[providerId] || {};
+      setOpencodeCliMode(settingsData.opencodeCliMode === true);
       setProviderStrategy(override.fallbackStrategy || null);
       setProviderStickyLimit(override.stickyRoundRobinLimit != null ? String(override.stickyRoundRobinLimit) : "1");
       // Load per-provider thinking config
@@ -1569,10 +1593,25 @@ export default function ProviderDetailPage() {
           <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
               <h1 className="truncate text-2xl font-semibold tracking-tight sm:text-3xl">{providerInfo.name}</h1>
-              {providerInfo.tag && (
-                <span className="text-sm font-normal text-text-muted">
-                  · {providerInfo.tag}
-                </span>
+              {providerId === "opencode" && (
+                <button
+                  type="button"
+                  onClick={toggleOpencodeCliMode}
+                  disabled={switchingLane}
+                  title={
+                    opencodeCliMode
+                      ? "CLI lane active — click to use the direct request"
+                      : "Direct lane active — click to use the local CLI"
+                  }
+                  className={`inline-flex items-center gap-1 rounded-[var(--r-chip)] border px-2 py-0.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+                    opencodeCliMode
+                      ? "border-brand-500/40 bg-brand-500/10 text-brand-600 dark:text-brand-300"
+                      : "border-border/60 text-text-muted hover:text-text-main"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[14px]">handyman</span>
+                  {opencodeCliMode ? "CLI" : "Direct"}
+                </button>
               )}
               {(providerInfo.notice?.apiKeyUrl || providerInfo.notice?.signupUrl || providerInfo.website) && (
                 <a

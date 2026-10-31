@@ -1,7 +1,11 @@
-# v0.5.346 (2026-10-31) · 1 commit
+# v0.5.346 (2026-10-31) · 2 commits
 
 ## Features & Improvements
 
+- **Restoration of AI Anti Slop Plugin**:
+  - Restored full standalone Anti Slop natural AI plugin across runtime, dashboard, and API endpoints (`/api/plugins`, `/api/models`).
+  - Added level selector in the Plugins dashboard supporting `lite`, `full`, and `ultra` intensities with real-time prompt rule injection and token estimation.
+  - Re-registered `antiSlop` capacity mark in `CAPACITY_META` and `PLUGIN_MARK_META` for model capability badges.
 - **Upstream Master Synchronization & Merge (v0.5.306 – v0.5.345)**:
   - **OpenCode Free Single Card & Dual Lane**: Consolidated direct and CLI lanes into one OpenCode Free provider card with a live hammer toggle (`Direct TLS` vs `With CLI`), TLS client routing, egress tunnel, and residential fallback.
   - **Gemini Web Cookie Session Restoration**: Reverse-engineered `gemini-web` provider supporting separated `__Secure-1PSID` and `__Secure-1PSIDTS` inputs, session auto-validation, proxy-aware requests, and terminal frame stream completion.

@@ -1,3 +1,8 @@
+# v0.5.341 (2026-10-29) · 1 commit
+
+## Fixes
+- **OpenCode Free V2 shares the V1 brand mark and icon.** `opencode-v2` now aliases to `opencode` in `providerIcon.js`, so it uses the exact same `/providers/opencode.png` logo and styling as OpenCode Free V1 without needing a duplicate asset.
+
 # v0.5.340 (2026-10-29) · 1 commit
 
 ## Features

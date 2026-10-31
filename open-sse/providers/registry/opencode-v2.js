@@ -7,8 +7,8 @@ export default {
   display: {
     name: "OpenCode Free V2",
     icon: "terminal",
-    color: "#2563EB",
-    textIcon: "OC2",
+    color: "#E87040",
+    textIcon: "OC",
   },
   category: "free",
   noAuth: true,

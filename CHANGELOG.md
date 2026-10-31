@@ -1,3 +1,8 @@
+# v0.5.342 (2026-10-29) · 1 commit
+
+## UI
+- **Renamed OpenCode Free providers for clarity.** The original CLI-based lane is now "OpenCode Free (USING CLI)" and the new direct-TLS lane (previously "OpenCode Free V2") is now just "OpenCode Free". IDs and aliases unchanged (`oc` / `oc2`).
+
 # v0.5.341 (2026-10-29) · 1 commit
 
 ## Fixes

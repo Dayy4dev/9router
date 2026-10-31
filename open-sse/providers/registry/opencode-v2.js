@@ -5,7 +5,7 @@ export default {
   alias: "oc2",
   uiAlias: "oc2",
   display: {
-    name: "OpenCode Free V2",
+    name: "OpenCode Free",
     icon: "terminal",
     color: "#E87040",
     textIcon: "OC",

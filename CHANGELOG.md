@@ -1,4 +1,4 @@
-# v0.5.346 (2026-10-31) · 4 commits
+# v0.5.346 (2026-10-31) · 5 commits
 
 ## Features & Improvements
 - **Custom Theme Accent Color ("Warna Tema Sesuka Hati")**:
@@ -22,6 +22,8 @@
   - **Preserved Dayy4dev Custom Features**: Zero-config auto-routing dynamic scoring engine with session stickiness, background PRD Builder with notification bell tracking, model test store with latency badges, and collapsible sidebar toggle.
 
 ## Fixes
+- **Provider Topology Live Edge Colors**:
+  - Connected `ProviderTopology` last-routed edge stroke to `var(--color-primary, #f59e0b)` so connection cables honor the active custom theme accent color instead of staying hardcoded amber/orange.
 - **API Keys Responsive Layout on Mobile & Small Screens**:
   - Cleaned up duplicate badge elements and uncontained creation date leftover from upstream merge conflict that caused element overlaps and wrapped rows on mobile.
   - Standardized usage and limit monitoring via `LimitBadge` with automatic quota exhaustion alerts and expiry countdown.

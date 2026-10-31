@@ -295,7 +295,7 @@ function buildLayout(providers, activeSet, lastSet, errorSet) {
   const edgeStyle = (active, last, error) => {
     if (error) return { stroke: "#ef4444", strokeWidth: 2.5, opacity: 0.9 };
     if (active) return { stroke: "#22d3ee", strokeWidth: 3.5, opacity: 1 };
-    if (last) return { stroke: "#f59e0b", strokeWidth: 2, opacity: 0.7 };
+    if (last) return { stroke: "var(--color-primary, #f59e0b)", strokeWidth: 2, opacity: 0.85 };
     return { stroke: "var(--color-border)", strokeWidth: 1, opacity: 0.3 };
   };
 

@@ -42,5 +42,7 @@ describe("theme: custom theme color feature", () => {
     expect(topo).toContain("var(--color-primary, #22d3ee)");
     expect(topo).toContain("var(--color-primary, #f59e0b)");
     expect(topo).toContain("topology-router-core border-primary");
+    expect(topo).toContain("router-node-icon-grad");
+    expect(topo).toContain("var(--color-primary, #10B981)");
   });
 });

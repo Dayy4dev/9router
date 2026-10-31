@@ -35,12 +35,15 @@ function getProviderImageUrl(providerId) {
 function ProviderNode({ data }) {
   const { label, color, imageUrl, textIcon, active } = data;
   const [imgError, setImgError] = useState(false);
+  const activeColor = "var(--color-primary, #10B981)";
   return (
     <div
       className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg border-2 transition-all duration-300 bg-bg"
       style={{
-        borderColor: active ? color : "var(--color-border)",
-        boxShadow: active ? `0 0 16px ${color}40` : "none",
+        borderColor: active ? activeColor : "var(--color-border)",
+        boxShadow: active
+          ? `0 0 18px color-mix(in srgb, var(--color-primary, #10B981) 45%, transparent), inset 0 0 12px color-mix(in srgb, var(--color-primary, #10B981) 15%, transparent)`
+          : "none",
         minWidth: "150px",
       }}
     >
@@ -51,8 +54,12 @@ function ProviderNode({ data }) {
 
       {/* Provider icon */}
       <div
-        className="w-8 h-8 rounded-md flex items-center justify-center shrink-0"
-        style={{ backgroundColor: `${color}15` }}
+        className="w-8 h-8 rounded-md flex items-center justify-center shrink-0 transition-colors"
+        style={{
+          backgroundColor: active
+            ? "color-mix(in srgb, var(--color-primary, #10B981) 18%, transparent)"
+            : `${color}15`,
+        }}
       >
         {imageUrl && !imgError ? (
           <img
@@ -68,14 +75,16 @@ function ProviderNode({ data }) {
             }}
           />
         ) : (
-          <span className="text-sm font-bold" style={{ color }}>{textIcon}</span>
+          <span className="text-sm font-bold" style={{ color: active ? activeColor : color }}>
+            {textIcon}
+          </span>
         )}
       </div>
 
       {/* Provider name */}
       <span
-        className="text-base font-medium truncate"
-        style={{ color: active ? color : "var(--color-text)" }}
+        className="text-base font-medium truncate transition-colors"
+        style={{ color: active ? "#ffffff" : "var(--color-text)" }}
       >
         {label}
       </span>
@@ -83,8 +92,14 @@ function ProviderNode({ data }) {
       {/* Active indicator */}
       {active && (
         <span className="relative flex h-2 w-2 shrink-0">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: color }} />
-          <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: color }} />
+          <span
+            className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+            style={{ backgroundColor: activeColor }}
+          />
+          <span
+            className="relative inline-flex rounded-full h-2 w-2"
+            style={{ backgroundColor: activeColor }}
+          />
         </span>
       )}
     </div>
@@ -111,13 +126,31 @@ function RouterNode({ data }) {
       <Handle type="source" position={Position.Left} id="left" className="!bg-transparent !border-0 !w-0 !h-0" />
       <Handle type="source" position={Position.Right} id="right" className="!bg-transparent !border-0 !w-0 !h-0" />
 
-      <img
-        src="/favicon.svg"
-        alt="9Router"
-        className={`w-6 h-6 mr-2 ${powering ? "topology-router-icon" : ""}`}
-        loading="lazy"
-        decoding="async"
-      />
+      {/* Dynamic 9Router Theme Icon */}
+      <svg
+        viewBox="0 0 32 32"
+        className={`w-6 h-6 mr-2 shrink-0 rounded-md overflow-hidden ${powering ? "topology-router-icon" : ""}`}
+        aria-label="9Router"
+      >
+        <defs>
+          <linearGradient id="router-node-icon-grad" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+            <stop stopColor="var(--color-primary, #f97815)" />
+            <stop offset="1" stopColor="color-mix(in srgb, var(--color-primary, #c2590a) 70%, #000000)" />
+          </linearGradient>
+        </defs>
+        <rect width="32" height="32" rx="6" fill="url(#router-node-icon-grad)" />
+        <text
+          x="16"
+          y="23"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontSize="19"
+          fontWeight="800"
+          fill="#ffffff"
+          textAnchor="middle"
+        >
+          9
+        </text>
+      </svg>
       <span className={`text-sm font-bold ${powering ? "topology-router-label text-primary" : "text-primary"}`}>
         9Router
       </span>

@@ -1686,17 +1686,10 @@ const scopedModelPatterns =
                     {/* Metadata & Badges */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                       <span className="text-[11px] text-text-muted mr-1">
-                        {new Date(key.createdAt).toLocaleDateString()}
+                        Created {new Date(key.createdAt).toLocaleDateString()}
                       </span>
-                      <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-primary/10 text-primary font-medium whitespace-nowrap">
-                        Usage: {formatTokensNumber(key.usedTokens)} / {key.tokenLimit > 0 ? formatTokensNumber(key.tokenLimit) : "Unlimited"}
-                      </span>
-                      {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                        <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-gray-500/10 text-text-muted whitespace-nowrap">
-                          Reset: every {key.resetInterval}
-                        </span>
-                      )}
-                      {key.tokenLimit > 0 && key.resetInterval && key.resetInterval !== "never" && (
+                      <LimitBadge entry={key} />
+                      {limitKindOf(key) !== "cost" && limitCapOf(key) > 0 && key.resetInterval && key.resetInterval !== "never" && (
                         <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
                       )}
                       <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-500 font-medium whitespace-nowrap">
@@ -1712,53 +1705,31 @@ const scopedModelPatterns =
                           IP Guard: Active
                         </span>
                       )}
-                      {key.tokenLimit > 0 && (key.usedTokens || 0) >= key.tokenLimit && (
-                        <span className="text-[11px] shrink-0 px-2 py-0.5 rounded-md bg-red-500/10 text-red-500 font-semibold whitespace-nowrap">
-                          Quota Exceeded
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-xs text-text-muted mt-1">
-                    Created {new Date(key.createdAt).toLocaleDateString()}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-1.5 mt-2 overflow-hidden">
-                    <LimitBadge entry={key} />
-                    {limitKindOf(key) !== "cost" && limitCapOf(key) > 0 && key.resetInterval && key.resetInterval !== "never" && (
-                      <ResetCountdown resetInterval={key.resetInterval} lastResetAt={key.lastResetAt} />
-                    )}
-                    <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-blue-500/10 text-blue-500 font-medium">
-                      Models: {key.allowedModels && key.allowedModels !== "*" ? key.allowedModels : "All"}
-                    </span>
-                    {(key.rpmLimit > 0 || key.tpmLimit > 0) && (
-                      <span className="text-xs max-w-full truncate px-2 py-0.5 rounded bg-purple-500/10 text-purple-500 font-medium">
-                        Rate: {key.rpmLimit > 0 ? `${key.rpmLimit} RPM` : ""}{key.rpmLimit > 0 && key.tpmLimit > 0 ? " · " : ""}{key.tpmLimit > 0 ? `${formatTokensNumber(key.tpmLimit)} TPM` : ""}
-                      </span>
-                    )}
-                    {key.expiresAt && (() => {
-                      const expDate = new Date(key.expiresAt);
-                      const isExpired = expDate.getTime() < Date.now();
-                      return (
-                        <span className={`inline-flex items-center gap-1 text-xs max-w-full truncate px-2 py-0.5 rounded font-medium ${
-                          isExpired
-                            ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20"
-                            : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                        }`}>
-                          <span className="material-symbols-outlined text-[13px] leading-none">
-                            {isExpired ? "event_busy" : "timer"}
+                      {key.expiresAt && (() => {
+                        const expDate = new Date(key.expiresAt);
+                        const isExpired = expDate.getTime() < Date.now();
+                        return (
+                          <span className={`inline-flex items-center gap-1 text-[11px] shrink-0 px-2 py-0.5 rounded-md font-medium whitespace-nowrap ${
+                            isExpired
+                              ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 border border-rose-500/20"
+                              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                          }`}>
+                            <span className="material-symbols-outlined text-[13px] leading-none">
+                              {isExpired ? "event_busy" : "timer"}
+                            </span>
+                            {isExpired ? "Expired: " : "Expires: "}
+                            {expDate.toLocaleDateString()} {expDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </span>
-                          {isExpired ? "Expired: " : "Expires: "}
-                          {expDate.toLocaleDateString()} {expDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                        </span>
-                      );
-                    })()}
+                        );
+                      })()}
+                    </div>
                   </div>
                 </div>
 
                 {/* Actions Toolbar */}
-                <div className="flex items-center justify-between sm:justify-end gap-1.5 pl-6 sm:pl-0 pt-2 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0">
+                <div className="flex items-center justify-between sm:justify-end gap-2 pt-2.5 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0 w-full sm:w-auto">
                   <div
-                    className="inline-flex items-center px-1"
+                    className="inline-flex items-center gap-2"
                     title={key.isActive === false ? "Switch this key back on" : "Switch this key off"}
                   >
                     <Toggle
@@ -1767,6 +1738,9 @@ const scopedModelPatterns =
                       disabled={isOwnKey(key)}
                       onChange={(nextActive) => handleToggleKeyActive(key, nextActive)}
                     />
+                    <span className="text-xs text-text-muted sm:hidden">
+                      {key.isActive === false ? "Disabled" : "Active"}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-0.5 bg-surface-2/60 sm:bg-transparent rounded-lg p-0.5 sm:p-0">

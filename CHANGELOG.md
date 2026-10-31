@@ -1,4 +1,4 @@
-# v0.5.346 (2026-10-31) · 2 commits
+# v0.5.346 (2026-10-31) · 3 commits
 
 ## Features & Improvements
 - **Restoration of AI Anti Slop Plugin**:
@@ -15,6 +15,12 @@
   - **Global Error Masking**: Comprehensive `Hide Raw Errors` coverage across all streaming SSE frames and non-JSON upstream errors.
   - **UI Design System Standardization**: Replaced all OS emoji with design tokens, Material Symbols, and `LocaleBadge` chips.
   - **Preserved Dayy4dev Custom Features**: Zero-config auto-routing dynamic scoring engine with session stickiness, background PRD Builder with notification bell tracking, model test store with latency badges, and collapsible sidebar toggle.
+
+## Fixes
+- **API Keys Responsive Layout on Mobile & Small Screens**:
+  - Cleaned up duplicate badge elements and uncontained creation date leftover from upstream merge conflict that caused element overlaps and wrapped rows on mobile.
+  - Standardized usage and limit monitoring via `LimitBadge` with automatic quota exhaustion alerts and expiry countdown.
+  - Restructured the actions toolbar to stretch full-width with a dedicated active state indicator on compact viewports.
 
 ---
 

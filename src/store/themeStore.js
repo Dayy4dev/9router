@@ -51,6 +51,9 @@ export function applyThemeColor(color) {
     root.style.removeProperty("--color-primary-hover");
     root.style.removeProperty("--color-primary-rgb");
     root.style.removeProperty("--color-accent");
+    root.style.removeProperty("--color-brand-100");
+    root.style.removeProperty("--color-brand-200");
+    root.style.removeProperty("--color-brand-300");
     root.style.removeProperty("--color-brand-400");
     root.style.removeProperty("--color-brand-500");
     root.style.removeProperty("--color-brand-600");
@@ -67,7 +70,10 @@ export function applyThemeColor(color) {
   if (!rgb) return;
 
   const hoverColor = adjustColor(color, -0.12);
-  const color400 = adjustColor(color, +0.12);
+  const color100 = adjustColor(color, +0.40);
+  const color200 = adjustColor(color, +0.28);
+  const color300 = adjustColor(color, +0.18);
+  const color400 = adjustColor(color, +0.10);
   const color600 = hoverColor;
   const color700 = adjustColor(color, -0.28);
 
@@ -75,6 +81,9 @@ export function applyThemeColor(color) {
   root.style.setProperty("--color-primary-hover", hoverColor);
   root.style.setProperty("--color-primary-rgb", `${rgb.r}, ${rgb.g}, ${rgb.b}`);
   root.style.setProperty("--color-accent", color);
+  root.style.setProperty("--color-brand-100", color100);
+  root.style.setProperty("--color-brand-200", color200);
+  root.style.setProperty("--color-brand-300", color300);
   root.style.setProperty("--color-brand-400", color400);
   root.style.setProperty("--color-brand-500", color);
   root.style.setProperty("--color-brand-600", color600);

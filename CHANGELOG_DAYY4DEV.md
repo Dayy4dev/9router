@@ -1,11 +1,11 @@
-# v0.5.346 (2026-10-31) · 7 commits
+# v0.5.346 (2026-10-31) · 8 commits
 
 ## Features & Improvements
 
-- **Custom Theme Accent Color ("Warna Tema Sesuka Hati")**:
+- **Custom Theme Accent Color (Free Theme Color Customization)**:
   - Introduced arbitrary theme accent color customization via interactive native color picker and custom hex code input in `ThemeModal`.
   - Added curated palette presets (Coral, Blue, Emerald, Purple, Rose, Amber, Cyan, Indigo) with one-click reset to default 9Router coral.
-  - Dynamically recalculates primary, hover, brand scale, aurora glow, and focus ring tokens across both dark and glass backgrounds with instant live preview.
+  - Dynamically recalculates primary, hover, brand scale, aurora glow, focus ring, and text selection highlight tokens across both dark and glass backgrounds with instant live preview.
   - Persisted globally in server settings (`settings.themeColor`) via `/api/theme` and synced across sessions, with pre-paint bootstrap script preventing theme color flicker.
 - **Restoration of AI Anti Slop Plugin**:
   - Restored full standalone Anti Slop natural AI plugin across runtime, dashboard, and API endpoints (`/api/plugins`, `/api/models`).
@@ -24,6 +24,8 @@
 
 ## Fixes
 
+- **Theme-Aware Text Selection Highlight**:
+  - Connected `::selection` background and text foreground across light and dark modes to `var(--color-primary-rgb)` and `var(--color-brand-200)` so highlighted text dynamically honors the chosen theme accent color instead of staying hardcoded coral.
 - **Provider Topology Live Edge Colors**:
   - Connected `ProviderTopology` last-routed edge stroke and active electric particle beam (outer halo, plasma flow, energy orbs, and sparks) to `var(--color-primary)` so active streaming transfers dynamically honor custom theme accent colors while preserving intense white hot-core energy aesthetics.
   - Synced active router core pulse glow, badge color, and keyframes with `var(--color-primary)`.

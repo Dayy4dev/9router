@@ -295,12 +295,12 @@ body {
 
 /* Selection - brand-tinted */
 ::selection {
-  background-color: rgba(229, 106, 74, 0.25);
+  background-color: rgba(var(--color-primary-rgb, 229, 106, 74), 0.25);
   color: var(--color-primary);
 }
 .dark ::selection {
-  background-color: rgba(229, 106, 74, 0.3);
-  color: var(--color-brand-300);
+  background-color: rgba(var(--color-primary-rgb, 229, 106, 74), 0.35);
+  color: var(--color-brand-200, #ffffff);
 }
 
 /* iOS keyboard accent */

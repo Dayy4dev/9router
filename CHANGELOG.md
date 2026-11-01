@@ -1,4 +1,4 @@
-# v0.5.346 (2026-10-31) · 8 commits
+# v0.5.346 (2026-10-31) · 9 commits
 
 ## Features & Improvements
 - **Custom Theme Accent Color (Free Theme Color Customization)**:
@@ -22,6 +22,10 @@
   - **Preserved Dayy4dev Custom Features**: Zero-config auto-routing dynamic scoring engine with session stickiness, background PRD Builder with notification bell tracking, model test store with latency badges, and collapsible sidebar toggle.
 
 ## Fixes
+- **Custom Plugins 3-Column Responsive Grid**:
+  - Expanded Custom Plugins card grid (`/dashboard/plugins`) from a constrained 2-column layout to a 3-column layout on large screens (`lg:grid-cols-3`).
+  - Removed restrictive `max-w-4xl` container boundary so cards seamlessly occupy full dashboard width while maintaining 1-column on mobile and 2-column on tablet viewports.
+  - Hardened card element responsiveness with `min-w-0` on headers, `shrink-0` on toggles, `flex-wrap` on model selection controls, and responsive truncation on model badges.
 - **Theme-Aware Text Selection Highlight**:
   - Connected `::selection` background and text foreground across light and dark modes to `var(--color-primary-rgb)` and `var(--color-brand-200)` so highlighted text dynamically honors the chosen theme accent color instead of staying hardcoded coral.
 - **Provider Topology Live Edge Colors**:

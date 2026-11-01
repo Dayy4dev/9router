@@ -244,7 +244,7 @@ export default function PluginsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {PLUGINS.map((plugin) => {
           const config = customPlugins[plugin.key] || {
             enabled: false,
@@ -256,7 +256,7 @@ export default function PluginsPage() {
           return (
             <Card key={plugin.key} className="flex flex-col h-full">
               <div className="flex items-start justify-between gap-4 mb-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 min-w-0">
                   {/* One tile, one mark, one ink for all seven cards. The marks
                       used to be seven pictograms in seven saturated hues, which
                       read as seven unrelated brands rather than one plugin
@@ -280,6 +280,7 @@ export default function PluginsPage() {
                 <Toggle
                   checked={isEnabled}
                   onChange={(val) => handleToggle(plugin.key, val)}
+                  className="shrink-0"
                 />
               </div>
 
@@ -315,7 +316,7 @@ export default function PluginsPage() {
 
               {isEnabled && (
                 <div className="mt-auto pt-4 border-t border-border-subtle">
-                  <div className="flex items-center justify-between gap-2 mb-3">
+                  <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                     <span className="text-xs font-semibold text-text-muted uppercase tracking-wider">
                       Selected Models
                     </span>
@@ -342,9 +343,9 @@ export default function PluginsPage() {
                           key={modelVal}
                           variant="default"
                           size="md"
-                          className="font-medium bg-surface-2 text-text-main border border-border-subtle"
+                          className="font-medium bg-surface-2 text-text-main border border-border-subtle max-w-full"
                         >
-                          <span className="truncate max-w-[180px]">
+                          <span className="truncate max-w-[140px] sm:max-w-[180px]">
                             {formatModelName(modelVal)}
                           </span>
                           <CapacityBadges caps={getCaps(modelVal)} />

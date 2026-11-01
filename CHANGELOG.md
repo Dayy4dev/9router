@@ -2771,7 +2771,7 @@ The following upstream commits in the v0.5.104 range were deliberately not porte
 - **No password nagging**: the tunnel/endpoint page no longer warns about the default dashboard password or blocks activation over it - the tunnel turns on as-is.
 - **Models are picked, never typed**: the allowed-models field in the API key dialogs is read-only; models come from the picker only (chips + Select Models), so a typo can no longer lock a key out of a model.
 - **Changelog works offline**: a local `/api/changelog` route serves this fork's changelog from disk, falling back to raw GitHub only for what it cannot resolve; the custom section is labelled **Contributed by Serenhope**.
-- **CLI default password**: the terminal settings menu now reports `seren123` as the default dashboard password instead of the old upstream value.
+- **CLI default password**: the terminal settings menu now reports `ajasendiri` as the default dashboard password instead of the old upstream value.
 - **UI polish**: long sidebar labels, provider/model ids, tool titles, badges and the header search now ellipsize instead of pushing buttons out of place, with the full text available on hover.
 - **Sidebar group renamed**: `Model Lab` is now **Custom Suite** - it holds every feature added by this fork, not only the model tools, so future additions have an obvious home.
 

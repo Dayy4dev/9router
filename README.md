@@ -73,7 +73,7 @@ Once it is running:
 
 | | |
 | --- | --- |
-| Dashboard | `http://localhost:20127/dashboard` (first login: `seren123`, or set `INITIAL_PASSWORD`) |
+| Dashboard | `http://localhost:20127/dashboard` (first login: `ajasendiri`, or set `INITIAL_PASSWORD`) |
 | OpenAI-compatible | `http://localhost:20127/v1` |
 | Claude-compatible | `http://localhost:20127/v1/messages` |
 | Gemini-native | `http://localhost:20127/v1beta/models/{model}:generateContent` |

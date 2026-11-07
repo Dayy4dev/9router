@@ -147,8 +147,12 @@ import p147 from "./minimax-code-global.js";
 import p148 from "./bedrock.js";
 import p149 from "./bedrock-xai.js";
 import p150 from "./nous.js";
+import p151 from "./deepseek-web.js";
 import p154 from "./veoaifree-web.js";
 import p156 from "./runcrate.js";
+import p157 from "./nace.js";
+import p158 from "./llmtr.js";
+import p160 from "./zcode.js";
 export default [
   p0,
   p1,
@@ -298,6 +302,10 @@ export default [
   p148,
   p149,
   p150,
+  p151,
   p154,
   p156,
+  p157,
+  p158,
+  p160,
 ];

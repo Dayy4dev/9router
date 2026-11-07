@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { cn } from "@/shared/utils/cn";
 import { APP_CONFIG } from "@/shared/constants/config";
@@ -169,7 +170,6 @@ export default function Sidebar({ onClose }) {
     if (item.href === "/dashboard/model-editor" || item.href === "/dashboard/arena" || item.href === "/dashboard/prompt-injection" || item.href === "/dashboard/prd") {
       return permissions.manageModels;
     }
-    if (item.href === "/dashboard/plugins") return permissions.managePlugins;
     return false;
   });
 

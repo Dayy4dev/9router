@@ -46,6 +46,7 @@ function adjustColor(hex, factor) {
 export function applyThemeColor(color) {
   if (typeof window === "undefined") return;
   const root = document.documentElement;
+  if (!root?.style) return;
   if (!color || typeof color !== "string") {
     root.style.removeProperty("--color-primary");
     root.style.removeProperty("--color-primary-hover");

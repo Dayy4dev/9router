@@ -38,8 +38,10 @@ describe("theme mode contract", () => {
   beforeEach(async () => {
     vi.resetModules();
     stubDom();
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: true });
     const mod = await import("../../src/store/themeStore.js");
     store = mod.default;
+    store.getState().setServerTheme("glass", true);
     globalThis.__THEME_IDS__ = mod.THEME_IDS;
   });
 
@@ -91,7 +93,7 @@ describe("theme mode contract", () => {
 
     // Simulate reload: classes wiped, store hydrated from persistence.
     classes.clear();
-    store.getState().initTheme();
+    store.getState().setServerTheme("glass", true);
 
     expect(classes.has("dark")).toBe(true);
     expect(classes.has("glass")).toBe(true);

@@ -29,9 +29,12 @@ import BulkImportCodexModal from "./BulkImportCodexModal";
 import BulkImportGrokCliModal from "./BulkImportGrokCliModal";
 import CustomConfigCard from "./CustomConfigCard";
 import AutoPingScheduleModal from "./AutoPingScheduleModal";
+import MinimaxLeaseButton from "../components/MinimaxLeaseButton.js";
 import { getScheduleSlotLabels } from "@/shared/services/quotaPingSchedule";
 
 const ONE_BY_ONE_DELAY_MS = 1000;
+
+const MCODE_LEASE_PROVIDERS = new Set(["minimax-code", "minimax-code-global"]);
 
 const AUTO_PING_SETTINGS_KEYS = {
   claude: "claudeAutoPing",
@@ -70,6 +73,13 @@ export default function ProviderDetailPage() {
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [modelStatusFilter, setModelStatusFilter] = useState("all"); // "all" | "ok" | "error" | "untested"
   const [opencodeInstalled, setOpencodeInstalled] = useState(true);
+  const [zcodeBonuses, setZcodeBonuses] = useState([]);
+  const [zcodeClaiming, setZcodeClaiming] = useState(false);
+  const [zcodeClaimMessage, setZcodeClaimMessage] = useState(null);
+  const [zcodeCaptchaParam, setZcodeCaptchaParam] = useState("");
+  const [zcodeVerifyRequired, setZcodeVerifyRequired] = useState(false);
+  const [zcodeVerifyUrl, setZcodeVerifyUrl] = useState("https://zcode.z.ai");
+  const [zcodeAppDeepLink, setZcodeAppDeepLink] = useState("zcode://");
   const [showAddCustomModel, setShowAddCustomModel] = useState(false);
   const [selectedConnectionIds, setSelectedConnectionIds] = useState([]);
   const [bulkProxyPoolId, setBulkProxyPoolId] = useState("__none__");
@@ -77,7 +87,9 @@ export default function ProviderDetailPage() {
   const [providerStrategy, setProviderStrategy] = useState(null);
   // OpenCode Free's lane switch: false = direct request, true = local CLI.
   const [opencodeCliMode, setOpencodeCliMode] = useState(false);
+  const [selectedLaneMode, setSelectedLaneMode] = useState(false);
   const [switchingLane, setSwitchingLane] = useState(false);
+  const [laneBannerOpen, setLaneBannerOpen] = useState(false);
   const [providerStickyLimit, setProviderStickyLimit] = useState("");
   const [thinkingMode, setThinkingMode] = useState("auto");
   const [autoPing, setAutoPing] = useState({ enabled: false, connections: {}, schedules: {} });
@@ -87,6 +99,8 @@ export default function ProviderDetailPage() {
   const [liveModels, setLiveModels] = useState([]);
   // Live-catalog fetch warning/error (surfaced for zed only; cursor behavior unchanged).
   const [liveModelsError, setLiveModelsError] = useState(null);
+  const [webCookieToolCalling, setWebCookieToolCalling] = useState(true);
+  const [updatingToolCalling, setUpdatingToolCalling] = useState(false);
   const [kiloFreeModels, setKiloFreeModels] = useState([]);
   const [disabledModelIds, setDisabledModelIds] = useState([]);
   const [enablingAll, setEnablingAll] = useState(false);
@@ -103,22 +117,45 @@ export default function ProviderDetailPage() {
   const { copied, copy } = useCopyToClipboard();
 
   // The hammer on the OpenCode Free header flips the lane the executor uses.
-  const toggleOpencodeCliMode = async () => {
+  const applyOpencodeCliMode = async (targetMode) => {
     if (switchingLane) return;
-    const next = !opencodeCliMode;
     setSwitchingLane(true);
-    setOpencodeCliMode(next);
+    setOpencodeCliMode(targetMode);
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ opencodeCliMode: next }),
+        body: JSON.stringify({ opencodeCliMode: targetMode }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
     } catch {
-      setOpencodeCliMode(!next);
+      setOpencodeCliMode(!targetMode);
+      setSelectedLaneMode(!targetMode);
     } finally {
       setSwitchingLane(false);
+    }
+  };
+
+  // Toggle tool calling for web-cookie providers (e.g. Gemini Web)
+  const handleToggleWebCookieToolCalling = async (enabled) => {
+    if (updatingToolCalling) return;
+    setUpdatingToolCalling(true);
+    setWebCookieToolCalling(enabled);
+    try {
+      const settingsRes = await fetch("/api/settings", { cache: "no-store" });
+      const current = settingsRes.ok ? await settingsRes.json() : {};
+      const tc = { ...(current.webCookieToolCalling || {}) };
+      tc[providerId] = enabled;
+      await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ webCookieToolCalling: tc }),
+      });
+    } catch (e) {
+      console.warn("Failed to update tool calling setting:", e.message);
+      setWebCookieToolCalling(!enabled);
+    } finally {
+      setUpdatingToolCalling(false);
     }
   };
 
@@ -191,6 +228,7 @@ export default function ProviderDetailPage() {
   const isOAuth = !!OAUTH_PROVIDERS[providerId] || !!FREE_PROVIDERS[providerId] || authModes.includes("oauth");
   const supportsApiKeyAuth = !!APIKEY_PROVIDERS[providerId] || authModes.includes("apikey");
   const isFreeNoAuth = !!FREE_PROVIDERS[providerId]?.noAuth;
+  const isWebCookie = !!WEB_COOKIE_PROVIDERS[providerId] || providerInfo?.category === "webCookie" || providerInfo?.authType === "cookie";
   const staticModels = getModelsByProviderId(providerId);
   const models = (providerId === "cursor" || providerId === "zed") && liveModels.length > 0
     ? liveModels
@@ -398,6 +436,85 @@ export default function ProviderDetailPage() {
       .catch(() => {});
   }, [providerId]);
 
+  // Check for claimable promotional bonuses for ZCode / GLM
+  useEffect(() => {
+    if (providerId !== "glm" && providerId !== "zcode" && providerId !== "zc") return;
+    fetch("/api/providers/glm/bonus")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.ok && Array.isArray(data.available) && data.available.length > 0) {
+          const list = [];
+          for (const item of data.available) {
+            for (const plan of item.plans || []) {
+              list.push({ ...plan, connectionId: item.connectionId, accountName: item.accountName });
+            }
+          }
+          setZcodeBonuses(list);
+        } else {
+          setZcodeBonuses([]);
+        }
+      })
+      .catch(() => {});
+  }, [providerId, connections]);
+
+  const handleClaimZCodeBonus = async (bonus) => {
+    setZcodeClaiming(true);
+    setZcodeClaimMessage(null);
+    setZcodeVerifyRequired(false);
+    try {
+      const res = await fetch("/api/providers/glm/bonus", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          connectionId: bonus.connectionId,
+          planId: bonus.planId,
+          captchaParam: zcodeCaptchaParam || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) {
+        setZcodeVerifyRequired(false);
+        setZcodeCaptchaParam("");
+        setZcodeClaimMessage({ type: "success", text: data.message || "Bonus successfully claimed!" });
+        // Refresh bonuses list after 2 seconds
+        setTimeout(() => {
+          fetch("/api/providers/glm/bonus")
+            .then((r) => r.json())
+            .then((d) => {
+              if (d.ok && Array.isArray(d.available)) {
+                const list = [];
+                for (const item of d.available) {
+                  for (const p of item.plans || []) list.push({ ...p, connectionId: item.connectionId });
+                }
+                setZcodeBonuses(list);
+              }
+            })
+            .catch(() => {});
+        }, 2000);
+      } else if (data.verifyRequired) {
+        // Aliyun NoCaptcha can only be completed inside the ZCode app — store
+        // the verify links and show the verify panel. Auto-opening from an
+        // async handler gets blocked by popup blockers, so the panel button
+        // carries the real user gesture.
+        setZcodeVerifyRequired(true);
+        setZcodeVerifyUrl(data.verifyUrl || "https://zcode.z.ai");
+        setZcodeAppDeepLink(data.appDeepLink || "zcode://");
+        setZcodeClaimMessage({
+          type: "error",
+          text:
+            data.message ||
+            "Verifikasi Aliyun dibutuhkan. Buka aplikasi ZCode untuk verifikasi, salin param verifikasi, lalu Claim lagi.",
+        });
+      } else {
+        setZcodeClaimMessage({ type: "error", text: data.error || "Failed to claim bonus." });
+      }
+    } catch (e) {
+      setZcodeClaimMessage({ type: "error", text: e.message || "Network error while claiming." });
+    } finally {
+      setZcodeClaiming(false);
+    }
+  };
+
   const fetchConnections = useCallback(async () => {
     try {
       const [connectionsRes, nodesRes, proxyPoolsRes, settingsRes] = await Promise.all([
@@ -422,7 +539,11 @@ export default function ProviderDetailPage() {
       }
       // Load per-provider strategy override
       const override = (settingsData.providerStrategies || {})[providerId] || {};
-      setOpencodeCliMode(settingsData.opencodeCliMode === true);
+      const isCli = settingsData.opencodeCliMode === true;
+      setOpencodeCliMode(isCli);
+      setSelectedLaneMode(isCli);
+      const isTcEnabled = settingsData?.webCookieToolCalling?.[providerId] !== false;
+      setWebCookieToolCalling(isTcEnabled);
       setProviderStrategy(override.fallbackStrategy || null);
       setProviderStickyLimit(override.stickyRoundRobinLimit != null ? String(override.stickyRoundRobinLimit) : "1");
       // Load per-provider thinking config
@@ -788,15 +909,12 @@ export default function ProviderDetailPage() {
       
       if (importedCount === 0) {
         finishImportTask(taskId, "All models already exist");
-        alert(translate("All models already exist, no new models added"));
       } else {
         finishImportTask(taskId, `Added ${importedCount} models`);
-        alert(translate("Successfully added") + ` ${importedCount} ` + translate("models"));
       }
     } catch (error) {
       console.log("Error importing Qoder models:", error);
       finishImportTask(taskId, "Fetch failed");
-      alert(translate("Error fetching models") + ": " + error.message);
     } finally {
       setImportingQoderModels(false);
     }
@@ -847,15 +965,12 @@ export default function ProviderDetailPage() {
       }
       if (importedCount === 0) {
         finishImportTask(taskId, "All models already exist");
-        alert(translate("All models already exist, no new models added"));
       } else {
         finishImportTask(taskId, `Added ${importedCount} models`);
-        alert(translate("Successfully added") + ` ${importedCount} ` + translate("models"));
       }
     } catch (error) {
       console.log("Error importing Cline models:", error);
       finishImportTask(taskId, "Fetch failed");
-      alert(translate("Error fetching models") + ": " + error.message);
     } finally {
       setImportingClineModels(false);
     }
@@ -1265,7 +1380,7 @@ export default function ProviderDetailPage() {
           <button
             onClick={handleApplyOneToOne}
             disabled={bulkUpdatingProxy || activePools.length === 0}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-text-muted text-[18px]">sync_alt</span>
             <span className="text-sm text-text-main">One-to-one (rotate)</span>
@@ -1273,7 +1388,7 @@ export default function ProviderDetailPage() {
           <button
             onClick={() => handleApplySinglePool(null)}
             disabled={bulkUpdatingProxy}
-            className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <span className="material-symbols-outlined text-text-muted text-[18px]">link_off</span>
             <span className="text-sm text-text-main">None (unbind all)</span>
@@ -1283,7 +1398,7 @@ export default function ProviderDetailPage() {
               key={pool.id}
               onClick={() => handleApplySinglePool(pool.id)}
               disabled={bulkUpdatingProxy || pool.isActive !== true}
-              className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-black/[0.04] dark:hover:bg-white/[0.04] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors hover:bg-surface-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className="material-symbols-outlined text-text-muted text-[18px]">lan</span>
               <span className="truncate text-sm text-text-main">{pool.name}</span>
@@ -1615,10 +1730,7 @@ export default function ProviderDetailPage() {
           Back to Providers
         </Link>
         <div className="flex min-w-0 items-center gap-3 sm:gap-4">
-          <div
-            className="flex size-12 shrink-0 items-center justify-center rounded-lg"
-            style={{ backgroundColor: `${providerInfo.color}15` }}
-          >
+          <div className="flex size-12 shrink-0 items-center justify-center bg-transparent">
             {headerImgError || !getHeaderIconPath() ? (
               <span className="text-sm font-bold" style={{ color: providerInfo.color }}>
                 {providerInfo.textIcon || providerInfo.id.slice(0, 2).toUpperCase()}
@@ -1629,7 +1741,7 @@ export default function ProviderDetailPage() {
                 alt={providerInfo.name}
                 width={48}
                 height={48}
-                className="max-h-12 max-w-12 rounded-lg object-contain"
+                className="max-h-12 max-w-12 object-contain rounded-2xl"
                 sizes="48px"
                 onError={() => {
                   markProviderIconMissing(providerInfo.id);
@@ -1646,21 +1758,23 @@ export default function ProviderDetailPage() {
               {providerId === "opencode" && (
                 <button
                   type="button"
-                  onClick={toggleOpencodeCliMode}
+                  onClick={() => {
+                    setSelectedLaneMode(opencodeCliMode);
+                    setLaneBannerOpen(true);
+                  }}
                   disabled={switchingLane}
                   title={
                     opencodeCliMode
-                      ? "CLI lane active — click to use the direct request"
-                      : "Direct lane active — click to use the local CLI"
+                      ? "Lane: CLI — click to switch"
+                      : "Lane: Direct — click to switch"
                   }
-                  className={`inline-flex items-center gap-1 rounded-[var(--r-chip)] border px-2 py-0.5 text-xs font-semibold transition-colors disabled:opacity-60 ${
+                  className={`flex size-7 shrink-0 items-center justify-center rounded-lg border transition-all ${
                     opencodeCliMode
-                      ? "border-brand-500/40 bg-brand-500/10 text-brand-600 dark:text-brand-300"
-                      : "border-border/60 text-text-muted hover:text-text-main"
+                      ? "border-brand-500/50 bg-brand-500/15 text-brand-500 hover:bg-brand-500/25"
+                      : "border-border/60 bg-surface text-text-muted hover:text-text-main hover:border-border"
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[14px]">handyman</span>
-                  {opencodeCliMode ? "CLI" : "Direct"}
+                  <span className="material-symbols-outlined text-[16px]">handyman</span>
                 </button>
               )}
               {(providerInfo.notice?.apiKeyUrl || providerInfo.notice?.signupUrl || providerInfo.website) && (
@@ -1671,7 +1785,7 @@ export default function ProviderDetailPage() {
                   className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-sm">open_in_new</span>
-                  {providerInfo.notice?.apiKeyUrl ? "Get API Key" : "Sign up / Learn more"}
+                  {isWebCookie ? "Open Web" : providerInfo.notice?.apiKeyUrl ? "Get API Key" : "Sign up / Learn more"}
                 </a>
               )}
             </div>
@@ -1700,9 +1814,142 @@ export default function ProviderDetailPage() {
               rel="noopener noreferrer"
               className="inline-flex justify-center rounded bg-blue-500 px-2 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-600 sm:py-0.5"
             >
-              Get API Key →
+              {isWebCookie ? "Open Web →" : "Get API Key →"}
             </a>
           )}
+        </div>
+      )}
+
+      {/* ZCode Claimable Bonus Banner */}
+      {(providerId === "glm" || providerId === "zcode" || providerId === "zc") && (zcodeBonuses.length > 0 || zcodeClaimMessage) && (
+        <div className="flex flex-col gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[20px] text-amber-500">card_giftcard</span>
+              <h3 className="text-sm font-semibold text-text-main">ZCode Promotional Plan Available</h3>
+            </div>
+            <Badge variant="warning" size="sm">Bonus</Badge>
+          </div>
+
+          {zcodeClaimMessage && (
+            <div className={`text-xs px-3 py-2 rounded-lg ${zcodeClaimMessage.type === "success" ? "bg-success/15 text-success border border-success/30" : "bg-danger/15 text-danger border border-danger/30"}`}>
+              {zcodeClaimMessage.text}
+            </div>
+          )}
+
+          {zcodeVerifyRequired && (
+            <div className="flex flex-col gap-2 rounded-lg bg-surface/60 border border-border-subtle p-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-amber-500">verified_user</span>
+                <span className="text-xs font-medium text-text-main">Verifikasi Aliyun (X-Aliyun-Captcha-Verify-Param)</span>
+              </div>
+              <p className="text-xs text-text-muted">
+                Selesaikan verifikasi captcha Aliyun di aplikasi ZCode, salin nilai header{" "}
+                <code className="text-amber-400">X-Aliyun-Captcha-Verify-Param</code> dari request di app/DevTools ke kolom di
+                bawah, lalu klik Claim lagi.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <a
+                  href={zcodeAppDeepLink}
+                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 px-3 py-2 text-xs font-medium text-amber-400 hover:bg-amber-500/30 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+                  Buka Aplikasi ZCode
+                </a>
+                <a
+                  href={zcodeVerifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-surface border border-border-subtle px-3 py-2 text-xs font-medium text-text-muted hover:text-text-main hover:border-border transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">language</span>
+                  Buka zcode.z.ai
+                </a>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={zcodeCaptchaParam}
+                  onChange={(e) => setZcodeCaptchaParam(e.target.value)}
+                  placeholder="Tempel X-Aliyun-Captcha-Verify-Param di sini..."
+                  className="flex-1 min-w-0 rounded-lg border border-border-subtle bg-surface px-3 py-2 text-xs text-text-main placeholder:text-text-subtle outline-none focus:border-amber-500/50"
+                />
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    if (zcodeCaptchaParam.trim()) {
+                      // Re-run claim for the first bonus with the pasted param
+                      if (zcodeBonuses[0]) handleClaimZCodeBonus(zcodeBonuses[0]);
+                    }
+                  }}
+                  disabled={zcodeClaiming || !zcodeCaptchaParam.trim()}
+                  className="shrink-0"
+                >
+                  {zcodeClaiming ? "Claiming..." : "Claim dengan Verifikasi"}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {zcodeBonuses.map((bonus) => (
+            <div key={bonus.planId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-surface/80 rounded-lg p-3 border border-border-subtle">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-text-main">{bonus.name}</span>
+                  {bonus.grants ? (
+                    <span className="text-xs text-amber-400 font-mono bg-amber-500/15 px-2 py-0.5 rounded">
+                      {typeof bonus.grants === "number" ? `${(bonus.grants / 1000000).toFixed(0)}M Tokens` : bonus.grants}
+                    </span>
+                  ) : null}
+                </div>
+                {bonus.description && (
+                  <p className="text-xs text-text-muted mt-0.5">{bonus.description}</p>
+                )}
+                {bonus.accountName && (
+                  <p className="text-xs text-text-subtle mt-0.5">Account: {bonus.accountName}</p>
+                )}
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                disabled={zcodeClaiming}
+                onClick={() => handleClaimZCodeBonus(bonus)}
+                className="shrink-0"
+              >
+                {zcodeClaiming ? "Claiming..." : "Claim Bonus"}
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Web Cookie Provider Tool Calling Banner */}
+      {isWebCookie && (
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border-subtle bg-surface-2/60 p-4">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div className="size-9 rounded-lg bg-brand-500/10 flex items-center justify-center shrink-0 mt-0.5">
+              <span className="material-symbols-outlined text-[20px] text-brand-500">construction</span>
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold text-text-main truncate">Support Tool Calling</h3>
+                <Badge variant={webCookieToolCalling ? "success" : "default"} size="sm" dot>
+                  {webCookieToolCalling ? "Enabled" : "Disabled"}
+                </Badge>
+              </div>
+              <p className="text-xs text-text-muted mt-1 leading-relaxed">
+                Enable OpenAI-compatible function calling bridge for web session models. Encodes schemas into system prompt and reconstructs returned structured output into valid tool calls.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center shrink-0">
+            <Toggle
+              checked={webCookieToolCalling}
+              disabled={updatingToolCalling}
+              onChange={handleToggleWebCookieToolCalling}
+            />
+          </div>
         </div>
       )}
 
@@ -1870,6 +2117,9 @@ export default function ProviderDetailPage() {
                   </>
                 ) : (
                   <>
+                    {!isCompatible && MCODE_LEASE_PROVIDERS.has(providerId) && (
+                      <MinimaxLeaseButton providerId={providerId} onConnected={fetchConnections} />
+                    )}
                     {!isCompatible && providerId === "iflow" && (
                       <Button size="sm" icon="cookie" variant="secondary" onClick={() => setShowIFlowCookieModal(true)}>
                         Cookie
@@ -1899,14 +2149,14 @@ export default function ProviderDetailPage() {
           ) : (
             <>
               {oneByOneSummary && (
-                <div className="mb-4 rounded-lg border border-black/10 bg-black/[0.02] px-3 py-2 text-xs text-text-muted dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="mb-4 rounded-lg border border-border-subtle bg-surface-2 px-3 py-2 text-xs text-text-muted">
                   <div className="flex flex-wrap items-center gap-3">
                     <span>Total: {oneByOneSummary.total}</span>
                     <span>Completed: {oneByOneSummary.completed}</span>
                     <span>Passed: {oneByOneSummary.passed}</span>
                     <span>Failed: {oneByOneSummary.failed}</span>
                     {oneByOneSummary.stopped && (
-                      <span className="text-amber-600 dark:text-amber-400">Stopped</span>
+                      <span className="text-warning">Stopped</span>
                     )}
                     {oneByOneRunning && oneByOneCurrentConnectionId && (
                       <span>Running: {connections.find((conn) => conn.id === oneByOneCurrentConnectionId)?.name || oneByOneCurrentConnectionId}</span>
@@ -1930,6 +2180,9 @@ export default function ProviderDetailPage() {
               {connectionsList}
               {!isCompatible && (
                 <div className="mt-4 grid grid-cols-1 gap-2 sm:flex">
+                  {MCODE_LEASE_PROVIDERS.has(providerId) && (
+                    <MinimaxLeaseButton providerId={providerId} onConnected={fetchConnections} />
+                  )}
                   {providerId === "iflow" && (
                     <Button
                       size="sm"
@@ -2262,6 +2515,88 @@ export default function ProviderDetailPage() {
           setShowAddApiKeyModal(false);
         }}
       />
+      {/* OpenCode Free Lane Switch Banner Modal */}
+      <Modal
+        isOpen={laneBannerOpen}
+        onClose={() => setLaneBannerOpen(false)}
+        title="Switch OpenCode Free Lane"
+        size="md"
+      >
+        <div className="flex flex-col gap-4 text-sm text-text-muted">
+          <div className="flex items-center gap-2 p-3 rounded-lg border border-border-subtle bg-surface-2">
+            <span className="material-symbols-outlined text-[20px] text-brand-500">handyman</span>
+            <div>
+              <p className="text-xs text-text-muted">Current Active Lane</p>
+              <p className="text-sm font-semibold text-text-main">
+                {opencodeCliMode ? "CLI Lane (Using Local CLI)" : "Direct Lane (No CLI / Fast TLS)"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedLaneMode(false)}
+              className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${!selectedLaneMode ? "border-brand-500 bg-brand-500/10 ring-1 ring-brand-500/30" : "border-border-subtle bg-surface-2/40 hover:bg-surface-2/70"}`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-2 font-medium text-text-main">
+                  <span className="material-symbols-outlined text-[18px] text-success">bolt</span>
+                  <span>Direct Lane (Default / Recommended)</span>
+                </div>
+                {!selectedLaneMode && (
+                  <span className="material-symbols-outlined text-[18px] text-brand-500">check_circle</span>
+                )}
+              </div>
+              <p className="text-xs text-text-muted leading-relaxed">
+                Requests are sent directly to upstream via impersonated TLS (Bun-shaped ClientHello). Fast (~400ms), lightweight, and requires no local OpenCode CLI or Bun runtime installed on the host.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSelectedLaneMode(true)}
+              className={`p-3 rounded-lg border text-left transition-all cursor-pointer ${selectedLaneMode ? "border-brand-500 bg-brand-500/10 ring-1 ring-brand-500/30" : "border-border-subtle bg-surface-2/40 hover:bg-surface-2/70"}`}
+            >
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <div className="flex items-center gap-2 font-medium text-text-main">
+                  <span className="material-symbols-outlined text-[18px] text-warning">terminal</span>
+                  <span>CLI Lane</span>
+                </div>
+                {selectedLaneMode && (
+                  <span className="material-symbols-outlined text-[18px] text-brand-500">check_circle</span>
+                )}
+              </div>
+              <p className="text-xs text-text-muted leading-relaxed">
+                Spawns the local <code className="text-[11px] bg-surface px-1 py-0.5 rounded">opencode</code> binary and Bun sidecar transport on the host. Requires the CLI installed locally; otherwise requests will hang and time out.
+              </p>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-2 border-t border-border-subtle">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setLaneBannerOpen(false)}
+              disabled={switchingLane}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              disabled={switchingLane}
+              onClick={async () => {
+                await applyOpencodeCliMode(selectedLaneMode);
+                setLaneBannerOpen(false);
+              }}
+            >
+              {switchingLane ? "Switching..." : "Konfirmasi"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       <EditConnectionModal
         isOpen={showEditModal}
         connection={selectedConnection}

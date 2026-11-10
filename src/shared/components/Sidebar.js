@@ -36,6 +36,7 @@ const workshopItems = [
   { href: "/dashboard/plugins", label: "Custom Plugins", icon: "widgets" },
   { href: "/dashboard/prompt-injection", label: "Prompt Injection", icon: "tune" },
   { href: "/dashboard/prd", label: "PRD Builder", icon: "description" },
+  { href: "/dashboard/auto-harvester", label: "Auto Harvester", icon: "radar" },
 ];
 
 // Security Log and Inbox Error live in the bell, not the menu - they are
@@ -170,6 +171,9 @@ export default function Sidebar({ onClose }) {
     if (item.href === "/dashboard/model-editor" || item.href === "/dashboard/arena" || item.href === "/dashboard/prompt-injection" || item.href === "/dashboard/prd") {
       return permissions.manageModels;
     }
+    if (item.href === "/dashboard/auto-harvester") {
+      return permissions.manageAdvanced;
+    }
     return false;
   });
 
@@ -286,12 +290,12 @@ export default function Sidebar({ onClose }) {
             />
           ))}
 
-          {/* FEATURE+ section - custom tools added by this fork */}
+          {/* Custom tools added by this fork */}
           {filteredWorkshopItems.length > 0 && (
             <div className={cn("pt-3 mt-2 space-y-0.5", collapsed && "border-t border-border-subtle/50 pt-2 mt-2")}>
               {!collapsed ? (
                 <p className="px-4 text-xs font-semibold text-text-muted/60 uppercase tracking-wider mb-2">
-                  FEATURE+
+                  Tools
                 </p>
               ) : null}
               {filteredWorkshopItems.map((item) => (

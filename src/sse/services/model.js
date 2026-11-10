@@ -43,6 +43,23 @@ export async function getModelInfo(modelStr, studioHops = 0) {
     return { provider: null, model: modelStr };
   }
 
+  const requested = String(modelStr ?? "").trim();
+
+  // A studio name may carry its own prefix (`anthropic/claude-opus-5`), which
+  // parseModel would read as a provider route. An exact studio match wins, so a
+  // prefix is only a label until the operator names a studio after it.
+  if (requested.includes("/") && studioHops < MAX_STUDIO_HOPS) {
+    try {
+      const { getStudioModel } = await import("@/lib/db/repos/modelEditorRepo.js");
+      const prefixedStudio = await getStudioModel(requested);
+      if (prefixedStudio?.targetModel) {
+        const next = String(prefixedStudio.targetModel).trim();
+        if (prefixedStudio.isComboTarget) return { provider: null, model: next };
+        return await getModelInfo(next, studioHops + 1);
+      }
+    } catch { /* fall through to normal parsing */ }
+  }
+
   const parsed = parseModel(modelStr);
 
   if (!parsed.isAlias) {

@@ -48,10 +48,10 @@ For granular version updates, newly added providers, and ongoing improvements, r
 ## Getting started
 
 ```bash
-git clone https://github.com/serenhope/9router.git
+git clone https://github.com/Dayy4dev/9router.git
 cd 9router
 npm install
-npm run dev          # dashboard on http://localhost:20127
+npm run dev          # dashboard on http://localhost:20128
 ```
 
 Production:
@@ -72,10 +72,10 @@ Once it is running:
 
 | | |
 | --- | --- |
-| Dashboard | `http://localhost:20127/dashboard` (first login: `ajasendiri`, or set `INITIAL_PASSWORD`) |
-| OpenAI-compatible | `http://localhost:20127/v1` |
-| Claude-compatible | `http://localhost:20127/v1/messages` |
-| Gemini-native | `http://localhost:20127/v1beta/models/{model}:generateContent` |
+| Dashboard | `http://localhost:20128/dashboard` (first login: `ajasendiri`, or set `INITIAL_PASSWORD`) |
+| OpenAI-compatible | `http://localhost:20128/v1` |
+| Claude-compatible | `http://localhost:20128/v1/messages` |
+| Gemini-native | `http://localhost:20128/v1beta/models/{model}:generateContent` |
 | Health probe | `GET /api/health` |
 
 Point any CLI tool or agent at the base URL, generate a key under **Endpoint & Key**, and you are done.

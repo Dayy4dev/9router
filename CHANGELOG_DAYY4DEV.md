@@ -1,3 +1,15 @@
+# v0.5.401 (2026-11-10) · 1 commit
+
+## Features & Improvements
+
+- **Custom Topology Map Backdrop & Dim Intensity Control**:
+  - Added custom backdrop support for the provider topology map in `ThemeModal` (`TopologyBackdropPicker`).
+  - Supports image uploads up to 8MB with iterative client-side `<canvas>` compression ladder (downscaling to ≤ 1600px edge, quality reduction to 0.5, WebP with JPEG fallback) capped strictly at `< 600 KB` (`MAX_TOPO_CHARS`) to remain lightweight in memory, SQLite, and network transfers.
+  - Supports direct public image URLs with CSS injection validation (`isTopologyBg`).
+  - Added Dim Backdrop Intensity slider (`0%` - `100%`) with tonality icon for dimming the backdrop behind nodes.
+  - Isolated background rendering into dedicated non-interactive layers behind ReactFlow (`z-0`) to avoid graph re-renders and aspect ratio stretching (`bg-cover bg-center`).
+  - Instant zero-latency display via `localStorage` mirroring and global persistence across devices in SQLite server settings (`settings.topologyBg`, `settings.topologyBgDim`) via `/api/theme`.
+
 # v0.5.346 (2026-10-31) · 9 commits
 
 ## Features & Improvements

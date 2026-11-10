@@ -1,7 +1,9 @@
-# v0.5.401 (2026-11-10) · 1 commit
+# v0.5.401 (2026-11-10) · 2 commits
 
 ## What's Added?
 
+- Non-Flat Harmonic Color System: dynamically computed secondary accent (`--color-secondary`), multi-tier semantic status tokens (success, warning, danger, info), and vibrant multi-layered aurora glass background.
+- Topology & Chart Harmonization: semi-transparent frosted glass cards for topology nodes (`bg-surface/50 backdrop-blur-md`), dynamic gradient fills and ambient glowing strokes for UsageChart, TopModelsChart, and ProviderBarChart.
 - Topology Backdrop: added custom background support for the provider topology map in ThemeModal with image upload (client-side compressed ladder down to <600 KB WebP/JPEG) or direct URL.
 - Backdrop Dim Slider: added dimming intensity slider (0%–100%) stored in SQLite settings and mirrored in localStorage for zero-latency load.
 - Isolated rendering: background layers render behind ReactFlow without triggering graph re-renders or stretching the image.

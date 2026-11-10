@@ -51,4 +51,32 @@ describe("theme: custom theme color feature", () => {
     expect(css).toContain("var(--color-primary-rgb, 229, 106, 74)");
     expect(css).toContain("var(--color-brand-200, #ffffff)");
   });
+
+  it("themeStore derives harmonious secondary color and sets secondary tokens", () => {
+    const store = read("src/store/themeStore.js");
+    expect(store).toContain("deriveSecondaryColor");
+    expect(store).toContain("--color-secondary");
+    expect(store).toContain("--color-secondary-hover");
+    expect(store).toContain("--shadow-glow");
+  });
+
+  it("globals.css includes multi-tier semantic tokens and dynamic aurora glass background", () => {
+    const css = read("src/app/globals.css");
+    expect(css).toContain("--color-secondary: var(--color-secondary)");
+    expect(css).toContain("--color-danger-bg: var(--color-danger-bg)");
+    expect(css).toContain("--color-success-bg: var(--color-success-bg)");
+    expect(css).toContain("--color-warning-bg: var(--color-warning-bg)");
+    expect(css).toContain("--color-info-bg: var(--color-info-bg)");
+    expect(css).toContain("color-mix(in srgb, var(--color-secondary, #6366f1) 40%, transparent)");
+  });
+
+  it("charts utilize dynamic theme and harmonic color tokens", () => {
+    const usage = read("src/app/(dashboard)/dashboard/usage/components/UsageChart.js");
+    expect(usage).toContain("var(--color-primary, #6366f1)");
+    expect(usage).toContain("var(--color-secondary, #14b8a6)");
+
+    const topModels = read("src/app/(dashboard)/dashboard/usage/components/TopModelsChart.js");
+    expect(topModels).toContain("HARMONIC_COLORS");
+    expect(topModels).toContain("var(--color-primary, #6366f1)");
+  });
 });

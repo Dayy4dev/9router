@@ -1,6 +1,14 @@
-# v0.5.401 (2026-11-10) · 1 commit
+# v0.5.401 (2026-11-10) · 2 commits
 
 ## Features & Improvements
+
+- **Harmonized Non-Flat Color System (Primary, Secondary, Semantic & Glass Aurora)**:
+  - Extended dynamic theme styling beyond flat monochromes to provide rich visual depth, elevation layering, and cohesive color theory across the entire dashboard.
+  - Dynamically computes energetic complementary/analogous secondary color (`--color-secondary`, `--color-secondary-hover`, `--color-secondary-rgb`) via HSL hue rotation (`+38°`) in `themeStore.js` whenever the theme accent color is changed.
+  - Introduced multi-tier semantic status tokens (success, warning, danger, info) with soft translucent backgrounds (`*-bg`), high-contrast foregrounds (`*-fg`), and crisp borders (`*-border`) to avoid flat utility hacks.
+  - Overhauled web background for `.dark.glass` into a multi-layered aurora mesh combining dynamic primary blooms, harmonic secondary flares, and ambient mood lights with obsidian charcoal depth.
+  - Updated ReactFlow topology nodes (`ProviderNode`, `RouterNode`) with semi-transparent frosted glass cards (`bg-surface/50 backdrop-blur-md`), ambient primary glow on active state, and inner top-hairline highlight.
+  - Harmonized data charts (`UsageChart`, `TopModelsChart`, `ProviderBarChart`) to consume dynamic theme primary, secondary, and semantic tokens with sleek non-flat linear gradients and glowing progress indicators.
 
 - **Custom Topology Map Backdrop & Dim Intensity Control**:
   - Added custom backdrop support for the provider topology map in `ThemeModal` (`TopologyBackdropPicker`).

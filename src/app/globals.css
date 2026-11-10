@@ -82,11 +82,35 @@ html:not(.fonts-loading) .material-symbols-outlined { opacity: 1; transition: op
   --color-text-muted: #6B7280;
   --color-text-subtle: #9CA3AF;
 
-  /* Status */
+  /* Secondary & ambient (light) */
+  --color-secondary: #e5cb4a;
+  --color-secondary-hover: #cca738;
+  --color-secondary-rgb: 229, 203, 74;
+
+  /* Status (light - non-flat multi-tier) */
   --color-danger: #cf222e;
+  --color-danger-bg: rgba(207, 34, 46, 0.10);
+  --color-danger-fg: #cf222e;
+  --color-danger-border: rgba(207, 34, 46, 0.25);
+  --color-danger-solid: #cf222e;
+
   --color-success: #10B981;
+  --color-success-bg: rgba(16, 185, 129, 0.10);
+  --color-success-fg: #059669;
+  --color-success-border: rgba(16, 185, 129, 0.25);
+  --color-success-solid: #10B981;
+
   --color-warning: #F59E0B;
+  --color-warning-bg: rgba(245, 158, 11, 0.10);
+  --color-warning-fg: #d97706;
+  --color-warning-border: rgba(245, 158, 11, 0.25);
+  --color-warning-solid: #F59E0B;
+
   --color-info: #3B82F6;
+  --color-info-bg: rgba(59, 130, 246, 0.10);
+  --color-info-fg: #2563eb;
+  --color-info-border: rgba(59, 130, 246, 0.25);
+  --color-info-solid: #3B82F6;
 
   /* Radius */
   --radius-brand: 10px;
@@ -164,10 +188,35 @@ html:not(.fonts-loading) .material-symbols-outlined { opacity: 1; transition: op
   --color-text-muted: #9ca3af;
   --color-text-subtle: #6b7280;
 
+  /* Secondary & ambient (dark) */
+  --color-secondary: #e5cb4a;
+  --color-secondary-hover: #f0d868;
+  --color-secondary-rgb: 229, 203, 74;
+
+  /* Status (dark - luminous & crisp, non-flat) */
   --color-danger: #ef4444;
-  --color-success: #22c55e;
-  --color-warning: #fbbf24;
-  --color-info: #60a5fa;
+  --color-danger-bg: rgba(239, 68, 68, 0.14);
+  --color-danger-fg: #f87171;
+  --color-danger-border: rgba(239, 68, 68, 0.30);
+  --color-danger-solid: #dc2626;
+
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.14);
+  --color-success-fg: #34d399;
+  --color-success-border: rgba(16, 185, 129, 0.30);
+  --color-success-solid: #059669;
+
+  --color-warning: #f59e0b;
+  --color-warning-bg: rgba(245, 158, 11, 0.14);
+  --color-warning-fg: #fbbf24;
+  --color-warning-border: rgba(245, 158, 11, 0.30);
+  --color-warning-solid: #d97706;
+
+  --color-info: #3b82f6;
+  --color-info-bg: rgba(59, 130, 246, 0.14);
+  --color-info-fg: #60a5fa;
+  --color-info-border: rgba(59, 130, 246, 0.30);
+  --color-info-solid: #2563eb;
 
   --shadow-soft: 0 1px 2px 0 rgba(0,0,0,0.3);
   --shadow-warm: 0 2px 12px -2px rgba(229, 106, 74, 0.25);
@@ -182,6 +231,13 @@ html:not(.fonts-loading) .material-symbols-outlined { opacity: 1; transition: op
   --color-scrim: rgba(0, 0, 0, 0.55);
 
   color-scheme: dark;
+}
+
+.dark body {
+  background-image:
+    radial-gradient(54rem 36rem at 92% -4%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 64%),
+    radial-gradient(44rem 30rem at -4% 104%, color-mix(in srgb, var(--color-secondary, var(--color-primary)) 6%, transparent), transparent 62%);
+  background-attachment: fixed;
 }
 
 /* ============================================================
@@ -217,7 +273,9 @@ select {
   --color-primary: var(--color-primary);
   --color-primary-hover: var(--color-primary-hover);
 
-  /* Semantic */
+  /* Semantic & Accent */
+  --color-secondary: var(--color-secondary);
+  --color-secondary-hover: var(--color-secondary-hover);
   --color-bg: var(--color-bg);
   --color-bg-alt: var(--color-bg-alt);
   --color-surface: var(--color-surface);
@@ -232,9 +290,25 @@ select {
   --color-text-subtle: var(--color-text-subtle);
   --color-accent: var(--color-brand-500);
   --color-danger: var(--color-danger);
+  --color-danger-bg: var(--color-danger-bg);
+  --color-danger-fg: var(--color-danger-fg);
+  --color-danger-border: var(--color-danger-border);
+  --color-danger-solid: var(--color-danger-solid);
   --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-success-fg: var(--color-success-fg);
+  --color-success-border: var(--color-success-border);
+  --color-success-solid: var(--color-success-solid);
   --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-warning-fg: var(--color-warning-fg);
+  --color-warning-border: var(--color-warning-border);
+  --color-warning-solid: var(--color-warning-solid);
   --color-info: var(--color-info);
+  --color-info-bg: var(--color-info-bg);
+  --color-info-fg: var(--color-info-fg);
+  --color-info-border: var(--color-info-border);
+  --color-info-solid: var(--color-info-solid);
 
   /* Scrim + interaction washes exposed as utilities. --color-scrim already
      existed as a var (modals/scrims tuned it per-mode) but was never reachable
@@ -752,33 +826,58 @@ button:disabled,
 /* GLASS-REWORK */
 .dark.glass,
 .dark.glass body {
-  background-color: #0b0e14;
+  background-color: color-mix(in srgb, var(--color-primary, #E56A4A) 3.5%, #07090e);
 }
 .dark.glass body {
   background-image:
-    radial-gradient(42rem 30rem at 8% 6%, rgba(var(--color-primary-rgb, 229, 106, 74), 0.55), transparent 60%),
-    radial-gradient(40rem 28rem at 94% 8%, rgba(129, 140, 248, 0.5), transparent 58%),
-    radial-gradient(46rem 32rem at 78% 96%, rgba(56, 189, 248, 0.42), transparent 60%),
-    radial-gradient(34rem 26rem at 22% 78%, rgba(16, 185, 129, 0.28), transparent 62%);
+    radial-gradient(56rem 38rem at 8% 6%, rgba(var(--color-primary-rgb, 229, 106, 74), 0.55), transparent 64%),
+    radial-gradient(48rem 32rem at 94% 8%, color-mix(in srgb, var(--color-secondary, #6366f1) 40%, transparent), transparent 62%),
+    radial-gradient(52rem 38rem at 80% 94%, color-mix(in srgb, var(--color-primary, #E56A4A) 24%, var(--color-info, #38bdf8) 22%), transparent 65%),
+    radial-gradient(42rem 30rem at 18% 82%, color-mix(in srgb, var(--color-secondary, #818cf8) 26%, transparent), transparent 60%),
+    radial-gradient(70rem 50rem at 50% 48%, color-mix(in srgb, var(--color-primary, #E56A4A) 6%, transparent), transparent 75%);
   background-attachment: fixed;
 }
 
 .dark.glass aside {
-  background-color: rgba(255, 255, 255, 0.06) !important;
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  ) !important;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-right-color: rgba(255, 255, 255, 0.11) !important;
+  box-shadow: 4px 0 24px -2px rgba(0, 0, 0, 0.35);
 }
 
 .dark.glass .bg-surface {
-  background-color: rgba(255, 255, 255, 0.07) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.14),
+    0 4px 20px -2px rgba(0, 0, 0, 0.35);
 }
+
 .dark.glass .bg-surface-2 {
-  background-color: rgba(255, 255, 255, 0.11) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(255, 255, 255, 0.07) 100%
+  ) !important;
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.16);
 }
+
 .dark.glass .bg-surface-3 {
-  background-color: rgba(255, 255, 255, 0.15) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.17) 0%,
+    rgba(255, 255, 255, 0.10) 100%
+  ) !important;
 }
+
 .dark.glass .bg-bg-alt {
   background-color: rgba(255, 255, 255, 0.04) !important;
 }
@@ -794,13 +893,13 @@ button:disabled,
    underneath instead of being buried. */
 .dark.glass {
   --color-scrim: rgba(8, 11, 16, 0.34);
-  --color-border: rgba(255, 255, 255, 0.12);
+  --color-border: color-mix(in srgb, rgba(255, 255, 255, 0.14) 85%, var(--color-primary) 15%);
   --color-border-subtle: rgba(255, 255, 255, 0.08);
   --color-text-subtle: #9ca3af;
 }
 
 .dark.glass .border-border {
-  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-color: color-mix(in srgb, rgba(255, 255, 255, 0.14) 85%, var(--color-primary) 15%) !important;
 }
 
 .dark.glass .border-border-subtle {
@@ -962,4 +1061,33 @@ button:disabled,
 .prd-markdown a { color: var(--color-primary); text-decoration: underline; }
 .prd-markdown hr { border: none; border-top: 1px solid var(--color-border); margin: 1.4rem 0; }
 .prd-markdown input[type="checkbox"] { margin-right: 0.4rem; }
+
+/* ============================================================
+   Non-flat dynamic styling (primary buttons, badges, controls)
+   ============================================================ */
+button.bg-primary,
+a.bg-primary {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-brand-400, var(--color-primary)) 0%,
+    var(--color-brand-600, var(--color-primary-hover)) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.25),
+    0 2px 10px -2px color-mix(in srgb, var(--color-primary) 40%, transparent) !important;
+  transition: all var(--motion-fast, 150ms) cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+button.bg-primary:hover,
+a.bg-primary:hover {
+  background-image: linear-gradient(
+    135deg,
+    var(--color-brand-300, var(--color-primary)) 0%,
+    var(--color-brand-500, var(--color-primary)) 100%
+  ) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.35),
+    0 4px 18px -2px color-mix(in srgb, var(--color-primary) 55%, transparent) !important;
+  transform: translateY(-1px);
+}
 

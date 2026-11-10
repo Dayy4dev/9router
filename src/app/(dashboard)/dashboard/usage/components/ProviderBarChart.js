@@ -14,7 +14,14 @@ import {
 } from "recharts";
 import Card from "@/shared/components/Card";
 
-const COLORS = ["#6366f1", "#14b8a6", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#10b981", "#f97316"];
+const THEME_FALLBACK_COLORS = [
+  "var(--color-primary, #6366f1)",
+  "color-mix(in srgb, var(--color-primary, #6366f1) 80%, white 20%)",
+  "var(--color-secondary, #14b8a6)",
+  "color-mix(in srgb, var(--color-primary, #6366f1) 68%, var(--color-info, #38bdf8) 32%)",
+  "color-mix(in srgb, var(--color-primary, #6366f1) 65%, var(--color-warning, #f59e0b) 35%)",
+  "color-mix(in srgb, var(--color-primary, #6366f1) 45%, transparent)",
+];
 
 const fmtTokens = (n) => {
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -139,7 +146,7 @@ export default function ProviderBarChart({ byProvider, labels }) {
             />
             <Bar dataKey={viewMode} radius={[0, 4, 4, 0]} maxBarSize={26}>
               {chartData.map((_, i) => (
-                <Cell key={i} fill={COLORS[i % COLORS.length]} fillOpacity={0.85} />
+                <Cell key={i} fill={THEME_FALLBACK_COLORS[i % THEME_FALLBACK_COLORS.length]} fillOpacity={0.85} />
               ))}
             </Bar>
           </BarChart>

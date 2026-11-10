@@ -40,13 +40,13 @@ function ProviderNode({ data }) {
   const activeColor = "var(--color-primary, #10B981)";
   return (
     <div
-      className="flex items-center gap-2.5 px-4 py-2.5 rounded-lg border-2 transition-all duration-300 bg-bg"
+      className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border-2 transition-all duration-300 bg-surface/50 hover:bg-surface/75 backdrop-blur-md"
       style={{
-        borderColor: active ? activeColor : "var(--color-border)",
+        borderColor: active ? activeColor : "color-mix(in srgb, var(--color-border) 60%, transparent)",
         boxShadow: active
           ? `0 0 18px color-mix(in srgb, var(--color-primary, #10B981) 45%, transparent), inset 0 0 12px color-mix(in srgb, var(--color-primary, #10B981) 15%, transparent)`
-          : "none",
-        minWidth: "150px",
+          : "0 4px 14px -2px rgba(0, 0, 0, 0.25), inset 0 1px 0 0 rgba(255, 255, 255, 0.08)",
+        minWidth: "145px",
       }}
     >
       <Handle type="target" position={Position.Top} id="top" className="!bg-transparent !border-0 !w-0 !h-0" />
@@ -117,10 +117,10 @@ function RouterNode({ data }) {
   const powering = (data.activeCount || 0) > 0;
   return (
     <div
-      className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-[130px] transition-colors duration-300 ${
+      className={`relative z-[1] flex items-center justify-center px-5 py-3 rounded-xl border-2 min-w-[130px] transition-all duration-300 backdrop-blur-md ${
         powering
-          ? "topology-router-core border-primary bg-gradient-to-br from-primary/35 via-primary/20 to-surface"
-          : "border-primary bg-primary/5 shadow-md"
+          ? "topology-router-core border-primary bg-gradient-to-br from-primary/35 via-surface/60 to-primary/15 shadow-[0_0_24px_-2px_color-mix(in_srgb,var(--color-primary)_45%,transparent)]"
+          : "border-primary/50 bg-surface/40 hover:bg-surface/70 shadow-[var(--shadow-elev)]"
       }`}
     >
       <Handle type="source" position={Position.Top} id="top" className="!bg-transparent !border-0 !w-0 !h-0" />

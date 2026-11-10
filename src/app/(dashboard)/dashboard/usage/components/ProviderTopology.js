@@ -14,6 +14,8 @@ import "@xyflow/react/dist/style.css";
 import { AI_PROVIDERS } from "@/shared/constants/providers";
 import { getProviderIconSrc, markProviderIconMissing } from "@/shared/utils/providerIcon";
 import { isCustomLogo } from "@/shared/utils/providerLogo";
+import useThemeStore from "@/store/themeStore";
+import { isTopologyBg } from "@/shared/utils/topologyBackground";
 
 // Force-stop FE animation if a provider stays active longer than this
 const FE_ACTIVE_TIMEOUT_MS = 60000;
@@ -445,6 +447,17 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
     [providers]
   );
 
+  const topologyBg = useThemeStore((state) => state.topologyBg);
+  const topologyBgDim = useThemeStore((state) => state.topologyBgDim);
+  const validatedBg = useMemo(() => isTopologyBg(topologyBg), [topologyBg]);
+  // Normalise dim value: boolean true maps to 60%, numbers map 0-100 to 0.0-1.0
+  const dimOpacity = useMemo(() => {
+    if (typeof topologyBgDim === "boolean") return topologyBgDim ? 0.6 : 0;
+    const n = Number(topologyBgDim);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return Math.min(1, Math.max(0, n / 100));
+  }, [topologyBgDim]);
+
   const rfInstance = useRef(null);
   const containerRef = useRef(null);
   const fitOpts = { padding: 0.2, duration: 200 };
@@ -473,9 +486,31 @@ export default function ProviderTopology({ providers = [], activeRequests = [], 
   }, [nodes.length]);
 
   return (
-    <div ref={containerRef} className="h-[320px] w-full min-w-0 rounded-[var(--r-card)] border border-border-subtle bg-surface shadow-[var(--elev-1)] sm:h-[420px] overflow-hidden">
+    <div
+      ref={containerRef}
+      className="relative h-[320px] w-full min-w-0 overflow-hidden rounded-[var(--r-card)] border border-border-subtle bg-surface shadow-[var(--elev-1)] sm:h-[420px]"
+    >
+      {/* Custom backdrop behind nodes/edges. Kept in a separate layer so it
+          never re-renders ReactFlow and does not stretch the image. */}
+      {validatedBg && (
+        <>
+          <div
+            className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-opacity duration-300"
+            style={{ backgroundImage: `url("${validatedBg.replace(/"/g, "")}")` }}
+            aria-hidden="true"
+          />
+          {dimOpacity > 0 && (
+            <div
+              className="pointer-events-none absolute inset-0 z-0 bg-black transition-opacity duration-150"
+              style={{ opacity: dimOpacity }}
+              aria-hidden="true"
+            />
+          )}
+        </>
+      )}
+
       {providers.length === 0 ? (
-        <div className="h-full flex items-center justify-center text-text-muted text-sm">
+        <div className="relative z-[1] h-full flex items-center justify-center text-text-muted text-sm">
           No providers connected
         </div>
       ) : (

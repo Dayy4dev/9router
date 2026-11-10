@@ -100,13 +100,33 @@ export function applyThemeColor(color) {
 const useThemeStore = create((set, get) => ({
   theme: "glass",
   themeColor: null,
+  topologyBg: null,
+  topologyBgDim: 0,
   canChangeTheme: false,
   hydrated: false,
 
   /** Called by the shell with the server value; also used for the SSR default. */
-  setServerTheme: (theme, canChange = false, color = null) => {
+  setServerTheme: (theme, canChange = false, color = null, serverBg = undefined, serverDim = undefined) => {
     const id = normalize(theme);
-    set({ theme: id, themeColor: color, canChangeTheme: !!canChange, hydrated: true });
+    let localBg = null;
+    let localDim = null;
+    try {
+      localBg = localStorage.getItem("topologyBg");
+      const d = localStorage.getItem("topologyBgDim");
+      if (d !== null) localDim = Number(d);
+    } catch {}
+
+    const bg = serverBg !== undefined && serverBg !== null ? serverBg : (localBg || null);
+    const dim = serverDim !== undefined && serverDim !== null ? Number(serverDim) : (localDim !== null ? localDim : 0);
+
+    set({
+      theme: id,
+      themeColor: color,
+      topologyBg: bg,
+      topologyBgDim: dim,
+      canChangeTheme: !!canChange,
+      hydrated: true,
+    });
     applyTheme(id);
     applyThemeColor(color);
   },
@@ -159,6 +179,65 @@ const useThemeStore = create((set, get) => ({
       set({ themeColor: previous });
       applyThemeColor(previous);
       console.error("Theme color change rejected:", error);
+      return false;
+    }
+  },
+
+  /**
+   * Applies and persists custom topology backdrop.
+   */
+  setTopologyBg: async (value) => {
+    if (!get().canChangeTheme) return false;
+    const previous = get().topologyBg;
+    set({ topologyBg: value });
+    try {
+      if (value) localStorage.setItem("topologyBg", value);
+      else localStorage.removeItem("topologyBg");
+    } catch {}
+    try {
+      const res = await fetch("/api/theme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topologyBg: value }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return true;
+    } catch (error) {
+      set({ topologyBg: previous });
+      try {
+        if (previous) localStorage.setItem("topologyBg", previous);
+        else localStorage.removeItem("topologyBg");
+      } catch {}
+      console.error("Topology backdrop change rejected:", error);
+      return false;
+    }
+  },
+
+  /**
+   * Applies and persists custom topology backdrop dim intensity (0 - 100).
+   */
+  setTopologyBgDim: async (dim) => {
+    if (!get().canChangeTheme) return false;
+    const previous = get().topologyBgDim;
+    const n = Math.max(0, Math.min(100, Math.round(Number(dim) || 0)));
+    set({ topologyBgDim: n });
+    try {
+      localStorage.setItem("topologyBgDim", String(n));
+    } catch {}
+    try {
+      const res = await fetch("/api/theme", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ topologyBgDim: n }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return true;
+    } catch (error) {
+      set({ topologyBgDim: previous });
+      try {
+        localStorage.setItem("topologyBgDim", String(previous));
+      } catch {}
+      console.error("Topology backdrop dim change rejected:", error);
       return false;
     }
   },

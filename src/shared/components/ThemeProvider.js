@@ -23,9 +23,15 @@ export function ThemeProvider({ children }) {
         const statusRes = await fetch("/api/auth/status", { cache: "no-store" });
         const status = statusRes.ok ? await statusRes.json() : {};
         if (cancelled) return;
-        setServerTheme(themeData.theme || "glass", status.role !== "apikey", themeData.themeColor || null);
+        setServerTheme(
+          themeData.theme || "glass",
+          status.role !== "apikey",
+          themeData.themeColor || null,
+          themeData.topologyBg !== undefined ? themeData.topologyBg : null,
+          themeData.topologyBgDim !== undefined ? Number(themeData.topologyBgDim) : 0
+        );
       } catch {
-        if (!cancelled) setServerTheme("glass", false, null);
+        if (!cancelled) setServerTheme("glass", false, null, null, 0);
       }
     }
 

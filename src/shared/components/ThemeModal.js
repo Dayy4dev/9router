@@ -5,6 +5,173 @@ import { createPortal } from "react-dom";
 import PropTypes from "prop-types";
 import { cn } from "@/shared/utils/cn";
 import useThemeStore, { THEME_IDS } from "@/store/themeStore";
+import { isTopologyBg, readTopologyBgFile } from "@/shared/utils/topologyBackground";
+
+/** Backdrop picker for the provider topology map (syncs globally across devices). */
+function TopologyBackdropPicker() {
+  const topologyBg = useThemeStore((state) => state.topologyBg);
+  const topologyBgDim = useThemeStore((state) => state.topologyBgDim);
+  const setTopologyBg = useThemeStore((state) => state.setTopologyBg);
+  const setTopologyBgDim = useThemeStore((state) => state.setTopologyBgDim);
+  const canChangeTheme = useThemeStore((state) => state.canChangeTheme);
+  const inputRef = useRef(null);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [urlMode, setUrlMode] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const preview = isTopologyBg(topologyBg);
+
+  const dimValue = typeof topologyBgDim === "boolean" ? (topologyBgDim ? 60 : 0) : Math.max(0, Math.min(100, Number(topologyBgDim) || 0));
+
+  const pick = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    setError(null);
+    setBusy(true);
+    try {
+      await setTopologyBg(await readTopologyBgFile(file));
+      setUrlMode(false);
+    } catch (err) {
+      setError(err.message || "Could not use that image");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const applyUrl = async () => {
+    const clean = (urlInput || "").trim();
+    if (!clean) return;
+    const validated = isTopologyBg(clean);
+    if (!validated) {
+      setError("Enter a valid http(s) image URL");
+      return;
+    }
+    setError(null);
+    await setTopologyBg(validated);
+    setUrlInput("");
+    setUrlMode(false);
+  };
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border-subtle flex flex-col gap-2.5">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold text-text-muted px-1 uppercase tracking-wider flex items-center gap-1.5">
+          <span className="material-symbols-outlined text-[15px]">wallpaper</span>
+          Topology Backdrop
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => { setUrlMode((v) => !v); setError(null); }}
+            disabled={!canChangeTheme}
+            className="text-[11px] text-primary hover:underline cursor-pointer disabled:opacity-50"
+          >
+            {urlMode ? "Upload file instead" : "Use URL"}
+          </button>
+        </div>
+      </div>
+
+      {urlMode ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            type="url"
+            placeholder="https://example.com/backdrop.png"
+            value={urlInput}
+            disabled={!canChangeTheme}
+            onChange={(e) => { setUrlInput(e.target.value); setError(null); }}
+            onKeyDown={(e) => { if (e.key === "Enter") applyUrl(); }}
+            className="flex-1 px-2 py-1 rounded-[6px] border border-border-subtle bg-surface-2 text-xs text-text-main placeholder:text-text-muted focus:border-primary focus:outline-none disabled:opacity-50"
+          />
+          <button
+            type="button"
+            onClick={applyUrl}
+            disabled={!canChangeTheme}
+            className="px-2.5 py-1 rounded-[6px] border border-border-subtle bg-primary/10 text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer disabled:opacity-50"
+          >
+            Apply
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => inputRef.current && inputRef.current.click()}
+            disabled={busy || !canChangeTheme}
+            className="px-2.5 py-1.5 rounded-[6px] border border-border-subtle text-xs text-text-main hover:bg-surface-2 disabled:opacity-50 transition-colors cursor-pointer"
+          >
+            {busy ? "Processing…" : preview ? "Replace image" : "Upload image"}
+          </button>
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+            className="hidden"
+            onChange={pick}
+          />
+          {preview && (
+            <button
+              type="button"
+              onClick={() => setTopologyBg(null)}
+              disabled={!canChangeTheme}
+              className="px-2.5 py-1.5 rounded-[6px] border border-border-subtle text-xs text-text-muted hover:text-text-main hover:bg-surface-2 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Dim Intensity Slider (0% - 100%) */}
+      {preview && (
+        <div className="flex flex-col gap-1 p-2 rounded-[5px] bg-surface-2/60 border border-border-subtle">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="text-text-muted font-medium flex items-center gap-1">
+              <span className="material-symbols-outlined text-[14px]">tonality</span>
+              Dim Backdrop Intensity
+            </span>
+            <span className="font-mono text-text-main">{dimValue}%</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="1"
+            value={dimValue}
+            disabled={!canChangeTheme}
+            onChange={(e) => setTopologyBgDim(Number(e.target.value))}
+            className="w-full h-1.5 rounded-full appearance-none bg-border cursor-pointer accent-[var(--color-primary)] outline-none disabled:opacity-50"
+          />
+        </div>
+      )}
+
+      {preview && (
+        <div className="flex items-center gap-2 px-1">
+          <span
+            className="h-10 w-20 rounded-[4px] border border-border bg-cover bg-center shrink-0"
+            style={{ backgroundImage: `url("${preview.replace(/"/g, "")}")` }}
+            aria-hidden="true"
+          />
+          <span className="text-[11px] text-text-muted truncate">
+            {preview.startsWith("data:") ? "Custom uploaded image" : preview}
+          </span>
+          {urlMode && (
+            <button
+              type="button"
+              onClick={() => setTopologyBg(null)}
+              disabled={!canChangeTheme}
+              className="ml-auto text-[11px] text-text-muted hover:text-text-main underline cursor-pointer disabled:opacity-50"
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      )}
+
+      {error && <div className="text-xs text-red-500 px-1">{error}</div>}
+    </div>
+  );
+}
 
 export const COLOR_PRESETS = [
   { id: "default", label: "Coral", hex: "#E56A4A", isDefault: true },
@@ -282,6 +449,8 @@ export default function ThemeModal({ isOpen, onClose }) {
               </span>
             </div>
           </div>
+
+          <TopologyBackdropPicker />
         </div>
       </div>
     </div>,

@@ -38,6 +38,8 @@ const DEFAULT_SETTINGS = {
   // Site-wide theme locked strictly to glass across the entire UI.
   theme: "glass",
   themeColor: null,
+  topologyBg: null,
+  topologyBgDim: 0,
   tunnelDashboardAccess: true,
   authMode: "password",
   ssoType: "oidc",

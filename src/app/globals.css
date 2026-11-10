@@ -887,15 +887,63 @@ button:disabled,
   background-color: transparent !important;
 }
 
-/* Modal and long-task scrim. The glass body paints a colourful aurora, so the
-   dark theme's 55% black veil turned every overlay muddy brown-black. A
-   lighter veil keeps the frost readable and lets the theme's colour survive
-   underneath instead of being buried. */
+/* Modal and long-task scrim. Elevated glass scrim gently dims and focuses without burying color. */
 .dark.glass {
-  --color-scrim: rgba(8, 11, 16, 0.34);
+  --color-scrim: rgba(5, 8, 14, 0.65);
   --color-border: color-mix(in srgb, rgba(255, 255, 255, 0.14) 85%, var(--color-primary) 15%);
   --color-border-subtle: rgba(255, 255, 255, 0.08);
   --color-text-subtle: #9ca3af;
+}
+
+/* Elevated glass overlays: Modals, Dialogs, Dropdowns, BellMenu, HeaderMenu */
+.dark.glass [role="dialog"],
+.dark.glass [aria-modal="true"],
+.dark.glass .chrome-enter-panel,
+.dark.glass header .absolute.bg-surface,
+.dark.glass div[role="dialog"] {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-primary, #6366f1) 4%, rgba(18, 22, 32, 0.90)) 0%,
+    rgba(10, 14, 22, 0.96) 100%
+  ) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border-color: color-mix(in srgb, var(--color-primary, #6366f1) 22%, rgba(255, 255, 255, 0.16)) !important;
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.18),
+    0 16px 48px -8px rgba(0, 0, 0, 0.75),
+    0 0 28px -4px color-mix(in srgb, var(--color-primary, #6366f1) 15%, transparent) !important;
+}
+
+/* Elevated glass text legibility */
+.dark.glass [role="dialog"] .text-text-main,
+.dark.glass [aria-modal="true"] .text-text-main,
+.dark.glass header .absolute .text-text-main {
+  color: #f8fafc !important;
+}
+
+.dark.glass [role="dialog"] .text-text-muted,
+.dark.glass [aria-modal="true"] .text-text-muted,
+.dark.glass header .absolute .text-text-muted {
+  color: #94a3b8 !important;
+}
+
+/* Sub-items & hover highlights inside elevated dialogs */
+.dark.glass [role="dialog"] .bg-surface-2,
+.dark.glass [aria-modal="true"] .bg-surface-2,
+.dark.glass [role="dialog"] .hover\:bg-surface-2:hover,
+.dark.glass header .absolute .hover\:bg-surface-2:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Destructive items (Shutdown, Logout) contrast fix */
+.dark.glass header .absolute button.text-red-500,
+.dark.glass [role="dialog"] button.text-red-500 {
+  color: #f87171 !important;
+}
+.dark.glass header .absolute button.text-red-500:hover,
+.dark.glass [role="dialog"] button.text-red-500:hover {
+  background-color: rgba(239, 68, 68, 0.16) !important;
 }
 
 .dark.glass .border-border {

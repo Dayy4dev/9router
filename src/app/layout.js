@@ -34,7 +34,7 @@ export default function RootLayout({ children }) {
         {/* Lock theme strictly to glass before first paint */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var s=JSON.parse(localStorage.getItem('theme')||'null');var t=s&&s.state&&s.state.theme;document.documentElement.classList.add('dark');if(t!=='dark')document.documentElement.classList.add('glass');var c=localStorage.getItem('themeColor');if(c){document.documentElement.style.setProperty('--color-primary',c);document.documentElement.style.setProperty('--color-accent',c);document.documentElement.style.setProperty('--color-brand-500',c);var n=parseInt(c.replace('#',''),16);if(!isNaN(n)){document.documentElement.style.setProperty('--color-primary-rgb',((n>>16)&255)+','+((n>>8)&255)+','+(n&255));}}}catch(e){document.documentElement.classList.add('dark')}`,
+            __html: `try{var m=localStorage.getItem('themeMode');var s=JSON.parse(localStorage.getItem('theme')||'null');var t=m||(s&&s.state&&s.state.theme);document.documentElement.classList.add('dark');if(t!=='dark')document.documentElement.classList.add('glass');var c=localStorage.getItem('themeColor');if(c){document.documentElement.style.setProperty('--color-primary',c);document.documentElement.style.setProperty('--color-accent',c);document.documentElement.style.setProperty('--color-brand-500',c);var n=parseInt(c.replace('#',''),16);if(!isNaN(n)){document.documentElement.style.setProperty('--color-primary-rgb',((n>>16)&255)+','+((n>>8)&255)+','+(n&255));}}}catch(e){document.documentElement.classList.add('dark');document.documentElement.classList.add('glass');}`,
           }}
         />
         <script

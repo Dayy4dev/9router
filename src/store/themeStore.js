@@ -172,15 +172,21 @@ const useThemeStore = create((set, get) => ({
 
   /** Called by the shell with the server value; also used for the SSR default. */
   setServerTheme: (theme, canChange = false, color = null, serverBg = undefined, serverDim = undefined) => {
-    const id = normalize(theme);
+    let localTheme = null;
     let localBg = null;
     let localDim = null;
     try {
+      localTheme = localStorage.getItem("themeMode");
+      if (!localTheme) {
+        const s = JSON.parse(localStorage.getItem("theme") || "null");
+        localTheme = s?.state?.theme;
+      }
       localBg = localStorage.getItem("topologyBg");
       const d = localStorage.getItem("topologyBgDim");
       if (d !== null) localDim = Number(d);
     } catch {}
 
+    const id = normalize(theme || localTheme);
     const bg = serverBg !== undefined && serverBg !== null ? serverBg : (localBg || null);
     const dim = serverDim !== undefined && serverDim !== null ? Number(serverDim) : (localDim !== null ? localDim : 0);
 
@@ -207,6 +213,10 @@ const useThemeStore = create((set, get) => ({
     set({ theme: id });
     applyTheme(id);
     try {
+      localStorage.setItem("themeMode", id);
+      localStorage.setItem("theme", JSON.stringify({ state: { theme: id } }));
+    } catch {}
+    try {
       const res = await fetch("/api/theme", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -219,6 +229,10 @@ const useThemeStore = create((set, get) => ({
       const previous = get().theme;
       set({ theme: previous });
       applyTheme(previous);
+      try {
+        localStorage.setItem("themeMode", previous);
+        localStorage.setItem("theme", JSON.stringify({ state: { theme: previous } }));
+      } catch {}
       console.error("Theme change rejected:", error);
       return false;
     }

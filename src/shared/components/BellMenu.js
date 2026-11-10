@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import PropTypes from "prop-types";
 import { createPortal } from "react-dom";
 import { cn } from "@/shared/utils/cn";
@@ -12,9 +12,8 @@ const MARGIN = 8;
 const MIN_HEIGHT = 160;
 
 /**
- * Dropdown shell for a header icon: a panel positioned against its trigger, a
- * transparent full-viewport backdrop that closes it on click, and
- * Escape-to-close.
+ * Dropdown shell for a header icon: a panel positioned against its trigger,
+ * an outside pointer listener that closes it on click, and Escape-to-close.
  *
  * The panel is portalled to document.body and measured from the trigger's
  * viewport rectangle instead of being an `absolute` child of the button. The
@@ -25,14 +24,13 @@ const MIN_HEIGHT = 160;
  * scroll or resize re-measures, so the panel follows its trigger instead of
  * drifting from it.
  *
- * The backdrop is transparent and does not dim the page: a notification
- * panel is not a modal, and a scrim would claim a blocking focus it does not
- * have. It exists to catch the dismissing click and to stop that click from
- * reaching the page underneath - one listener doing the work of a backdrop
- * and a document-level outside-click handler.
+ * Instead of a full-screen fixed blocking backdrop (which would prevent mouse wheel
+ * or touch scrolling on the page), an outside-pointerdown listener dismisses the
+ * panel while allowing fluid scrolling of both the page and the panel itself.
  */
 export default function BellMenu({ open, onClose, triggerRef, label, header, children }) {
   const [pos, setPos] = useState(null);
+  const panelRef = useRef(null);
 
   const place = useCallback(() => {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -68,31 +66,44 @@ export default function BellMenu({ open, onClose, triggerRef, label, header, chi
       onClose();
     };
     window.addEventListener("keydown", onKey, true);
+
+    // Close on outside clicks without blocking page scroll
+    const onPointerDown = (e) => {
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(e.target) &&
+        triggerRef.current &&
+        !triggerRef.current.contains(e.target)
+      ) {
+        onClose();
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown, true);
+
     return () => {
       window.removeEventListener("resize", onChange);
       window.removeEventListener("scroll", onChange, true);
       window.removeEventListener("keydown", onKey, true);
+      document.removeEventListener("pointerdown", onPointerDown, true);
     };
-  }, [open, onClose, place]);
+  }, [open, onClose, place, triggerRef]);
 
   if (!open || !pos || typeof document === "undefined") return null;
 
   return createPortal(
-    <>
-      <div className="fixed inset-0 z-40" onClick={onClose} aria-hidden="true" />
-      <div
-        role="dialog"
-        aria-label={label}
-        className={cn(
-          "fixed z-50 flex flex-col overflow-hidden slide-in-top",
-          "rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-elev)]"
-        )}
-        style={{ left: pos.left, top: pos.top, width: pos.width, maxHeight: pos.maxHeight }}
-      >
-        {header ? <div className="shrink-0">{header}</div> : null}
-        <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar">{children}</div>
-      </div>
-    </>,
+    <div
+      ref={panelRef}
+      role="dialog"
+      aria-label={label}
+      className={cn(
+        "fixed z-50 flex flex-col overflow-hidden slide-in-top",
+        "rounded-xl border border-border-subtle bg-surface shadow-[var(--shadow-elev)]"
+      )}
+      style={{ left: pos.left, top: pos.top, width: pos.width, maxHeight: pos.maxHeight }}
+    >
+      {header ? <div className="shrink-0">{header}</div> : null}
+      <div className="min-h-0 flex-1 overflow-y-auto custom-scrollbar">{children}</div>
+    </div>,
     document.body
   );
 }

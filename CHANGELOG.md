@@ -1,7 +1,10 @@
-# v0.5.401 (2026-11-10) · 2 commits
+# v0.5.401 (2026-11-10) · 3 commits
 
 ## What's Added?
 
+- Theme Mode Persistence: fixed solid dark mode reverting to glass on refresh by honoring stored theme settings in SQLite repository (`settingsRepo.js`) and syncing to localStorage.
+- High-Contrast Elevated Glass: enhanced dialogs, modals, and dropdown menus (ThemeModal, BellMenu, HeaderMenu) with rich deep-frosted glass, specular highlights, and darkened scrim to prevent visual clutter and illegible text bleed-through.
+- Non-Blocking Notification Bell: eliminated full-viewport transparent backdrop so page content can be scrolled freely while viewing notifications, with auto-dismiss on outside clicks.
 - Non-Flat Harmonic Color System: dynamically computed secondary accent (`--color-secondary`), multi-tier semantic status tokens (success, warning, danger, info), and vibrant multi-layered aurora glass background.
 - Topology & Chart Harmonization: semi-transparent frosted glass cards for topology nodes (`bg-surface/50 backdrop-blur-md`), dynamic gradient fills and ambient glowing strokes for UsageChart, TopModelsChart, and ProviderBarChart.
 - Topology Backdrop: added custom background support for the provider topology map in ThemeModal with image upload (client-side compressed ladder down to <600 KB WebP/JPEG) or direct URL.

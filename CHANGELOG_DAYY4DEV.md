@@ -1,6 +1,20 @@
-# v0.5.401 (2026-11-10) · 2 commits
+# v0.5.401 (2026-11-10) · 3 commits
 
 ## Features & Improvements
+
+- **Theme Mode Persistence (Dark & Glass Mode Persistence Fix)**:
+  - Fixed an issue where selecting solid `dark` mode was reverted back to `glass` upon page reload due to hardcoded theme fallback in `settingsRepo.js` (`mergeWithDefaults`).
+  - Added full bidirectional synchronization in SQLite settings repo, `localStorage` (`themeMode` and `theme`), and inline layout bootstrap scripts so the chosen mode stays strictly intact across restarts and refreshes.
+
+- **Elevated Glass Overlays & High-Contrast Readability (Modals, Dropdowns, Menus)**:
+  - Resolved low-contrast bleed-through where background controls (e.g. time range filters, dashboard cards, topology images) showed through floating dialogs and dropdown menus in `glass` mode.
+  - Applied deep-frosted glass backgrounds (`linear-gradient(145deg, rgba(18, 22, 32, 0.90), rgba(10, 14, 22, 0.96))`), heavy acrylic blur (`backdrop-filter: blur(28px) saturate(190%)`), and primary specular highlight borders to all `[role="dialog"]`, `[aria-modal="true"]`, `BellMenu`, and `HeaderMenu` containers.
+  - Boosted contrast of primary text (`#f8fafc`), muted metadata (`#94a3b8`), and destructive menu action buttons (`#f87171` text with subtle red ambient tint on hover).
+  - Enhanced modal scrim darkening (`--color-scrim: rgba(5, 8, 14, 0.65)`) to eliminate background visual noise during modal focus.
+
+- **Non-Blocking Notification Bell & Background Page Scrolling**:
+  - Replaced the full-screen transparent blocking overlay (`fixed inset-0 z-40`) in `BellMenu` with an outside `pointerdown` listener.
+  - Allows simultaneous fluid mouse-wheel and touch scrolling of the underlying page and the notification list itself while the notification menu remains open and follows its header trigger.
 
 - **Harmonized Non-Flat Color System (Primary, Secondary, Semantic & Glass Aurora)**:
   - Extended dynamic theme styling beyond flat monochromes to provide rich visual depth, elevation layering, and cohesive color theory across the entire dashboard.

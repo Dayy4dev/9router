@@ -79,4 +79,22 @@ describe("theme: custom theme color feature", () => {
     expect(topModels).toContain("HARMONIC_COLORS");
     expect(topModels).toContain("var(--color-primary, #6366f1)");
   });
+
+  it("settingsRepo preserves persisted theme mode without forcing glass", () => {
+    const repo = read("src/lib/db/repos/settingsRepo.js");
+    expect(repo).toContain('raw?.theme === "dark" ? "dark" : (raw?.theme === "glass" ? "glass" : DEFAULT_SETTINGS.theme)');
+  });
+
+  it("BellMenu permits page scrolling without a full-screen blocking overlay", () => {
+    const menu = read("src/shared/components/BellMenu.js");
+    expect(menu).not.toContain('<div className="fixed inset-0 z-40"');
+    expect(menu).toContain("pointerdown");
+  });
+
+  it("globals.css styles elevated glass overlays for high contrast and readability", () => {
+    const css = read("src/app/globals.css");
+    expect(css).toContain('.dark.glass [role="dialog"]');
+    expect(css).toContain(".dark.glass [aria-modal=\"true\"]");
+    expect(css).toContain("backdrop-filter: blur(28px)");
+  });
 });

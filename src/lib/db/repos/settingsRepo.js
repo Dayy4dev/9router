@@ -101,7 +101,8 @@ async function readRaw() {
 
 // Merge raw settings with defaults; backward-compat for missing keys
 export function mergeWithDefaults(raw) {
-  const merged = { ...DEFAULT_SETTINGS, ...(raw || {}), theme: "glass" };
+  const theme = raw?.theme === "dark" ? "dark" : (raw?.theme === "glass" ? "glass" : DEFAULT_SETTINGS.theme);
+  const merged = { ...DEFAULT_SETTINGS, ...(raw || {}), theme };
   for (const [key, defVal] of Object.entries(DEFAULT_SETTINGS)) {
     if (merged[key] === undefined) {
       if (

@@ -1,3 +1,18 @@
+# v0.5.415 (2026-11-11) · 5 commits
+
+## Features & Improvements
+
+- **Configurable API Key Prefix**:
+  - Key Prefix input integrated into the **Create API Key** modal with sk- placeholder fallback and automatic hyphen appending.
+- **Pure Frosted Glass Backdrop for Modals**:
+  - Restored clear frosted acrylic blur across modals without opaque black background tinting.
+- **DeepAI Free Tier Badges**:
+  - Added official green **FREE** badge and tier detection across all DeepAI models.
+- **OpenCode CLI Mode Singleton Daemon**:
+  - Persistent singleton daemon (`opencode serve`) running in temporary workspace with session caching, reducing latency to ~1.5s with zero 429 blocks and hidden background processes.
+- **Packaging & Wreq-JS Native Bindings**:
+  - Standalone bundle includes native prebuilt bindings (`@wreq-js/binding-win32-x64-msvc`) for error-free OpenCode TLS connections.
+
 # v0.5.407 (2026-11-11) · 5 commits
 
 ## Features & Improvements

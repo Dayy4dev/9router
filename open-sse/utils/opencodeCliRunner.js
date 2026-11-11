@@ -18,7 +18,7 @@ const BINARY_CACHE_TTL_MS = 60000;
 // ── SINGLETON OPENCODE SERVE DAEMON ──────────────────────────────
 const DAEMON_PORT = process.env.OPENCODE_DAEMON_PORT || 8772;
 const DAEMON_URL = `http://127.0.0.1:${DAEMON_PORT}`;
-const DAEMON_WORKSPACE = "/tmp/opencode-workspace";
+const DAEMON_WORKSPACE = path.join(os.tmpdir(), "opencode-workspace");
 let daemonProcess = null;
 let daemonStartingPromise = null;
 const sessionCache = new Map(); // cacheKey -> { sid, turns }
@@ -43,7 +43,7 @@ export async function ensureOpencodeDaemon(opencodeBin) {
       }
       const gitDir = path.join(DAEMON_WORKSPACE, ".git");
       if (!fs.existsSync(gitDir)) {
-        try { execSync("git init", { cwd: DAEMON_WORKSPACE, stdio: "ignore" }); } catch {}
+        try { execSync("git init", { cwd: DAEMON_WORKSPACE, stdio: "ignore", windowsHide: true }); } catch {}
       }
 
       const env = { ...process.env };
@@ -59,6 +59,8 @@ export async function ensureOpencodeDaemon(opencodeBin) {
         cwd: DAEMON_WORKSPACE,
         env,
         stdio: ["ignore", "pipe", "pipe"],
+        shell: process.platform === "win32" && !/\.exe$/i.test(opencodeBin),
+        windowsHide: true,
       });
 
       daemonProcess.on("exit", () => {

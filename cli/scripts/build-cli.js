@@ -23,6 +23,7 @@ const EXCLUDE_PATTERNS = [
   "*.log",          // Log files
   "tmp",            // Temp files
   ".DS_Store",      // macOS files
+  ".git",           // Git repository data
 ];
 
 function shouldExclude(name) {
@@ -35,7 +36,7 @@ function shouldExclude(name) {
   });
 }
 
-function copyRecursive(src, dest) {
+function copyRecursive(src, dest, rootExcludes = null) {
   if (!fs.existsSync(src)) {
     console.warn(`Warning: Source ${src} does not exist`);
     return;
@@ -47,7 +48,7 @@ function copyRecursive(src, dest) {
 
   const entries = fs.readdirSync(src, { withFileTypes: true });
   for (const entry of entries) {
-    if (shouldExclude(entry.name)) {
+    if (shouldExclude(entry.name) || (rootExcludes && rootExcludes.has(entry.name))) {
       continue;
     }
 
@@ -112,7 +113,8 @@ function resolveStandaloneBuild(appDir, buildDistDir) {
 
 function copyStandaloneBuild(appDir, buildDistDir, cliAppDir) {
   const { standaloneApp, standaloneRoot } = resolveStandaloneBuild(appDir, buildDistDir);
-  copyRecursive(standaloneApp, cliAppDir);
+  const standaloneExcludes = new Set([".git", "cli", ".next", "standalone"]);
+  copyRecursive(standaloneApp, cliAppDir, standaloneExcludes);
 
   // Older nested-app layout stores traced node_modules at standalone root.
   const standaloneNodeModules = path.join(standaloneRoot, "node_modules");
@@ -336,6 +338,16 @@ function buildCliPackage() {
     }
   }
 
+  // Copy changelogs for in-app Changelog modal
+  for (const doc of ["CHANGELOG_DAYY4DEV.md", "CHANGELOG.md"]) {
+    const docSrc = path.join(appDir, doc);
+    const docDest = path.join(cliAppDir, doc);
+    if (fs.existsSync(docSrc)) {
+      fs.copyFileSync(docSrc, docDest);
+      console.log(`✅ Copied ${doc} to bundle`);
+    }
+  }
+
   const guardFiles = [
     ["src", "dashboardGuard.js"],
     ["src", "dashboardGuardRules.js"],
@@ -383,9 +395,12 @@ function buildCliPackage() {
   console.log(`📁 Output: ${cliAppDir}`);
 
   try {
-    const { execSync: exec } = require("child_process");
-    const size = exec(`du -sh "${cliAppDir}"`, { encoding: "utf8" }).trim();
-    console.log(`📊 Package size: ${size.split("\t")[0]}`);
+    // Skip du on Windows if slow/unnecessary
+    if (process.platform !== "win32") {
+      const { execSync: exec } = require("child_process");
+      const size = exec(`du -sh "${cliAppDir}"`, { encoding: "utf8" }).trim();
+      console.log(`📊 Package size: ${size.split("\t")[0]}`);
+    }
   } catch (e) {
     // Silent fail on size check
   }

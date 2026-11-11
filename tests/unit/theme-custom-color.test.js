@@ -48,7 +48,7 @@ describe("theme: custom theme color feature", () => {
 
   it("globals.css connects text selection highlight to theme primary color tokens", () => {
     const css = read("src/app/globals.css");
-    expect(css).toContain("var(--color-primary-rgb, 229, 106, 74)");
+    expect(css).toContain("var(--color-primary-rgb, 6, 182, 212)");
     expect(css).toContain("var(--color-brand-200, #ffffff)");
   });
 

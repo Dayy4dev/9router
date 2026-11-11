@@ -174,13 +174,13 @@ function TopologyBackdropPicker() {
 }
 
 export const COLOR_PRESETS = [
-  { id: "default", label: "Coral", hex: "#E56A4A", isDefault: true },
+  { id: "default", label: "Cyan", hex: "#06B6D4", isDefault: true },
+  { id: "coral", label: "Coral", hex: "#E56A4A" },
   { id: "blue", label: "Blue", hex: "#3B82F6" },
   { id: "emerald", label: "Emerald", hex: "#10B981" },
   { id: "purple", label: "Purple", hex: "#8B5CF6" },
   { id: "rose", label: "Rose", hex: "#EC4899" },
   { id: "amber", label: "Amber", hex: "#F59E0B" },
-  { id: "cyan", label: "Cyan", hex: "#06B6D4" },
   { id: "indigo", label: "Indigo", hex: "#6366F1" },
 ];
 
@@ -219,10 +219,10 @@ export default function ThemeModal({ isOpen, onClose }) {
   // administrator setting, so the picker is replaced by an explanation.
   const canChangeTheme = useThemeStore((state) => state.canChangeTheme);
   const modalRef = useRef(null);
-  const [customHex, setCustomHex] = useState(themeColor || "#E56A4A");
+  const [customHex, setCustomHex] = useState(themeColor || "#06B6D4");
 
   useEffect(() => {
-    setCustomHex(themeColor || "#E56A4A");
+    setCustomHex(themeColor || "#06B6D4");
   }, [themeColor]);
 
   useEffect(() => {
@@ -345,7 +345,7 @@ export default function ThemeModal({ isOpen, onClose }) {
                 onClick={() => {
                   if (canChangeTheme) {
                     setThemeColor(null);
-                    setCustomHex("#E56A4A");
+                    setCustomHex("#06B6D4");
                   }
                 }}
                 disabled={!canChangeTheme}
@@ -405,12 +405,12 @@ export default function ThemeModal({ isOpen, onClose }) {
                 "relative size-9 rounded-lg border border-border overflow-hidden cursor-pointer shrink-0 shadow-inner transition-transform hover:scale-105",
                 !canChangeTheme && "cursor-not-allowed opacity-50"
               )}
-              style={{ backgroundColor: customHex || "#E56A4A" }}
+              style={{ backgroundColor: customHex || "#06B6D4" }}
               title="Click to open color picker"
             >
               <input
                 type="color"
-                value={customHex || "#E56A4A"}
+                value={customHex || "#06B6D4"}
                 disabled={!canChangeTheme}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -427,7 +427,7 @@ export default function ThemeModal({ isOpen, onClose }) {
                   type="text"
                   value={customHex}
                   disabled={!canChangeTheme}
-                  placeholder="#E56A4A"
+                  placeholder="#06B6D4"
                   maxLength={7}
                   onChange={(e) => {
                     let val = e.target.value;

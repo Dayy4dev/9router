@@ -226,7 +226,7 @@ export default function Sidebar({ onClose }) {
             <Link
               href="/dashboard"
               className={cn("flex items-center gap-3 min-w-0", collapsed && "justify-center w-full")}
-              title={collapsed ? `${APP_CONFIG.name} v${APP_CONFIG.version}` : undefined}
+              title={collapsed ? `${APP_CONFIG.name} xd v${APP_CONFIG.version}` : undefined}
             >
               <div className="flex items-center justify-center size-9 rounded-[10px] bg-gradient-to-br from-brand-500 to-brand-700 shadow-[var(--shadow-warm)] shrink-0">
                 <span className="material-symbols-outlined text-white text-[20px]">hub</span>
@@ -234,7 +234,7 @@ export default function Sidebar({ onClose }) {
               {!collapsed && (
                 <div className="flex flex-col min-w-0">
                   <h1 className="text-lg font-semibold tracking-tight text-text-main truncate">
-                    {APP_CONFIG.name}
+                    {APP_CONFIG.name} <span style={{ fontFamily: "Consolas, monospace" }}>xd</span>
                   </h1>
                   <span className="text-xs text-text-muted">v{APP_CONFIG.version}</span>
                 </div>

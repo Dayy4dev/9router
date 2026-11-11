@@ -982,6 +982,20 @@ button:disabled,
   color: #ededed;
 }
 
+/* Model select modal sticky headers - solid backdrop prevents scroll bleed-through */
+.model-group-header {
+  background-color: var(--color-surface, #ffffff);
+}
+.dark .model-group-header {
+  background-color: #1a1e29 !important;
+}
+.dark.glass .model-group-header {
+  background-color: rgba(14, 18, 27, 0.98) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.12) !important;
+}
+
 /* Inputs keep a solid base; a translucent field loses the caret against blur. */
 .dark.glass input,
 .dark.glass select,

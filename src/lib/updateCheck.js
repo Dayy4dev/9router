@@ -269,9 +269,7 @@ export async function getUpdateInfo(currentVersion) {
     releaseKnown: Boolean(localRelease),
     currentRevision: localSha ? localSha.slice(0, 7) : null,
     behindBy,
-    installCmd: cache.gitInstall === false && !process.env.APP_REVISION
-      ? UPDATER_CONFIG.installCmdLatest
-      : GIT_UPDATE_CMD,
+    installCmd: UPDATER_CONFIG.installCmdLatest,
   };
   cache.info = info;
   cache.fetchedAt = Date.now();

@@ -40,8 +40,8 @@ describe("key catalog shows context, not the upstream account", () => {
 });
 
 describe("update banner installs the fork, not upstream npm", () => {
-  it("the published command points at the fork repository", () => {
-    expect(config).toContain("github:serenhope/9router");
+  it("the published command points at the published 9router-xd package", () => {
+    expect(config).toContain("9router-xd@latest");
     expect(config).toContain("installCmdLatest");
   });
 

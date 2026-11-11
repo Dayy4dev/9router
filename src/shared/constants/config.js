@@ -24,13 +24,11 @@ export const WELCOME_CONFIG = {
 
 // Updater configuration
 export const UPDATER_CONFIG = {
-  // This install is a fork of the upstream npm package: pulling the published
-  // `9router` from npm would hand the operator a different codebase than the one
-  // reporting the update, so the command points at this repository instead.
-  npmPackageName: "9router",
-  repoPackageSpec: "github:Dayy4dev/9router#dev",
-  installCmd: "npm install -g github:Dayy4dev/9router#dev",
-  installCmdLatest: "npm install -g github:Dayy4dev/9router#dev",
+  // Published npm package under Dayy4dev
+  npmPackageName: "9router-xd",
+  repoPackageSpec: "9router-xd@latest",
+  installCmd: "npm install -g 9router-xd@latest",
+  installCmdLatest: "npm install -g 9router-xd@latest",
   shutdownCountdownSec: 3,
   exitDelayMs: 500,
   statusPort: 20129,

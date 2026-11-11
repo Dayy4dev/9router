@@ -6,6 +6,7 @@ import Modal from "./Modal";
 import ProviderIcon from "./ProviderIcon";
 import CapacityBadges from "./CapacityBadges";
 import ModelTierBadge from "./ModelTierBadge";
+import { cn } from "@/shared/utils/cn";
 import { useModelCaps } from "@/shared/hooks/useModelCaps";
 import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
 import { OAUTH_PROVIDERS, APIKEY_PROVIDERS, FREE_PROVIDERS, FREE_TIER_PROVIDERS, WEB_COOKIE_PROVIDERS, AI_PROVIDERS, isOpenAICompatibleProvider, isAnthropicCompatibleProvider, getProviderAlias } from "@/shared/constants/providers";
@@ -822,10 +823,32 @@ export default function ModelSelectModal({
     return filtered;
   }, [groupedModels, parsedQuery, addedModelValues, allowProviderWildcard, allowedModelPatterns, capFilter, getCaps, studioModels]);
 
-  // Visible models available for batch actions (excluding placeholders)
+  const [activeTab, setActiveTab] = useState("all");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setSearchQuery("");
+      setActiveTab("all");
+    }
+  }, [isOpen]);
+
+  const hasCombos = filteredCombos.length > 0;
+  const hasStudio = filteredStudioModels.length > 0;
+  const providerEntries = Object.entries(filteredGroups);
+
+  const totalModelCount = useMemo(() => {
+    let count = filteredCombos.length + filteredStudioModels.length;
+    Object.values(filteredGroups).forEach((g) => {
+      count += g.models.length;
+    });
+    return count;
+  }, [filteredCombos, filteredStudioModels, filteredGroups]);
+
+  // Visible models available for batch actions (excluding placeholders, honoring activeTab)
   const visibleModels = useMemo(() => {
     const list = [];
-    Object.values(filteredGroups).forEach((group) => {
+    Object.entries(filteredGroups).forEach(([providerId, group]) => {
+      if (activeTab !== "all" && activeTab !== providerId) return;
       group.models.forEach((m) => {
         if (!m.isPlaceholder) {
           list.push(m);
@@ -833,7 +856,7 @@ export default function ModelSelectModal({
       });
     });
     return list;
-  }, [filteredGroups]);
+  }, [filteredGroups, activeTab]);
 
   const visibleUnadded = useMemo(() => {
     return visibleModels.filter((m) => !addedModelValues.includes(m.value));
@@ -936,6 +959,83 @@ export default function ModelSelectModal({
           </div>
         </div>
 
+        {/* Quick Category & Provider Filter Strip */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-0.5 custom-scrollbar text-xs">
+          <button
+            type="button"
+            onClick={() => setActiveTab("all")}
+            className={cn(
+              "px-2.5 py-1 rounded-[6px] font-medium whitespace-nowrap border transition-all shrink-0 cursor-pointer",
+              activeTab === "all"
+                ? "bg-primary text-white border-primary shadow-2xs"
+                : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-2"
+            )}
+          >
+            All ({totalModelCount})
+          </button>
+
+          {hasCombos && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("combos")}
+              className={cn(
+                "px-2.5 py-1 rounded-[6px] font-medium whitespace-nowrap border transition-all flex items-center gap-1 shrink-0 cursor-pointer",
+                activeTab === "combos"
+                  ? "bg-primary text-white border-primary shadow-2xs"
+                  : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-2"
+              )}
+            >
+              <span className="material-symbols-outlined text-[14px]">layers</span>
+              <span>Combos ({filteredCombos.length})</span>
+            </button>
+          )}
+
+          {hasStudio && (
+            <button
+              type="button"
+              onClick={() => setActiveTab("studio")}
+              className={cn(
+                "px-2.5 py-1 rounded-[6px] font-medium whitespace-nowrap border transition-all flex items-center gap-1 shrink-0 cursor-pointer",
+                activeTab === "studio"
+                  ? "bg-primary text-white border-primary shadow-2xs"
+                  : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-2"
+              )}
+            >
+              <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+              <span>Custom ({filteredStudioModels.length})</span>
+            </button>
+          )}
+
+          {providerEntries.map(([providerId, group]) => {
+            const isActive = activeTab === providerId;
+            return (
+              <button
+                key={providerId}
+                type="button"
+                onClick={() => setActiveTab(providerId)}
+                className={cn(
+                  "px-2.5 py-1 rounded-[6px] font-medium whitespace-nowrap border transition-all flex items-center gap-1.5 shrink-0 cursor-pointer",
+                  isActive
+                    ? "bg-primary text-white border-primary shadow-2xs"
+                    : "bg-surface border-border text-text-muted hover:text-text-main hover:bg-surface-2"
+                )}
+              >
+                <ProviderIcon
+                  src={`/providers/${providerId}.png`}
+                  alt={group.name}
+                  size={14}
+                  fallbackText={(group.name || providerId).slice(0, 2).toUpperCase()}
+                  fallbackColor={group.color}
+                />
+                <span>{group.name}</span>
+                <span className={cn("text-[10px] font-mono", isActive ? "text-white/80" : "text-text-muted")}>
+                  {group.models.length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
         {!closeOnSelect && visibleModels.length > 0 && (
           <div className="flex items-center justify-between px-1 text-[11px] text-text-muted">
             <span className="flex items-center gap-1.5">
@@ -973,11 +1073,11 @@ export default function ModelSelectModal({
       {/* Models grouped by provider - compact */}
       <div className="max-h-[400px] overflow-y-auto space-y-3">
         {/* Combos section - always first */}
-        {filteredCombos.length > 0 && (
+        {hasCombos && (activeTab === "all" || activeTab === "combos") && (
           <div>
-            <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-surface py-0.5">
+            <div className="flex items-center gap-1.5 mb-2 sticky top-0 py-1.5 px-2 -mx-1 z-10 rounded-md border-b border-border-subtle/80 shadow-xs model-group-header">
               <span className="material-symbols-outlined text-primary text-[14px]">layers</span>
-              <span className="text-xs font-medium text-primary">Combos</span>
+              <span className="text-xs font-semibold text-primary">Combos</span>
               <span className="text-[10px] text-text-muted">({filteredCombos.length})</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -1012,11 +1112,11 @@ export default function ModelSelectModal({
         )}
 
         {/* Custom model section */}
-        {filteredStudioModels.length > 0 && (
+        {hasStudio && (activeTab === "all" || activeTab === "studio") && (
           <div>
-            <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-surface py-0.5">
+            <div className="flex items-center gap-1.5 mb-2 sticky top-0 py-1.5 px-2 -mx-1 z-10 rounded-md border-b border-border-subtle/80 shadow-xs model-group-header">
               <span className="material-symbols-outlined size-[14px] text-[14px] leading-none text-primary">auto_awesome</span>
-              <span className="text-xs font-medium leading-none text-primary">Custom Models</span>
+              <span className="text-xs font-semibold leading-none text-primary">Custom Models</span>
               <span className="text-[10px] text-text-muted">({filteredStudioModels.length})</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -1053,48 +1153,50 @@ export default function ModelSelectModal({
         )}
 
         {/* Provider models */}
-        {Object.entries(filteredGroups).map(([providerId, group]) => {
-          const wildcardValue = `${group.alias || providerId}/*`;
-          const isWildcardAdded = allowProviderWildcard && addedModelValues.includes(wildcardValue);
+        {providerEntries
+          .filter(([providerId]) => activeTab === "all" || activeTab === providerId)
+          .map(([providerId, group]) => {
+            const wildcardValue = `${group.alias || providerId}/*`;
+            const isWildcardAdded = allowProviderWildcard && addedModelValues.includes(wildcardValue);
 
-          return (
-            <div key={providerId}>
-              {/* Provider header */}
-              <div className="flex items-center gap-1.5 mb-1.5 sticky top-0 bg-surface py-0.5 z-10">
-                <ProviderIcon
-                  src={`/providers/${providerId}.png`}
-                  alt={group.name}
-                  size={14}
-                  fallbackText={(group.name || providerId).slice(0, 2).toUpperCase()}
-                  fallbackColor={group.color}
-                />
-                {allowProviderWildcard ? (
-                  <button
-                    type="button"
-                    onClick={() => handleSelect({ value: wildcardValue, name: wildcardValue })}
-                    title={isWildcardAdded ? `Click to remove wildcard ${wildcardValue}` : `Click to allow all models from ${group.name} (${wildcardValue})`}
-                    className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium transition-all cursor-pointer border ${
-                      isWildcardAdded
-                        ? "bg-primary text-white border-primary shadow-2xs hover:bg-primary-hover"
-                        : "text-primary border-transparent hover:bg-primary/10 hover:border-primary/20"
-                    }`}
-                  >
-                    {isWildcardAdded && (
-                      <span className="material-symbols-outlined leading-none text-[12px]">check</span>
-                    )}
-                    <span>{group.name}</span>
-                    <span className={`text-[10px] font-mono px-1 py-0.2 rounded ${isWildcardAdded ? "bg-white/20 text-white" : "text-text-muted bg-sidebar border border-border/50"}`}>
-                      {wildcardValue}
+            return (
+              <div key={providerId}>
+                {/* Provider header */}
+                <div className="flex items-center gap-1.5 mb-2 sticky top-0 py-1.5 px-2 -mx-1 z-10 rounded-md border-b border-border-subtle/80 shadow-xs model-group-header">
+                  <ProviderIcon
+                    src={`/providers/${providerId}.png`}
+                    alt={group.name}
+                    size={14}
+                    fallbackText={(group.name || providerId).slice(0, 2).toUpperCase()}
+                    fallbackColor={group.color}
+                  />
+                  {allowProviderWildcard ? (
+                    <button
+                      type="button"
+                      onClick={() => handleSelect({ value: wildcardValue, name: wildcardValue })}
+                      title={isWildcardAdded ? `Click to remove wildcard ${wildcardValue}` : `Click to allow all models from ${group.name} (${wildcardValue})`}
+                      className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-semibold transition-all cursor-pointer border ${
+                        isWildcardAdded
+                          ? "bg-primary text-white border-primary shadow-2xs hover:bg-primary-hover"
+                          : "text-primary border-transparent hover:bg-primary/10 hover:border-primary/20"
+                      }`}
+                    >
+                      {isWildcardAdded && (
+                        <span className="material-symbols-outlined leading-none text-[12px]">check</span>
+                      )}
+                      <span>{group.name}</span>
+                      <span className={`text-[10px] font-mono px-1 py-0.2 rounded ${isWildcardAdded ? "bg-white/20 text-white" : "text-text-muted bg-sidebar border border-border/50"}`}>
+                        {wildcardValue}
+                      </span>
+                    </button>
+                  ) : (
+                    <span className="text-xs font-semibold text-primary">
+                      {group.name}
                     </span>
-                  </button>
-                ) : (
-                  <span className="text-xs font-medium text-primary">
-                    {group.name}
+                  )}
+                  <span className="text-[10px] text-text-muted">
+                    ({group.models.length})
                   </span>
-                )}
-                <span className="text-[10px] text-text-muted">
-                  ({group.models.length})
-                </span>
                 {/* Disabled ids are filtered out of every group above, so without this
                     count the picker silently offers fewer models than the provider
                     publishes and reads as if the free tier were half-missing. */}

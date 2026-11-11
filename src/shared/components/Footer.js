@@ -39,7 +39,7 @@ export default function Footer() {
                 </svg>
               </div>
               <span className="text-xl font-bold text-text-main">
-                {APP_CONFIG.name}
+                {APP_CONFIG.name} <span style={{ fontFamily: "Consolas, monospace" }}>xd</span>
               </span>
             </div>
             <p className="text-text-muted mb-6 max-w-sm font-light">

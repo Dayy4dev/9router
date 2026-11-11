@@ -1,3 +1,23 @@
+# v0.5.407 (2026-11-11) · 5 commits
+
+## Features & Improvements
+
+- **Sky Blue Tab Favicon & Cyan Default Theme**:
+  - Replaced the default orange browser tab favicon (`public/favicon.svg`) with a clean sky blue gradient (`#38bdf8` → `#0284c7`).
+  - Set the default base theme color to Cyan (`#06B6D4` / `rgb(6, 182, 212)`) across color scale, aurora glow, selection highlights, and preset fallbacks for fresh installations.
+- **Sidebar & Footer Typography Branding ("9Router Proxy xd")**:
+  - Updated sidebar navigation heading to display "9Router Proxy xd", styling "xd" with monospace Consolas font (`font-family: Consolas, monospace`).
+  - Synchronized footer brand display with matching typography.
+- **Quick Category & Provider Filter Strip in Model Selector**:
+  - Integrated horizontal filter pills directly below the search bar in `ModelSelectModal` (matching xrouter).
+  - Enables instant single-click filtering across `All`, `Combos`, `Custom`, or specific providers with brand icons and live model counts.
+  - Aligned batch selection actions (Select All / Deselect All) to operate on the active category filter.
+- **Opaque Backdrop for Model Group Sticky Headers**:
+  - Fixed background transparency issue where scrolling model cards overlapped and collided with sticky provider headers in `ModelSelectModal`.
+  - Added dedicated `.model-group-header` styling with solid dark background (`rgba(14, 18, 27, 0.98)`), acrylic blur (`backdrop-filter: blur(20px)`), and subtle bottom divider to ensure 100% text clarity during scroll.
+- **Update Notification Command Standardization**:
+  - Changed update command on update notifications and `UPDATER_CONFIG` to `npm install -g 9router-xd@latest`.
+
 # v0.5.401 (2026-11-10) · 3 commits
 
 ## Features & Improvements

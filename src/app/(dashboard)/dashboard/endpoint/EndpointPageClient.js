@@ -385,7 +385,9 @@ export default function APIPageClient({ machineId }) {
   const [snippetLang, setSnippetLang] = useState("curl");
 
   const [requireApiKey, setRequireApiKey] = useState(false);
- const [tunnelDashboardAccess, setTunnelDashboardAccess] = useState(false);
+  // Prefix used for newly minted keys; defaults to "sk-", input starts empty.
+  const [apiKeyPrefix, setApiKeyPrefix] = useState("");
+  const [tunnelDashboardAccess, setTunnelDashboardAccess] = useState(false);
  const [authStatus, setAuthStatus] = useState(null);
  const [newKeyPermissions, setNewKeyPermissions] = useState({ ...EMPTY_PERMISSIONS });
  const [editPermissions, setEditPermissions] = useState({ ...EMPTY_PERMISSIONS });
@@ -582,6 +584,8 @@ const scopedModelPatterns =
       ]);
       if (settingsData) {
         setRequireApiKey(settingsData.requireApiKey || false);
+        const savedPrefix = settingsData.apiKeyPrefix || "";
+        setApiKeyPrefix(savedPrefix && savedPrefix !== "sk-" ? savedPrefix.replace(/[^a-zA-Z0-9]/g, "") : "");
         setRequireLogin(settingsData.requireLogin !== false);
         setHasPassword(settingsData.hasPassword || false);
         setTunnelDashboardAccess(settingsData.tunnelDashboardAccess || false);
@@ -1077,6 +1081,7 @@ const scopedModelPatterns =
   const closeAddModal = () => {
     setShowAddModal(false);
     setNewKeyName("");
+    setApiKeyPrefix("");
   };
 
   const handleCreateKey = async () => {
@@ -1104,6 +1109,7 @@ const scopedModelPatterns =
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newKeyName,
+          prefix: apiKeyPrefix.trim() ? apiKeyPrefix.trim().replace(/[^a-zA-Z0-9]/g, "") : undefined,
           limitKind: newKeyLimitKind,
           tokenLimit: newKeyLimitKind === "tokens" ? limitNum : 0,
           requestLimit: newKeyLimitKind === "requests" ? limitNum : 0,
@@ -1623,7 +1629,7 @@ const scopedModelPatterns =
             {keys.map((key) => (
               <div
                 key={key.id}
-                className={`group flex flex-col sm:flex-row sm:items-start justify-between gap-3.5 py-4 ${key.isActive === false ? "opacity-60" : ""}`}
+                className={`group flex flex-col sm:flex-row sm:items-start justify-between gap-3.5 py-4 border-b border-border/30 last:border-b-0 ${key.isActive === false ? "opacity-60" : ""}`}
               >
                 <div className="flex items-start gap-2.5 min-w-0 flex-1">
                   {!isApiKeyUser && (
@@ -1647,12 +1653,26 @@ const scopedModelPatterns =
                     {/* Key Name & Creator */}
                     <div className="flex items-center justify-between sm:justify-start gap-2">
                       <p className="text-sm font-semibold text-text-main truncate min-w-0">{key.name}</p>
+                      {/* Mobile-only toggle aligned with title */}
+                      <div className="sm:hidden flex-shrink-0" title={key.isActive === false ? "Switch this key back on" : "Switch this key off"}>
+                        <Toggle
+                          size="sm"
+                          checked={key.isActive !== false}
+                          disabled={isOwnKey(key)}
+                          onChange={(nextActive) => handleToggleKeyActive(key, nextActive)}
+                        />
+                      </div>
                       {creatorLabelFor(key) && (
-                        <span className="text-[11px] text-text-muted px-1.5 py-0.5 rounded bg-surface-2 truncate">
+                        <span className="hidden sm:inline-block text-[11px] text-text-muted px-1.5 py-0.5 rounded bg-surface-2 truncate">
                           {creatorLabelFor(key)}
                         </span>
                       )}
                     </div>
+                    {creatorLabelFor(key) && (
+                      <span className="sm:hidden text-[11px] text-text-muted px-1.5 py-0.5 rounded bg-surface-2 truncate w-fit">
+                        {creatorLabelFor(key)}
+                      </span>
+                    )}
 
                     {/* Key Token Box */}
                     <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-border/80 w-full sm:w-fit sm:max-w-md">
@@ -1726,8 +1746,8 @@ const scopedModelPatterns =
                   </div>
                 </div>
 
-                {/* Actions Toolbar */}
-                <div className="flex items-center justify-between sm:justify-end gap-2 pt-2.5 sm:pt-0 border-t border-border/40 sm:border-0 shrink-0 w-full sm:w-auto">
+                {/* Actions Toolbar (Desktop) */}
+                <div className="hidden sm:flex items-center justify-end gap-2 shrink-0">
                   <div
                     className="inline-flex items-center gap-2"
                     title={key.isActive === false ? "Switch this key back on" : "Switch this key off"}
@@ -1738,9 +1758,6 @@ const scopedModelPatterns =
                       disabled={isOwnKey(key)}
                       onChange={(nextActive) => handleToggleKeyActive(key, nextActive)}
                     />
-                    <span className="text-xs text-text-muted sm:hidden">
-                      {key.isActive === false ? "Disabled" : "Active"}
-                    </span>
                   </div>
 
                   <div className="flex items-center gap-0.5 bg-surface-2/60 sm:bg-transparent rounded-lg p-0.5 sm:p-0">
@@ -1749,8 +1766,9 @@ const scopedModelPatterns =
                       onClick={() => {
                         setEditingKey(key);
                         setEditName(key.name || "");
-                        const lim = key.tokenLimit ? String(key.tokenLimit) : "";
+                        const lim = limitCapOf(key) ? String(limitCapOf(key)) : "";
                         setEditLimit(lim);
+                        setEditLimitKind(limitKindOf(key));
                         const resVal = key.resetInterval || "never";
                         if (["never", "5h", "7d", "14d", "30d"].includes(resVal)) {
                           setEditReset(resVal);
@@ -1808,6 +1826,69 @@ const scopedModelPatterns =
                     </button>
                   </div>
                 </div>
+
+                {/* Mobile action bar */}
+                <div className="flex sm:hidden items-center justify-end gap-1.5 pt-2 border-t border-border/20 text-text-muted">
+                  <button
+                    onClick={() => {
+                      setEditingKey(key);
+                      setEditName(key.name || "");
+                      const lim = limitCapOf(key) ? String(limitCapOf(key)) : "";
+                      setEditLimit(lim);
+                      setEditLimitKind(limitKindOf(key));
+                      const resVal = key.resetInterval || "never";
+                      if (["never", "5h", "7d", "14d", "30d"].includes(resVal)) {
+                        setEditReset(resVal);
+                        setEditCustomReset("");
+                      } else {
+                        setEditReset("custom");
+                        setEditCustomReset(resVal);
+                      }
+                      setEditAllowedModels(key.allowedModels || "*");
+                      setEditRpm(key.rpmLimit ? String(key.rpmLimit) : "");
+                      setEditTpm(key.tpmLimit ? String(key.tpmLimit) : "");
+                      setEditIpWhitelist(key.ipWhitelist || "");
+                      setEditExpiresAt(key.expiresAt || "");
+                      setEditPermissions(key.permissions || EMPTY_PERMISSIONS);
+                    }}
+                    disabled={isOwnKey(key)}
+                    className={cn("p-1.5 hover:bg-surface-2 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                    title="Edit key"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                  </button>
+                  <button
+                    onClick={() => handleDuplicateKey(key)}
+                    disabled={isOwnKey(key)}
+                    className={cn("p-1.5 hover:bg-surface-2 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                    title="Duplicate key"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">library_add</span>
+                  </button>
+                  <button
+                    onClick={() => handleManualResetUsage(key)}
+                    disabled={isOwnKey(key)}
+                    className={cn("p-1.5 hover:bg-surface-2 rounded text-text-muted hover:text-primary transition-all", isOwnKey(key) && "opacity-40 cursor-not-allowed")}
+                    title="Reset used tokens"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                  </button>
+                  <button
+                    onClick={() => { setShowSnippetModal(key); setSnippetLang("curl"); }}
+                    className="p-1.5 hover:bg-surface-2 rounded text-text-muted hover:text-primary transition-all"
+                    title="Code snippet"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">code</span>
+                  </button>
+                  <button
+                    onClick={() => handleDeleteKey(key.id)}
+                    disabled={isOwnKey(key)}
+                    className={cn("p-1.5 hover:bg-red-500/10 rounded text-red-500 transition-all", isOwnKey(key) && "opacity-30 cursor-not-allowed")}
+                    title="Delete key"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1837,12 +1918,23 @@ const scopedModelPatterns =
             title="Identity"
             description="What you will see in the key list, and how long the key may live."
           >
-            <Input
-              label="Key Name"
-              value={newKeyName}
-              onChange={(e) => setNewKeyName(e.target.value)}
-              placeholder="Production Key"
-            />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input
+                label="Key Name"
+                value={newKeyName}
+                onChange={(e) => setNewKeyName(e.target.value)}
+                placeholder="Production Key"
+              />
+              <Input
+                label="Key Prefix"
+                value={apiKeyPrefix}
+                onChange={(e) => setApiKeyPrefix(e.target.value.replace(/[^a-zA-Z0-9]/g, ""))}
+                placeholder="sk-"
+                spellCheck={false}
+                className="font-mono"
+                hint={`Minted key: ${apiKeyPrefix ? `${apiKeyPrefix}-` : "sk-"}••••••••`}
+              />
+            </div>
             <Input
               label="Expiry Date (optional)"
               type="datetime-local"

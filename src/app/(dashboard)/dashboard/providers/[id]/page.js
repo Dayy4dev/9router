@@ -1509,7 +1509,7 @@ export default function ProviderDetailPage() {
         {/* Custom models first */}
         {filteredCustomModelRows.map((model) => {
           const suggested = suggestedModels.find((s) => s.id === model.id);
-          const effectiveIsFree = suggested?.isFree !== undefined ? suggested.isFree : model.isFree;
+          const effectiveIsFree = suggested?.isFree !== undefined ? suggested.isFree : (model.isFree !== undefined ? model.isFree : (isFreeNoAuth || providerId === "deepai" || providerId === "dai"));
           return (
             <ModelRow
               key={`${model.source}-${model.fullModel}`}
@@ -1623,7 +1623,7 @@ export default function ProviderDetailPage() {
                       >
                         <span className="material-symbols-outlined text-[13px] leading-none">add</span>
                         <span>{m.id.split("/").pop()}</span>
-                        <ModelTierBadge model={m.id} providerId={providerStorageAlias} isFree={m.isFree} />
+                        <ModelTierBadge model={m.id} providerId={providerStorageAlias} isFree={m.isFree !== undefined ? m.isFree : (isFreeNoAuth || providerId === "deepai" || providerId === "dai")} />
                       </button>
                     ))}
                   </div>
@@ -1650,7 +1650,7 @@ export default function ProviderDetailPage() {
                       >
                         <span className="material-symbols-outlined text-[13px] leading-none">add</span>
                         <span>{m.id.split("/").pop()}</span>
-                        <ModelTierBadge model={m.id} providerId={providerStorageAlias} isFree={m.isFree} />
+                        <ModelTierBadge model={m.id} providerId={providerStorageAlias} isFree={m.isFree !== undefined ? m.isFree : (isFreeNoAuth || providerId === "deepai" || providerId === "dai")} />
                       </button>
                     ))}
                   </div>

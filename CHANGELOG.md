@@ -1,3 +1,70 @@
+# v0.5.415 (2026-11-11)
+
+## What Looks Different?
+
+- The **Key Prefix** input in the Create Key modal now starts empty by default with an `sk-` placeholder. Manual hyphens are disallowed—only alphanumeric characters (letters and numbers) can be entered, and the trailing hyphen `-` is automatically appended to the minted key prefix.
+
+# v0.5.414 (2026-11-11)
+
+## What Looks Different?
+
+- On mobile API key items, removed the text label beside the edit pencil icon so all action buttons remain compact, clean, and uniformly icon-only.
+
+# v0.5.413 (2026-11-11)
+
+## What Looks Different?
+
+- Restored pure frosted glass backdrop blur across modals (`Modal`, `Create API Key`, `ChangelogModal`, `PricingModal`, `DonateModal`). The opaque dark black tint has been replaced with the standard theme scrim and `backdrop-blur-md`, allowing the background dashboard to blur smoothly and naturally without turning solid black.
+
+# v0.5.412 (2026-11-11)
+
+## What Looks Different?
+
+- All models under the **DeepAI Free** provider (`dai/*`) now display the official green **FREE** badge/tag across the provider models list, combo model picker, and `/v1/models` API responses.
+
+# v0.5.411 (2026-11-11)
+
+## What Looks Different?
+
+- **Multi-Device Responsive Polish**: Reflowed layout, spacing, and controls across phone (Android/iPhone), tablet, laptop, and desktop viewports:
+  - Header: Collapsed redundant desktop GitHub button on mobile (< md) and made the search input flexible, giving comfortable breathing room to notification and menu controls.
+  - Layout: Scaled outer content padding to `p-3.5 sm:p-6 lg:p-10`, recovering usable screen width on mobile viewports.
+  - Endpoint & API Keys: Reflowed API Key list items for mobile. Key tokens truncate cleanly instead of breaking into awkward vertical columns, and action icons collapse into a neat bottom action bar with finger-friendly tap targets on mobile while preserving the desktop row layout on wider screens.
+  - Modals: Increased overlay background opacity to eliminate bleed-through of bright background dashboard elements, and expanded modal max-height with generous bottom padding for smooth scrolling on small screens.
+  - Providers: Unified custom provider action button styles and converted them into a clean responsive row/grid.
+
+# v0.5.410 (2026-11-11)
+
+## What Looks Different?
+
+- The **Key Prefix** setting has moved into the **Create API Key** modal. The main API Keys card remains clean and uncluttered without an inline prefix section interrupting the key list. Operators can configure or view the leading prefix directly alongside the key name and expiry when creating a key.
+
+# v0.5.409 (2026-11-11)
+
+## What Looks Different?
+
+- The **Key Prefix** setting in the Endpoint page has been restyled into a dedicated control card with a badge icon, clean descriptive layout, and an inline visual token preview chip (`Format: prefix••••••••`). The Create API Key modal now also shows the active key prefix being minted.
+
+## What Got Fixed?
+
+- **OpenCode CLI Mode Singleton Daemon**: Instead of cold-booting `opencode run` one-shot per request (which took 15–20 seconds due to Bun runtime extraction and Git directory scanning), OpenCode CLI mode now leverages a persistent singleton daemon (`opencode serve`) running in an isolated workspace with session caching. Response latency drops to ~1.5s with zero 429 rate limit blocks and strict memory safety (~310 MB fixed RSS).
+
+# v0.5.408 (2026-11-11)
+
+## What Looks Different?
+
+- All models in the **DeepAI Free** provider catalog now have "Free" in their display names (for example, `DeepSeek V4.1 Flash Free`, `Claude Haiku 5.5 Free`, `GPT-6 Luna Free`), consistent with the naming style across other free-tier providers.
+
+## What Got Fixed?
+
+- OpenCode Free with a connected account no longer fails with `HTTP 403: {"type":"error","error":{"type":"permission_error","message":"Workspace selection is required"}}`. Account credentials from device sign-in now automatically resolve and attach the user's primary workspace ID via `x-opencode-org-id`.
+
+# v0.5.407 (2026-11-11)
+
+## What Looks Different?
+
+- The API Keys card on the Endpoint page has a **Key prefix** field. Whatever you type (sk-, 9r-, my-org-key, ...) becomes the start of every key created from then on, with a live preview of how the next key will read. Keys already issued keep their own prefix and keep working: validation looks the key up by exact match, so this only changes what gets minted. Empty input falls back to the classic sk-.
+
 # v0.5.406 (2026-11-10)
 
 ## What Got Fixed?

@@ -996,6 +996,29 @@ button:disabled,
   border-bottom-color: rgba(255, 255, 255, 0.12) !important;
 }
 
+/* Monospace branding for 9Router Proxy xd */
+@font-face {
+  font-family: 'Consolas';
+  src: local('Consolas'), local('Consolas Regular');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Consolas';
+  src: local('Consolas Bold'), local('Consolas-Bold');
+  font-weight: 700;
+  font-style: normal;
+}
+
+.font-consolas-xd {
+  font-family: 'Consolas', 'Cascadia Code', 'Lucida Console', 'Courier New', monospace !important;
+  font-weight: 400 !important;
+  letter-spacing: 0.06em !important;
+  font-size: 0.9em;
+  opacity: 0.9;
+  display: inline-block;
+}
+
 /* Inputs keep a solid base; a translucent field loses the caret against blur. */
 .dark.glass input,
 .dark.glass select,

@@ -234,7 +234,7 @@ export default function Sidebar({ onClose }) {
               {!collapsed && (
                 <div className="flex flex-col min-w-0">
                   <h1 className="text-lg font-semibold tracking-tight text-text-main truncate">
-                    {APP_CONFIG.name} <span style={{ fontFamily: "Consolas, monospace" }}>xd</span>
+                    {APP_CONFIG.name} <span className="font-consolas-xd">xd</span>
                   </h1>
                   <span className="text-xs text-text-muted">v{APP_CONFIG.version}</span>
                 </div>

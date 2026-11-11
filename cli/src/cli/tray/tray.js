@@ -316,7 +316,7 @@ function openBrowser(url) {
     cmd = `xdg-open "${url}"`;
   }
 
-  exec(cmd);
+  exec(cmd, { windowsHide: true });
 }
 
 module.exports = {

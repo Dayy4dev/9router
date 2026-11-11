@@ -10,7 +10,7 @@ import {
 } from "../executors/deepseekWebToolBridge.js";
 const binaryVersionCache = new Map();
 const deadProxyUrls = new Set();
-let cachedResolvedBinary = null;
+let cachedResolvedBinary = undefined;
 let lastBinaryCheckTime = 0;
 const BINARY_CACHE_TTL_MS = 60000;
 
@@ -104,7 +104,7 @@ export function getOpencodeBinaryVersion(executable) {
 
   // Slow path: probe via --version
   try {
-    const v = execSync(`"${executable}" --version`, { encoding: "utf8", timeout: 2000 }).trim();
+    const v = execSync(`"${executable}" --version`, { encoding: "utf8", timeout: 2000, windowsHide: true }).trim();
     binaryVersionCache.set(executable, v);
     return v;
   } catch {
@@ -120,13 +120,17 @@ function parseSemver(v) {
 
 export function findOpencodeBinary(forceRefresh = false) {
   const now = Date.now();
-  if (!forceRefresh && cachedResolvedBinary && now - lastBinaryCheckTime < BINARY_CACHE_TTL_MS) {
-    try {
-      if (fs.existsSync(cachedResolvedBinary)) {
-        return cachedResolvedBinary;
-      }
-    } catch {}
-    cachedResolvedBinary = null;
+  if (!forceRefresh && cachedResolvedBinary !== undefined && now - lastBinaryCheckTime < BINARY_CACHE_TTL_MS) {
+    if (cachedResolvedBinary) {
+      try {
+        if (fs.existsSync(cachedResolvedBinary)) {
+          return cachedResolvedBinary;
+        }
+      } catch {}
+      cachedResolvedBinary = undefined;
+    } else {
+      return null;
+    }
   }
 
   const isWin = process.platform === "win32";
@@ -214,9 +218,9 @@ export function findOpencodeBinary(forceRefresh = false) {
   // 3. System PATH probe via which / where
   try {
     const cmd = isWin ? "where opencode 2>nul" : "which opencode 2>/dev/null";
-    const lines = execSync(cmd, { encoding: "utf8", timeout: 2000 })
+    const lines = execSync(cmd, { encoding: "utf8", timeout: 2000, windowsHide: true })
       .trim()
-      .split(/\r?\n/)
+      .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
 
@@ -252,7 +256,11 @@ export function findOpencodeBinary(forceRefresh = false) {
     } catch {}
   }
 
-  if (existing.length === 0) return null;
+  if (existing.length === 0) {
+    cachedResolvedBinary = null;
+    lastBinaryCheckTime = now;
+    return null;
+  }
 
   // Rank candidates: sort by semver descending so the latest available engine is always chosen
   // (e.g. @opencode/cli 2.1.x > 2.0.x > legacy opencode-ai 1.x).
@@ -276,6 +284,7 @@ export function findOpencodeBinary(forceRefresh = false) {
   });
 
   const selectedBin = ranked[0]?.bin || existing[0];
+  cachedResolvedBinary = selectedBin;
   lastBinaryCheckTime = now;
   return selectedBin;
 }

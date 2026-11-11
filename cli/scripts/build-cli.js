@@ -250,6 +250,21 @@ function buildCliPackage() {
   // the bundle's node_modules or every importer throws MODULE_NOT_FOUND at runtime. Output
   // tracing normally copies it; this is the same belt-and-braces guard used for sql.js.
   ensureModuleInBundle("open");
+
+  // Modules required by src/ loaded dynamically by custom-server.js / dashboardGuard
+  for (const dep of ["uuid", "jose", "bcryptjs", "node-machine-id"]) {
+    ensureModuleInBundle(dep);
+  }
+
+  // Mirror full `next` package to ensure `next/server` exists for custom-server.js / dashboardGuard
+  console.log("3️⃣ c Mirroring next package for dashboardGuard...");
+  const rootNextDir = path.join(appDir, "node_modules", "next");
+  const bundleNextDir = path.join(cliAppDir, "node_modules", "next");
+  if (fs.existsSync(rootNextDir)) {
+    copyRecursive(rootNextDir, bundleNextDir);
+    console.log("✅ Mirrored full next package to bundle");
+  }
+
   const betterDir = path.join(cliAppDir, "node_modules", "better-sqlite3");
   if (fs.existsSync(betterDir)) {
     fs.rmSync(betterDir, { recursive: true, force: true });
@@ -309,6 +324,39 @@ function buildCliPackage() {
   } else {
     console.log("⏭️  No MITM files found\n");
   }
+
+  // Step 7a: Stage dashboard guard, repos, scripts, and open-sse required by custom-server.js
+  console.log("7️⃣ a Copying auth guard and runtime modules for custom-server.js...");
+  for (const dir of ["scripts", "open-sse"]) {
+    const srcDir = path.join(appDir, dir);
+    const destDir = path.join(cliAppDir, dir);
+    if (fs.existsSync(srcDir)) {
+      copyRecursive(srcDir, destDir);
+      console.log(`✅ Copied ${dir}/ to bundle`);
+    }
+  }
+
+  const guardFiles = [
+    ["src", "dashboardGuard.js"],
+    ["src", "dashboardGuardRules.js"],
+    ["src", "lib"],
+    ["src", "shared"],
+    ["src", "sse"],
+  ];
+  for (const parts of guardFiles) {
+    const fileSrc = path.join(appDir, ...parts);
+    const fileDest = path.join(cliAppDir, ...parts);
+    if (fs.existsSync(fileSrc)) {
+      if (fs.statSync(fileSrc).isDirectory()) {
+        copyRecursive(fileSrc, fileDest);
+      } else {
+        fs.mkdirSync(path.dirname(fileDest), { recursive: true });
+        fs.copyFileSync(fileSrc, fileDest);
+      }
+      console.log(`✅ Copied ${parts.join("/")} to bundle`);
+    }
+  }
+  console.log("");
 
   // Step 7b: Copy standalone updater (headless Node process for install progress)
   console.log("7️⃣ b Copying updater files...");

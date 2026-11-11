@@ -48,7 +48,7 @@ function npmInstall(pkg, version) {
   const npm = process.platform === "win32" ? "npm.cmd" : "npm";
   const args = ["install", "--no-audit", "--no-fund", "--prefer-online", `${pkg}@${version}`];
   return new Promise((resolve) => {
-    const child = spawn(npm, args, { cwd, stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32" });
+    const child = spawn(npm, args, { cwd, stdio: ["ignore", "pipe", "pipe"], shell: process.platform === "win32", windowsHide: true });
     let stderr = "";
     child.stderr?.on("data", (chunk) => { stderr += String(chunk); });
     child.on("error", (error) => resolve({ ok: false, stderr: String(error.message || error) }));

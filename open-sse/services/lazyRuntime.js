@@ -34,7 +34,13 @@ function getCreateRequire() {
 
 function isModuleMissing(error) {
   const code = String(error?.code || "");
-  return code === "MODULE_NOT_FOUND" || code === "ERR_MODULE_NOT_FOUND";
+  const msg = String(error?.message || "");
+  return (
+    code === "MODULE_NOT_FOUND" ||
+    code === "ERR_MODULE_NOT_FOUND" ||
+    msg.includes("Failed to load native module") ||
+    msg.includes("Cannot find module")
+  );
 }
 
 function npmInstall(pkg, version) {

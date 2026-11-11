@@ -19,6 +19,7 @@
 /.next-test/
 /.test-data/
 /.next-cli-build/
+/cli/app/
 /out/
 cli/.build-home/
 product

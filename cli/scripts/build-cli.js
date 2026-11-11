@@ -251,8 +251,8 @@ function buildCliPackage() {
   // tracing normally copies it; this is the same belt-and-braces guard used for sql.js.
   ensureModuleInBundle("open");
 
-  // Modules required by src/ loaded dynamically by custom-server.js / dashboardGuard
-  for (const dep of ["uuid", "jose", "bcryptjs", "node-machine-id"]) {
+  // Modules required by src/ loaded dynamically by custom-server.js / dashboardGuard / opencode TLS
+  for (const dep of ["uuid", "jose", "bcryptjs", "node-machine-id", "wreq-js", "@wreq-js"]) {
     ensureModuleInBundle(dep);
   }
 

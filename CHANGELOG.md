@@ -1,15 +1,42 @@
-# v0.5.401 (2026-11-10) · 3 commits
+# v0.5.406 (2026-11-10)
 
-## What's Added?
+## What Got Fixed?
 
-- Theme Mode Persistence: fixed solid dark mode reverting to glass on refresh by honoring stored theme settings in SQLite repository (`settingsRepo.js`) and syncing to localStorage.
-- High-Contrast Elevated Glass: enhanced dialogs, modals, and dropdown menus (ThemeModal, BellMenu, HeaderMenu) with rich deep-frosted glass, specular highlights, and darkened scrim to prevent visual clutter and illegible text bleed-through.
-- Non-Blocking Notification Bell: eliminated full-viewport transparent backdrop so page content can be scrolled freely while viewing notifications, with auto-dismiss on outside clicks.
-- Non-Flat Harmonic Color System: dynamically computed secondary accent (`--color-secondary`), multi-tier semantic status tokens (success, warning, danger, info), and vibrant multi-layered aurora glass background.
-- Topology & Chart Harmonization: semi-transparent frosted glass cards for topology nodes (`bg-surface/50 backdrop-blur-md`), dynamic gradient fills and ambient glowing strokes for UsageChart, TopModelsChart, and ProviderBarChart.
-- Topology Backdrop: added custom background support for the provider topology map in ThemeModal with image upload (client-side compressed ladder down to <600 KB WebP/JPEG) or direct URL.
-- Backdrop Dim Slider: added dimming intensity slider (0%–100%) stored in SQLite settings and mirrored in localStorage for zero-latency load.
-- Isolated rendering: background layers render behind ReactFlow without triggering graph re-renders or stretching the image.
+- DeepAI Free no longer claims capabilities it does not have. Its endpoint is text-only: vision, web search and a native reasoning channel were advertised because the model names (claude-haiku-5-5, gpt-6-luna...) matched generic patterns, and reasoning parameters sent upstream are ignored. The catalog now reports text + tool calling only, so combos and capability routing stop sending image or search requests there.
+
+# v0.5.405 (2026-11-10)
+
+## What Got Fixed?
+
+- **DeepAI Free tool calling works.** The endpoint is text-only, so a client that sent `tools` got prose back with `finish_reason: stop` and agents looped or gave up. The executor now folds the tool catalogue into the conversation (schema first, highest-priority reminder on the latest turn), flattens assistant `tool_calls` and `tool` results into readable turns, and parses the reply's tool_call block back into standard OpenAI `tool_calls` with `finish_reason: "tool_calls"` - streaming and non-streaming. Tool results round-trip, so a multi-step agent loop actually runs.
+- A tool result now carries an explicit stop condition (answer in plain text when the result already answers the request), and the "call a tool now" reminder is not re-appended on a result turn, so a multi-step loop finishes instead of repeating the same call.
+- DeepAI usage numbers are estimated from real prompt/output size instead of `prompt_tokens: 0`, and the stream now closes with exactly one `data: [DONE]`.
+- Tool protocol uses the fenced `tool_call` format on DeepAI, the shape its models actually emit.
+- A passthrough stream that already ended with `data: [DONE]` no longer gets a second one appended at flush, for every provider that streams that way, not just DeepAI.
+
+# v0.5.404 (2026-11-10)
+
+## What Looks Different?
+
+- The prefix switch on the model form is labeled Provider prefix, with copy that says what it does instead of what it imitates.
+
+# v0.5.403 (2026-11-10)
+
+## What Looks Different?
+
+- The custom model name field takes a plain name again. The vendor prefix moved to its own "Provider prefix" switch under it: leave it off and the model is called by its plain name, turn it on and a `vendor/` input appears with the resulting model ID previewed next to it.
+
+# v0.5.402 (2026-11-10)
+
+## What Looks Different?
+
+- The custom model name field shows a prefixed example (`anthropic/claude-opus-5 or meta/llama/llama-4`) and its error text says any number of prefix segments is allowed, matching what the router now accepts.
+
+# v0.5.401 (2026-11-10)
+
+## What Looks Different?
+
+- Custom model names accept more than one prefix: `meta/llama/llama-4-qa` saves as written. Resolution now looks the full name up in the database, so multi segment names still route to their configured provider and model.
 
 # v0.5.400 (2026-11-10) · 1 commit
 

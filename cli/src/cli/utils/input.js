@@ -14,9 +14,17 @@ const COLORS = {
   bgGreen: "\x1b[42m",
   bgBlue: "\x1b[44m",
   black: "\x1b[30m",
-  terracotta: "\x1b[38;2;217;119;87m",
-  bgTerracotta: "\x1b[48;2;217;119;87m"
+  accent: "\x1b[38;2;6;182;212m",
+  skyBlue: "\x1b[38;2;56;189;248m",
+  bgAccent: "\x1b[48;2;6;182;212m"
 };
+
+const ASCII_BANNER = [
+  "  ___  ___          _                       _ ",
+  " / _ \\| _ \\___ _  _| |_ ___ _ _   __ __   _| |",
+  " \\_, /|   / _ \\ || |  _/ -_) '_|__\\ \\ / / _` |",
+  "  /_/ |_|_\\___/\\_,_|\\__\\___|_|    /_\\_\\ \\__,_|"
+];
 
 // Prime stdin once globally. Toggling raw mode between menus adds latency on
 // macOS, so we keep raw mode on for the whole TUI session.
@@ -89,7 +97,7 @@ async function pause(message = "Press Enter to continue...") {
  * (no underline). Uses readline keypress + raw 'data' fallback to prevent
  * arrow-key escape sequence leaks on macOS.
  */
-async function selectMenu(title, items, defaultIndex = 0, subtitle = "", headerContent = "", breadcrumb = []) {
+async function selectMenu(title, items, defaultIndex = 0, subtitle = "", headerContent = "", breadcrumb = [], showBanner = breadcrumb.length === 0) {
   return new Promise((resolve) => {
     let selectedIndex = defaultIndex;
     let isActive = true;
@@ -100,11 +108,17 @@ async function selectMenu(title, items, defaultIndex = 0, subtitle = "", headerC
     const renderMenu = () => {
       if (!isActive) return;
       process.stdout.write("\x1b[2J\x1b[H");
-      const width = Math.min(process.stdout.columns || 40, 40);
-      console.log(`\n${COLORS.terracotta}${"=".repeat(width)}${COLORS.reset}`);
-      console.log(`  ${COLORS.bright}${COLORS.terracotta}${title}${COLORS.reset}`);
+      const width = Math.min(process.stdout.columns || 46, 46);
+      if (showBanner) {
+        console.log();
+        ASCII_BANNER.forEach(line => {
+          console.log(`${COLORS.bright}${COLORS.skyBlue}${line}${COLORS.reset}`);
+        });
+      }
+      console.log(`\n${COLORS.accent}${"=".repeat(width)}${COLORS.reset}`);
+      console.log(`  ${COLORS.bright}${COLORS.accent}${title}${COLORS.reset}`);
       if (subtitle) console.log(`  ${COLORS.dim}${subtitle}${COLORS.reset}`);
-      console.log(`${COLORS.terracotta}${"=".repeat(width)}${COLORS.reset}`);
+      console.log(`${COLORS.accent}${"=".repeat(width)}${COLORS.reset}`);
       if (breadcrumb.length > 0) console.log(`  ${COLORS.dim}${breadcrumb.join(" > ")}${COLORS.reset}`);
       console.log();
       if (headerContent) { console.log(headerContent); console.log(); }

@@ -46,6 +46,19 @@ import { getScheduleSlotLabels } from "@/shared/services/quotaPingSchedule";
 import { USAGE_SUPPORTED_PROVIDERS, AI_PROVIDERS } from "@/shared/constants/providers";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 
+import { normalizeResetCard, getResetCardTypeLabel, isResetCardExpired, readPendingResetAttempt, savePendingResetAttempt, clearPendingResetAttempt, classifyResetPostOutcome } from "./glmResetCardsLogic";
+
+function glmResetStorage() {
+  try { return window.localStorage; } catch { return null; }
+}
+
+const isGlmLike = (p) => p === "glm" || p === "zcode";
+
+function readGlmPending(connectionId) {
+  const read = readPendingResetAttempt(glmResetStorage(), connectionId);
+  return read.status === "ok" ? read.attempt : read.status === "invalid" ? { invalid: true } : null;
+}
+
 // Maps the stored providerSpecificData.authMethod to a human label for Kiro.
 // Values come from the Kiro connect flows: builder-id/idc (device code),
 // google/github (social), imported (refresh-token paste), api_key (headless).
@@ -175,6 +188,10 @@ export default function ProviderLimits() {
   const [resettingLimitId, setResettingLimitId] = useState(null);
   const [resetConfirmState, setResetConfirmState] = useState(null);
   const [resetCreditsState, setResetCreditsState] = useState(null);
+  const [glmResets, setGlmResets] = useState({});
+  const [glmResetNow, setGlmResetNow] = useState(Date.now);
+  const glmResetInFlightRef = useRef(false);
+  const [glmClaimModal, setGlmClaimModal] = useState(null);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedConnection, setSelectedConnection] = useState(null);
   const [proxyPools, setProxyPools] = useState([]);
@@ -225,6 +242,22 @@ export default function ProviderLimits() {
   const countdownRef = useRef(null);
   const tickCountRef = useRef(0);
 
+  useEffect(() => {
+    if (!isGlmLike(resetConfirmState?.connection?.provider) && !isGlmLike(resetCreditsState?.connection?.provider)) return;
+    const timer = setInterval(() => setGlmResetNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [resetConfirmState?.connection?.provider, resetCreditsState?.connection?.provider]);
+
+  useEffect(() => {
+    const onStorage = () => {
+      if (glmResetInFlightRef.current) return;
+      setGlmResets((previous) => Object.fromEntries(Object.entries(previous).map(([id, state]) => [id, { ...state, pending: readGlmPending(id) }])));
+      setResetCreditsState((previous) => isGlmLike(previous?.connection?.provider) ? { ...previous, pending: readGlmPending(previous.connection.id), dashboardChecked: false } : previous);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
   const fetchConnections = useCallback(
     async (targetPage = page) => {
       try {
@@ -250,6 +283,11 @@ export default function ProviderLimits() {
         const nextTotals = getSafeTotals(data.totals, connectionList.length);
 
         setConnections(connectionList);
+        setGlmResets((previous) => {
+          const next = { ...previous };
+          for (const connection of connectionList) if (isGlmLike(connection.provider)) next[connection.id] = { ...next[connection.id], pending: readGlmPending(connection.id) };
+          return next;
+        });
         setProviderOptions(getProviderOptions(data.providerOptions));
         setPagination(nextPagination);
         setTotals(nextTotals);
@@ -289,7 +327,7 @@ export default function ProviderLimits() {
           console.warn(
             `[ProviderLimits] Connection not found for ${provider}, skipping`,
           );
-          return;
+          return false;
         }
 
         if (response.status === 401) {
@@ -307,7 +345,7 @@ export default function ProviderLimits() {
             [connectionId]: quotaEntry,
           }));
           setQuotaCache(connectionId, quotaEntry);
-          return;
+          return false;
         }
 
         throw new Error(`HTTP ${response.status}: ${errorMsg}`);
@@ -331,6 +369,8 @@ export default function ProviderLimits() {
         [connectionId]: quotaEntry,
       }));
       setQuotaCache(connectionId, quotaEntry);
+      if (isGlmLike(provider)) setGlmResets((previous) => ({ ...previous, [connectionId]: { ...previous[connectionId], inventory: data.resetCards ?? null } }));
+      return !data.message;
     } catch (error) {
       console.error(
         `[ProviderLimits] Error fetching quota for ${provider} (${connectionId}):`,
@@ -340,6 +380,7 @@ export default function ProviderLimits() {
         ...prev,
         [connectionId]: error.message || "Failed to fetch quota",
       }));
+      return false;
     } finally {
       setLoading((prev) => ({ ...prev, [connectionId]: false }));
     }
@@ -353,6 +394,95 @@ export default function ProviderLimits() {
     },
     [fetchQuota],
   );
+
+  const readGlmResets = useCallback(async (connection) => {
+    const response = await fetch(`/api/usage/${connection.id}/glm-reset-cards`, { cache: "no-store" });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || !Array.isArray(result?.cards) || !Number.isSafeInteger(result.availableCount) || result.availableCount < 0) {
+      setGlmResets((previous) => ({ ...previous, [connection.id]: { ...previous[connection.id], inventory: null } }));
+      throw new Error(result?.error || result?.message || "Could not load GLM reset cards");
+    }
+    const inventory = { ...result, cards: result.cards.map(normalizeResetCard).filter(Boolean).sort((a, b) => Date.parse(a.expiresAt) - Date.parse(b.expiresAt)) };
+    setGlmResets((previous) => ({ ...previous, [connection.id]: { ...previous[connection.id], inventory } }));
+    return inventory;
+  }, []);
+
+  const prepareGlmReset = useCallback(async (connection) => {
+    if (glmResetInFlightRef.current || resettingLimitId) return;
+    glmResetInFlightRef.current = true;
+    setResettingLimitId(connection.id);
+    try {
+      const pending = readGlmPending(connection.id);
+      setGlmResets((previous) => ({ ...previous, [connection.id]: { ...previous[connection.id], pending } }));
+      if (pending || glmResets[connection.id]?.refreshNeeded) throw new Error("Resolve the unfinished reset in card details before using another card.");
+      const inventory = await readGlmResets(connection);
+      const cards = inventory.cards.filter((card) => !isResetCardExpired(card.expiresAt));
+      if (!cards.length) throw new Error("No GLM reset cards available.");
+      setResetConfirmState({ connection, cards, card: cards.length === 1 ? cards[0] : null });
+    } catch (error) {
+      setErrors((previous) => ({ ...previous, [connection.id]: error.message }));
+    } finally {
+      glmResetInFlightRef.current = false;
+      setResettingLimitId(null);
+    }
+  }, [glmResets, readGlmResets, resettingLimitId]);
+
+  const handleGlmReset = useCallback(async (connection, selection = null, resolution = null) => {
+    if (glmResetInFlightRef.current || resettingLimitId) return;
+    glmResetInFlightRef.current = true;
+    setResettingLimitId(connection.id);
+    setErrors((previous) => ({ ...previous, [connection.id]: null }));
+    const update = (patch) => {
+      setGlmResets((previous) => ({ ...previous, [connection.id]: { ...previous[connection.id], ...patch } }));
+      setResetCreditsState((previous) => previous?.connection.id === connection.id ? { ...previous, ...patch } : previous);
+    };
+    try {
+      if (selection) {
+        const pending = readGlmPending(connection.id);
+        update({ pending });
+        if (pending || glmResets[connection.id]?.refreshNeeded) throw new Error("Resolve the unfinished reset before using another card.");
+        const card = selection.card;
+        if (!card || isResetCardExpired(card.expiresAt)) throw new Error("Select a valid, unexpired GLM reset card.");
+        const attempt = { provider: "glm", card, startedAt: new Date().toISOString() };
+        if (!savePendingResetAttempt(glmResetStorage(), connection.id, attempt)) throw new Error("Could not save recovery info. For safety the card was not used.");
+        update({ pending: attempt });
+        setResetConfirmState(null);
+        let outcome;
+        try {
+          const response = await fetch(`/api/usage/${connection.id}/glm-reset-cards`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recordId: card.recordId,
+              type: card.type,
+              ...(card.grantType ? { grantType: card.grantType } : {})
+            })
+          });
+          outcome = classifyResetPostOutcome({ ok: response.ok, payload: await response.json().catch(() => null) });
+        } catch { outcome = { kind: "uncertain" }; }
+        if (outcome.kind !== "success") throw new Error(outcome.message || "GLM reset outcome is uncertain. Check your GLM dashboard before trying again.");
+      } else if (resolution !== null) {
+        const latest = readGlmPending(connection.id);
+        if (!resetCreditsState?.dashboardChecked || JSON.stringify(latest) !== JSON.stringify(resetCreditsState.pending)) throw new Error("The unfinished attempt changed. Reopen details and check the GLM dashboard.");
+      }
+      if (selection || resolution !== null) {
+        if (!clearPendingResetAttempt(glmResetStorage(), connection.id)) throw new Error("Could not clear recovery info. Check your GLM dashboard before continuing.");
+        update({ pending: null, dashboardChecked: false });
+      }
+      if (resolution === "not-used" || resolution === "discard") return;
+      update({ refreshNeeded: true });
+      if (!await fetchQuota(connection.id, connection.provider, { force: true })) throw new Error("Could not refresh quota; the reset result is preserved. Open card details to finish.");
+      const inventory = await readGlmResets(connection);
+      update({ refreshNeeded: false, error: null, data: { kind: "glm", ...inventory } });
+      setLastUpdated(new Date());
+    } catch (error) {
+      setErrors((previous) => ({ ...previous, [connection.id]: error.message }));
+      setResetCreditsState((previous) => previous?.connection.id === connection.id ? { ...previous, recoveryError: error.message } : previous);
+    } finally {
+      glmResetInFlightRef.current = false;
+      setResettingLimitId(null);
+    }
+  }, [fetchQuota, glmResets, readGlmResets, resetCreditsState, resettingLimitId]);
 
   const handleResetCodexLimit = useCallback(
     async (connectionId, provider) => {
@@ -391,7 +521,80 @@ export default function ProviderLimits() {
     setResetCreditsState({ connection, loading: false, error: null, data: { kind: "claude", ...resetCredits } });
   }, []);
 
+  const openGlmClaim = useCallback(async (connection) => {
+    setGlmClaimModal({ connection, plans: [], loading: true, claiming: false, error: null, success: null });
+    try {
+      const res = await fetch(`/api/usage/${connection.id}/glm-claim`, { cache: "no-store" });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.message || json?.error || "Gagal memuat event gift card");
+      }
+      setGlmClaimModal({
+        connection,
+        plans: json.plans || [],
+        activeBalances: json.activeBalances || [],
+        activePlans: json.activePlans || [],
+        loading: false,
+        claiming: false,
+        error: null,
+        success: null,
+      });
+    } catch (err) {
+      setGlmClaimModal({
+        connection,
+        plans: [],
+        loading: false,
+        claiming: false,
+        error: err.message || "Gagal memuat event gift card",
+        success: null,
+      });
+    }
+  }, []);
+
+  const handleExecuteGlmClaim = useCallback(async (planId) => {
+    if (!glmClaimModal?.connection || !planId) return;
+    setGlmClaimModal((prev) => ({ ...prev, claiming: true, error: null }));
+    try {
+      const res = await fetch(`/api/usage/${glmClaimModal.connection.id}/glm-claim`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.message || json?.error || "Gagal mengklaim plan");
+      }
+      setGlmClaimModal((prev) => ({
+        ...prev,
+        claiming: false,
+        success: json.message || "Berhasil mengklaim plan!",
+        plans: prev.plans.filter((p) => p.planId !== planId),
+      }));
+      await fetchQuota(glmClaimModal.connection.id, glmClaimModal.connection.provider, { force: true });
+    } catch (err) {
+      setGlmClaimModal((prev) => ({ ...prev, claiming: false, error: err.message || "Gagal mengklaim plan" }));
+    }
+  }, [glmClaimModal, fetchQuota]);
+
   const handleViewCodexResetCredits = useCallback(async (connection) => {
+    if (isGlmLike(connection.provider)) {
+      if (glmResetInFlightRef.current || resettingLimitId) return;
+      glmResetInFlightRef.current = true;
+      setResettingLimitId(connection.id);
+      const pending = readGlmPending(connection.id);
+      setGlmResets((previous) => ({ ...previous, [connection.id]: { ...previous[connection.id], pending } }));
+      setResetCreditsState({ connection, loading: true, error: null, data: { kind: "glm" }, pending, refreshNeeded: glmResets[connection.id]?.refreshNeeded, dashboardChecked: false });
+      try {
+        const inventory = await readGlmResets(connection);
+        setResetCreditsState((previous) => ({ ...previous, loading: false, data: { kind: "glm", ...inventory } }));
+      } catch (error) {
+        setResetCreditsState((previous) => ({ ...previous, loading: false, recoveryError: error.message }));
+      } finally {
+        glmResetInFlightRef.current = false;
+        setResettingLimitId(null);
+      }
+      return;
+    }
     setResetCreditsState({ connection, loading: true, error: null, data: null });
     try {
       const response = await fetch(`/api/usage/${connection.id}/codex-reset-credits`, { cache: "no-store" });
@@ -1123,9 +1326,12 @@ export default function ProviderLimits() {
           // Use table layout for all providers
           const isInactive = conn.isActive === false;
           const isCodex = conn.provider === "codex";
+          const isGlm = isGlmLike(conn.provider);
+          const glmReset = glmResets[conn.id];
+          const glmInventory = glmReset && Object.hasOwn(glmReset, "inventory") ? glmReset.inventory : quota?.raw?.resetCards;
           const claudeReset = conn.provider === "claude" ? quota?.raw?.resetCredits : null;
-          const resetLabel = isCodex ? "Codex reset credit" : "Claude limit reset";
-          const resetCreditCount = getCodexResetCreditCount(quota);
+          const resetLabel = isGlm ? "GLM reset card" : isCodex ? "Codex reset credit" : "Claude limit reset";
+          const resetCreditCount = isGlm ? (glmInventory?.availableCount ?? 0) : getCodexResetCreditCount(quota);
           const isResettingLimit = resettingLimitId === conn.id;
           const rowBusy = deletingId === conn.id || togglingId === conn.id || isResettingLimit;
           const rawQuotas = quota?.quotas || [];
@@ -1165,6 +1371,13 @@ export default function ProviderLimits() {
                         <p className="text-[11px] text-text-muted/80 truncate">
                           {getConnectionSecondaryLabel(conn)}
                         </p>
+                      ) : null}
+                      {isGlm && quota?.plan && quota.plan !== "None" ? (
+                        <div className="mt-0.5">
+                          <span className="inline-flex items-center rounded-md bg-green-500/10 px-1.5 py-0.5 text-[10px] font-medium text-green-600 dark:text-green-400 border border-green-500/20">
+                            {quota.plan}
+                          </span>
+                        </div>
                       ) : null}
                       {conn.provider === "kiro" && (
                         <div className="mt-1 flex flex-wrap items-center gap-1">
@@ -1210,11 +1423,11 @@ export default function ProviderLimits() {
                   </div>
 
                   <div className="flex items-center gap-1 shrink-0">
-                    {(isCodex || claudeReset) && (
+                    {(isCodex || claudeReset || isGlm) && (
                       <>
                         <Tooltip
                           text={
-                            resetCreditCount > 0
+                            isGlm && !glmInventory ? "Reset cards unavailable. Open card details to retry." : isGlm && (glmReset?.pending || glmReset?.refreshNeeded) ? "Resolve the unfinished reset in card details before using another card." : resetCreditCount > 0
                               ? claudeReset
                                 ? `Use your reset now (${resetCreditCount} left, use by ${formatCreditDate(claudeReset.expiresAt)}) · refills ${formatClaudeResetClears(claudeReset.clears)}`
                                 : `Use one ${resetLabel}. Available: ${resetCreditCount}`
@@ -1223,8 +1436,8 @@ export default function ProviderLimits() {
                         >
                           <button
                             type="button"
-                            onClick={() => setResetConfirmState({ connection: conn, resetCreditCount })}
-                            disabled={resetCreditCount <= 0 || isLoading || rowBusy}
+                            onClick={() => isGlm ? prepareGlmReset(conn) : setResetConfirmState({ connection: conn, resetCreditCount })}
+                            disabled={resetCreditCount <= 0 || isLoading || rowBusy || (isGlm && Boolean(glmReset?.pending || glmReset?.refreshNeeded))}
                             aria-label={
                               resetCreditCount > 0
                                 ? `Use one ${resetLabel}. ${resetCreditCount} available.`
@@ -1239,21 +1452,35 @@ export default function ProviderLimits() {
                             <span className={`material-symbols-outlined text-[15px] ${isResettingLimit ? "animate-spin" : ""}`}>
                               {isResettingLimit ? "progress_activity" : "restart_alt"}
                             </span>
-                            <span>{resetCreditCount}</span>
+                            <span>{isGlm && !glmInventory ? "–" : resetCreditCount}</span>
                           </button>
                         </Tooltip>
-                        <Tooltip text={isCodex ? "View Codex reset credit expiry" : "View Claude Code reset expiry"}>
+                        <Tooltip text={isGlm ? "View GLM reset card expiry" : isCodex ? "View Codex reset credit expiry" : "View Claude Code reset expiry"}>
                           <button
                             type="button"
-                            onClick={() => (isCodex ? handleViewCodexResetCredits(conn) : handleViewClaudeResets(conn, claudeReset))}
+                            onClick={() => ((isCodex || isGlm) ? handleViewCodexResetCredits(conn) : handleViewClaudeResets(conn, claudeReset))}
                             disabled={isLoading || rowBusy}
-                            aria-label={isCodex ? "View Codex reset credit expiry" : "View Claude Code reset expiry"}
+                            aria-label={isGlm ? "View GLM reset card expiry" : isCodex ? "View Codex reset credit expiry" : "View Claude Code reset expiry"}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-black/10 text-text-muted transition-colors hover:bg-black/5 hover:text-primary disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:hover:bg-white/5"
                           >
                             <span className="material-symbols-outlined text-[17px]">schedule</span>
                           </button>
                         </Tooltip>
                       </>
+                    )}
+                    {isGlm && (
+                      <Tooltip text="Claim ZCode event gift card">
+                        <button
+                          type="button"
+                          onClick={() => openGlmClaim(conn)}
+                          disabled={isLoading || rowBusy}
+                          aria-label="Claim ZCode event gift card"
+                          className="flex h-8 items-center justify-center gap-1 rounded-lg border border-primary/30 bg-primary/5 px-2 text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          <span className="material-symbols-outlined text-[15px]">redeem</span>
+                          <span>Gift</span>
+                        </button>
+                      </Tooltip>
                     )}
                     {AUTO_PING_SETTINGS_KEYS[conn.provider] && conn.authType === "oauth" && (() => {
                       const cfg = autoPingConfigs[conn.provider] || {};
@@ -1368,7 +1595,7 @@ export default function ProviderLimits() {
                     </span>
                     <p className="mt-1.5 text-xs text-text-muted">{error}</p>
                   </div>
-                ) : quota?.message ? (
+                ) : quota?.message && visibleQuotas.length === 0 ? (
                   <div className="text-center py-5">
                     <p className="text-xs text-text-muted">{quota.message}</p>
                   </div>
@@ -1383,7 +1610,7 @@ export default function ProviderLimits() {
                     onHideQuota={(quotaRow) => handleHideQuota(conn.provider, quotaRow)}
                   />
                 )}
-                {quota?.message && !error && !isLoading && (
+                {quota?.message && visibleQuotas.length > 0 && !error && !isLoading && (
                   <p className="mt-2 px-1 text-[10px] leading-relaxed text-text-muted">
                     {quota.message}
                   </p>
@@ -1546,18 +1773,32 @@ export default function ProviderLimits() {
         onConfirm={async () => {
           const connection = resetConfirmState?.connection;
           if (!connection) return;
-          await handleResetCodexLimit(connection.id, connection.provider);
+          if (isGlmLike(connection.provider)) await handleGlmReset(connection, resetConfirmState);
+          else await handleResetCodexLimit(connection.id, connection.provider);
           setResetConfirmState(null);
         }}
-        title={resetConfirmState?.connection?.provider === "claude" ? "Reset Claude limits?" : "Reset Codex limit?"}
-        message={resetConfirmState?.connection?.provider === "claude"
+        title={isGlmLike(resetConfirmState?.connection?.provider) ? "Reset GLM limits?" : resetConfirmState?.connection?.provider === "claude" ? "Reset Claude limits?" : "Reset Codex limit?"}
+        message={isGlmLike(resetConfirmState?.connection?.provider)
+          ? resetConfirmState.card ? `Use one ${getResetCardTypeLabel(resetConfirmState.card.type)} reset card for ${getConnectionLabel(resetConfirmState.connection)}. Card expires ${formatCreditDate(resetConfirmState.card.expiresAt)}. This cannot be undone.` : "Choose a five-hour or weekly reset. This consumes one reset card and cannot be undone."
+          : resetConfirmState?.connection?.provider === "claude"
           ? `Refills your ${formatClaudeResetClears(quotaData[resetConfirmState.connection.id]?.raw?.resetCredits?.clears)} now for ${getConnectionLabel(resetConfirmState.connection) || "this account"} · your weekly reset day stays ${formatCreditDate(quotaData[resetConfirmState.connection.id]?.raw?.resetCredits?.weeklyResetsAt)}. This cannot be undone. Resets left: ${resetConfirmState.resetCreditCount ?? 0}.`
           : `Use 1 Codex reset credit for ${getConnectionLabel(resetConfirmState?.connection || {}) || "this account"}. This cannot be undone. Remaining credits: ${resetConfirmState?.resetCreditCount ?? 0}.`}
         confirmText="Reset limit"
         cancelText="Cancel"
         variant="danger"
         loading={Boolean(resettingLimitId)}
-      />
+        disabled={isGlmLike(resetConfirmState?.connection?.provider) && (!resetConfirmState.card || isResetCardExpired(resetConfirmState.card.expiresAt, glmResetNow))}
+      >
+        {isGlmLike(resetConfirmState?.connection?.provider) && (
+          <label className="mb-3 block text-sm text-text-primary">
+            Quota window to reset
+            <select aria-label="Quota window to reset" value={resetConfirmState.card?.id || ""} onChange={(event) => setResetConfirmState((previous) => ({ ...previous, card: previous.cards.find((card) => card.id === event.target.value) || null }))} className="mt-1 w-full rounded-lg border border-border-subtle bg-surface px-3 py-2">
+              <option value="" disabled>Select a reset card</option>
+              {resetConfirmState.cards.map((card) => <option key={card.id} value={card.id} disabled={isResetCardExpired(card.expiresAt, glmResetNow)}>{getResetCardTypeLabel(card.type)} · expires {formatCreditDate(card.expiresAt)}</option>)}
+            </select>
+          </label>
+        )}
+      </ConfirmModal>
 
       {resetCreditsState && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim px-4 backdrop-blur-sm">
@@ -1565,7 +1806,7 @@ export default function ProviderLimits() {
             <div className="flex items-start justify-between gap-3 border-b border-black/10 bg-black/[0.03] px-4 py-3 dark:border-white/10 dark:bg-white/[0.04]">
               <div className="min-w-0">
                 <h3 className="text-base font-semibold text-text-primary">
-                  {resetCreditsState.data?.kind === "claude" ? "Claude Code Limit Resets" : "Codex Reset Credit Expiry"}
+                  {resetCreditsState.data?.kind === "glm" ? "GLM Reset Cards" : resetCreditsState.data?.kind === "claude" ? "Claude Code Limit Resets" : "Codex Reset Credit Expiry"}
                 </h3>
                 <p className="mt-0.5 truncate text-xs text-text-muted">
                   {getConnectionLabel(resetCreditsState.connection) || (resetCreditsState.data?.kind === "claude" ? "Claude account" : "Codex account")}
@@ -1574,6 +1815,7 @@ export default function ProviderLimits() {
               <button
                 type="button"
                 onClick={() => setResetCreditsState(null)}
+                disabled={isGlmLike(resetCreditsState.connection?.provider) && Boolean(resettingLimitId)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted transition-colors hover:bg-black/5 hover:text-text-primary dark:hover:bg-white/5"
                 aria-label="Close reset credit expiry modal"
               >
@@ -1590,6 +1832,35 @@ export default function ProviderLimits() {
               ) : resetCreditsState.error ? (
                 <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-300">
                   {resetCreditsState.error}
+                </div>
+              ) : resetCreditsState.data?.kind === "glm" ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-xs text-text-muted">
+                    <span>{resetCreditsState.data.availableCount == null ? "Inventory unavailable — not zero." : `${resetCreditsState.data.availableCount} reset cards available`}</span>
+                    <button type="button" disabled={Boolean(resettingLimitId)} onClick={() => handleViewCodexResetCredits(resetCreditsState.connection)} className="rounded-lg border px-3 py-1 disabled:opacity-50">Refresh inventory</button>
+                  </div>
+                  {resetCreditsState.recoveryError && <p role="alert" className="text-sm text-red-500">{resetCreditsState.recoveryError}</p>}
+                  {resetCreditsState.refreshNeeded && <button type="button" disabled={Boolean(resettingLimitId)} onClick={() => handleGlmReset(resetCreditsState.connection)} className="rounded-lg border px-3 py-1 text-xs disabled:opacity-50">Refresh to finish</button>}
+                  {resetCreditsState.pending && (
+                    <div className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
+                      <p>{resetCreditsState.pending.invalid ? "The unfinished attempt marker is unreadable. Check your GLM dashboard before discarding it." : "Unfinished reset attempt — it may or may not have been used. No other card can be used until it is resolved."}</p>
+                      {!resetCreditsState.pending.invalid && <p className="text-xs">{getResetCardTypeLabel(resetCreditsState.pending.card.type)} · expires {formatCreditDate(resetCreditsState.pending.card.expiresAt)} · attempted {formatCreditDate(resetCreditsState.pending.startedAt)}</p>}
+                      <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={Boolean(resetCreditsState.dashboardChecked)} onChange={(event) => setResetCreditsState((previous) => ({ ...previous, dashboardChecked: event.target.checked }))} />I checked my GLM dashboard for this card&apos;s status</label>
+                      <div className="flex gap-2">
+                        {resetCreditsState.pending.invalid ? <button type="button" disabled={!resetCreditsState.dashboardChecked || Boolean(resettingLimitId)} onClick={() => handleGlmReset(resetCreditsState.connection, null, "discard")} className="rounded-lg border px-3 py-1 text-xs disabled:opacity-50">Discard unreadable marker</button> : <>
+                          <button type="button" disabled={!resetCreditsState.dashboardChecked || Boolean(resettingLimitId)} onClick={() => handleGlmReset(resetCreditsState.connection, null, "used")} className="rounded-lg border px-3 py-1 text-xs disabled:opacity-50">Card was used</button>
+                          <button type="button" disabled={!resetCreditsState.dashboardChecked || Boolean(resettingLimitId)} onClick={() => handleGlmReset(resetCreditsState.connection, null, "not-used")} className="rounded-lg border px-3 py-1 text-xs disabled:opacity-50">Card was not used</button>
+                        </>}
+                      </div>
+                    </div>
+                  )}
+                  <div className="overflow-x-auto rounded-xl border border-black/10 dark:border-white/10">
+                    <table className="w-full text-left text-sm">
+                      <thead className="bg-black/[0.03] text-xs uppercase text-text-muted dark:bg-white/[0.04]"><tr><th scope="col" className="px-3 py-2">Reset</th><th scope="col" className="px-3 py-2">Expires At</th><th scope="col" className="px-3 py-2">Remaining</th></tr></thead>
+                      <tbody>{resetCreditsState.data.cards?.map((card) => <tr key={card.id} className="border-t border-black/5 dark:border-white/5"><td className="px-3 py-2">{getResetCardTypeLabel(card.type)}</td><td className="px-3 py-2">{formatCreditDate(card.expiresAt)}</td><td className="px-3 py-2">{formatTimeRemaining(card.expiresAt)}</td></tr>)}</tbody>
+                    </table>
+                  </div>
+                  {resetCreditsState.data.availableCount === 0 && <p className="text-sm text-text-muted">No reset cards available.</p>}
                 </div>
               ) : resetCreditsState.data?.kind === "claude" && resetCreditsState.data.grants?.length ? (
                 <div className="space-y-3">
@@ -1680,6 +1951,190 @@ export default function ProviderLimits() {
           setSelectedConnection(null);
         }}
       />
+
+      {glmClaimModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-scrim px-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg overflow-hidden rounded-2xl border border-border bg-surface shadow-2xl ring-1 ring-border">
+            <div className="flex items-start justify-between gap-3 border-b border-black/10 bg-black/[0.03] px-4 py-3 dark:border-white/10 dark:bg-white/[0.04]">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="material-symbols-outlined text-primary text-[20px]">redeem</span>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold text-text-primary">
+                      Claim ZCode Event Gift
+                    </h3>
+                    <p className="mt-0.5 truncate text-xs text-text-muted">
+                      {getConnectionLabel(glmClaimModal.connection) || "GLM account"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGlmClaimModal(null)}
+                disabled={glmClaimModal.claiming}
+                className="rounded-lg p-1 text-text-muted hover:bg-black/5 hover:text-text-primary dark:hover:bg-white/5"
+                aria-label="Close modal"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <div className="p-4 space-y-3 bg-surface">
+              {glmClaimModal.error && (
+                <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 text-xs text-red-500">
+                  {glmClaimModal.error}
+                </div>
+              )}
+
+              {glmClaimModal.success && (
+                <div className="rounded-lg border border-green-500/20 bg-green-500/10 p-3 text-xs text-green-600 dark:text-green-400">
+                  {glmClaimModal.success}
+                </div>
+              )}
+
+              {glmClaimModal.activeBalances && glmClaimModal.activeBalances.length > 0 && (
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-text-muted">Active Grants on Account</div>
+                  {glmClaimModal.activeBalances.map((bal, idx) => (
+                    <div
+                      key={bal.bucket_id || idx}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-green-500/20 bg-green-500/5 p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="font-semibold text-sm text-text-primary truncate">
+                          {bal.show_name || "Token Grant"}
+                        </div>
+                        <div className="text-xs text-text-muted mt-0.5">
+                          {Number(bal.remaining_units || 0).toLocaleString()} / {Number(bal.total_units || 0).toLocaleString()} {bal.unit_type || "tokens"}
+                          {bal.expires_at && ` · Expires ${new Date(bal.expires_at * 1000).toLocaleDateString()}`}
+                        </div>
+                      </div>
+                      <span className="inline-flex items-center gap-1 rounded bg-green-500/10 px-2 py-0.5 text-[11px] font-medium text-green-600 dark:text-green-400 border border-green-500/20">
+                        Active
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {glmClaimModal.loading ? (
+                <div className="flex flex-col items-center justify-center py-8 gap-2 text-text-muted">
+                  <span className="material-symbols-outlined animate-spin text-[24px]">progress_activity</span>
+                  <span className="text-xs">Checking active ZCode event gift cards...</span>
+                </div>
+              ) : glmClaimModal.plans && glmClaimModal.plans.length > 0 ? (
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-text-muted">Available Event Plans & Reward Tasks</div>
+                  {glmClaimModal.plans.map((plan) => (
+                    <div
+                      key={plan.planId}
+                      className="flex items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface-2/40 p-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-semibold text-sm text-text-primary truncate">
+                            {plan.name}
+                          </span>
+                          {plan.source === "incentive_reward" && (
+                            <span className="inline-flex items-center rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-500 border border-blue-500/20">
+                              Task
+                            </span>
+                          )}
+                        </div>
+                        {plan.description && (
+                          <p className="text-xs text-text-muted mt-0.5">{plan.description}</p>
+                        )}
+                        {plan.progress && (
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-text-muted">
+                            <span className="tabular-nums">Progress: {plan.progress.current} / {plan.progress.target}</span>
+                            {plan.state && <span className="capitalize text-[11px] opacity-75">({plan.state.replace("_", " ")})</span>}
+                            {plan.inviteCode && (
+                              <span className="text-[11px] font-mono text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                                Code: {plan.inviteCode}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {(plan.entitlements || []).map((ent, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 rounded bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary"
+                            >
+                              <span>{ent.showName || "Tokens"}</span>
+                              {ent.grantUnits > 0 && (
+                                <span className="tabular-nums">
+                                  {ent.grantUnits >= 1e6 ? `${(ent.grantUnits / 1e6).toFixed(0)}M` : ent.grantUnits.toLocaleString()}
+                                </span>
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleExecuteGlmClaim(plan.planId)}
+                        disabled={glmClaimModal.claiming || !plan.claimable}
+                        className={`inline-flex items-center gap-1 shrink-0 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                          plan.claimable
+                            ? "bg-primary text-white hover:bg-primary/90"
+                            : "bg-surface-3 text-text-muted border border-border-subtle opacity-70 cursor-not-allowed"
+                        }`}
+                      >
+                        {glmClaimModal.claiming && (
+                          <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
+                        )}
+                        <span>{plan.claimable ? "Claim" : "In Progress"}</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-black/10 bg-black/[0.02] px-3 py-8 text-center text-xs text-text-muted dark:border-white/10 dark:bg-white/[0.03]">
+                  No active claimable event gift card found for this account right now.
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-border-subtle">
+                <div className="text-xs font-medium text-text-muted mb-2">Activate Start Plan via Handshake</div>
+                <button
+                  type="button"
+                  onClick={() => handleExecuteGlmClaim("zcode-v3-start-plan-0817")}
+                  disabled={glmClaimModal.claiming}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg bg-green-600 px-3 py-2 text-xs font-medium text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  {glmClaimModal.claiming && (
+                    <span className="material-symbols-outlined animate-spin text-[14px]">progress_activity</span>
+                  )}
+                  <span>Activate Start Plan (8M Token Free Tier)</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center gap-2 border-t border-black/10 bg-black/[0.02] px-4 py-2.5 dark:border-white/10 dark:bg-white/[0.02]">
+              <a
+                href={`/api/usage/${glmClaimModal.connection?.id}/zcode-bridge`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+              >
+                <span className="material-symbols-outlined text-[15px]">open_in_new</span>
+                <span>Buka ZCode Web Claim</span>
+              </a>
+              <button
+                type="button"
+                onClick={() => setGlmClaimModal(null)}
+                disabled={glmClaimModal.claiming}
+                className="rounded-lg border border-border-subtle bg-surface px-3 py-1.5 text-xs font-medium text-text-primary hover:bg-surface-2 transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {scheduleConnection && (
         <AutoPingScheduleModal

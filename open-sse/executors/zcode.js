@@ -403,9 +403,23 @@ function hookStreamRelease(response, release, abortCtrl) {
 export class ZCodeExecutor extends DefaultExecutor {
   constructor(providerName = "zcode") {
     super(providerName);
+    this._plainExecutor =
+      providerName !== "zcode" && providerName !== "zc"
+        ? new DefaultExecutor(providerName)
+        : null;
   }
 
   async execute(args) {
+    if (this._plainExecutor) {
+      const psd = args.credentials?.providerSpecificData || {};
+      const hasZcodeSession = Boolean(
+        psd.zcodeJwtToken || psd.zaiBusinessToken || psd.oauthAccessToken || psd.zcodePlan
+      );
+      if (!hasZcodeSession) {
+        return this._plainExecutor.execute(args);
+      }
+    }
+
     const lockKey = String(
       args.credentials?.providerSpecificData?.userId ||
       args.credentials?.providerSpecificData?.zcodeJwtToken ||
@@ -657,7 +671,7 @@ export class ZCodeExecutor extends DefaultExecutor {
   async refreshCredentials(credentials, log) {
     const psd = credentials?.providerSpecificData || {};
     const family = psd.family === "bigmodel" ? "bigmodel" : "zai";
-    const businessToken = psd.oauthAccessToken || credentials?.accessToken;
+    const businessToken = psd.oauthAccessToken || psd.zaiBusinessToken || credentials?.accessToken;
     if (family !== "zai" || !businessToken) return null;
 
     try {

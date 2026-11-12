@@ -90,6 +90,20 @@ export default function QuotaTable({
 }) {
   const [page, setPage] = useState(1);
 
+  // Compact absolute token amounts for grant rows (e.g. 500,000,000 -> "500M").
+  // Inline here to avoid threading a helper import through every quota table.
+  const compactToken = (value) => {
+    const n = Number(value) || 0;
+    if (n >= 1e9) return `${trimFuel(n / 1e9)}B`;
+    if (n >= 1e6) return `${trimFuel(n / 1e6)}M`;
+    if (n >= 1e3) return `${trimFuel(n / 1e3)}K`;
+    return `${n}`;
+  };
+  const trimFuel = (x) => {
+    const v = Math.round(x * 10) / 10;
+    return `${v}`.replace(/\.0$/, "");
+  };
+
   const normalizedQuotas = useMemo(
     () => quotas.map((quota, index) => ({
       ...quota,
@@ -149,9 +163,18 @@ export default function QuotaTable({
         {currentPageRows.map((quota) => {
           const isUnlimited = quota.unlimited === true;
           const isCreditBalance = quota.isCreditBalance === true;
+          const remPercent = typeof quota.remaining === "number" ? quota.remaining : (typeof quota.remainingPercentage === "number" ? quota.remainingPercentage : 100);
+          let displayRemaining = `${remPercent}%`;
+          if (quota.totalTokens && quota.totalTokens > 0) {
+            const remTokens = Math.max(0, quota.totalTokens - (quota.usedTokens || 0));
+            displayRemaining = `${(remTokens / 1000000).toFixed(1)}M tok (${remPercent}%)`;
+          } else if (quota.total >= 1000000) {
+            const remTokens = Math.max(0, quota.total - (quota.used || 0));
+            displayRemaining = `${(remTokens / 1000000).toFixed(1)}M tok (${remPercent}%)`;
+          }
           const colors = isCreditBalance
             ? { text: "text-info", bg: "bg-info", bgLight: "bg-info/10" }
-            : getColorClasses(quota.remaining);
+            : getColorClasses(remPercent);
           // Qoder flags open-ended plans with `neverExpires` (its API reports a
           // year-9999 sentinel). Return "-"/"Never expires" rather than an empty
           // countdown: the render below branches on `countdown !== "-"`, so an
@@ -171,6 +194,10 @@ export default function QuotaTable({
           // and their resetAt is a hard expiry, so word it as "expires".
           const recurring = quota.recurring !== false;
           const countdownLabel = recurring ? `in ${countdown}` : `expires in ${countdown}`;
+          const absoluteExpiry = quota.absoluteReset === true
+            ? formatResetTimeDisplay(quota.expiresAt || quota.resetAt)
+            : null;
+          const absoluteLabel = absoluteExpiry ? `Expires ${absoluteExpiry}` : null;
           const resetWord = recurring ? "Reset" : "Expires";
 
           // "See details" rows are a link to the provider's own usage page —
@@ -207,7 +234,7 @@ export default function QuotaTable({
                     </span>
                   </div>
                   <span className={`shrink-0 text-xs font-semibold tabular-nums ${colors.text}`}>
-                    {isUnlimited ? "Unlimited" : `${quota.remaining}%`}
+                    {isUnlimited ? "Unlimited" : displayRemaining}
                   </span>
                 </div>
 
@@ -216,7 +243,7 @@ export default function QuotaTable({
                   <div className={`h-1.5 rounded-full overflow-hidden ${colors.bgLight}`}>
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${colors.bg}`}
-                      style={{ width: `${Math.min(quota.remaining, 100)}%` }}
+                      style={{ width: `${Math.min(remPercent, 100)}%` }}
                     />
                   </div>
                 )}
@@ -226,14 +253,18 @@ export default function QuotaTable({
                   <span
                     className="truncate text-[11px] text-text-muted"
                     title={
-                      isUnlimited
+                      quota.totalTokens > 0
+                        ? `${quota.usedTokens.toLocaleString()} / ${quota.totalTokens.toLocaleString()} tokens`
+                        : isUnlimited
                         ? `${quota.used.toLocaleString()} used · Unlimited`
                         : isCreditBalance
                         ? `Credit balance: ${quota.total.toFixed(2)} ${quota.currency || ""}`
                         : `${quota.used.toLocaleString()} / ${quota.total > 0 ? quota.total.toLocaleString() : "∞"}`
                     }
                   >
-                    {isUnlimited
+                    {quota.totalTokens > 0
+                      ? `${compactToken(quota.usedTokens)} / ${compactToken(quota.totalTokens)} tok`
+                      : isUnlimited
                       ? `${quota.used.toLocaleString()} used · Unlimited`
                       : isCreditBalance
                       ? `Credit: ${quota.total.toFixed(2)} ${quota.currency || ""}`
@@ -269,9 +300,9 @@ export default function QuotaTable({
                   compact ? (
                     <div
                       className={`${resetPrimary} text-text-main font-medium truncate`}
-                      title={resetSecondaryText || ""}
+                      title={absoluteLabel ? `${absoluteLabel} (${countdownLabel})` : resetSecondaryText || ""}
                     >
-                      {countdown !== "-" ? countdownLabel : renderResetCell(resetPrimary)}
+                      {absoluteLabel ? absoluteLabel : countdown !== "-" ? countdownLabel : renderResetCell(resetPrimary)}
                     </div>
                   ) : (
                     <div className="min-w-0 space-y-0.5">

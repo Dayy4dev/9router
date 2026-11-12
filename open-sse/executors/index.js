@@ -89,6 +89,8 @@ const executors = {
   "deepseek-cookie": new DeepSeekWebExecutor(),
   zcode: new ZCodeExecutor(),
   zc: new ZCodeExecutor(),
+  glm: new ZCodeExecutor("glm"),
+  "glm-cn": new ZCodeExecutor("glm-cn"),
   deepai: new DeepAIExecutor(),
   dai: new DeepAIExecutor(),
 };

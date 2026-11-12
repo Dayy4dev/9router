@@ -10,18 +10,18 @@ function sanitizeHtml(str) {
 }
 
 export async function GET(request, { params }) {
-  const { connectionId } = params;
+  const { connectionId } = await params;
   let connection = null;
 
   if (connectionId && connectionId !== "undefined" && connectionId !== "null" && connectionId !== "default") {
     connection = await getProviderConnectionById(connectionId);
   }
 
-  // Graceful fallback: If connectionId is 'undefined' or not found, resolve first GLM connection with ZCode token
+  // Graceful fallback: If connectionId is 'undefined' or not found, resolve first GLM / ZCode connection with ZCode token
   if (!connection) {
     const allConns = await getProviderConnections();
     connection =
-      allConns.find((c) => c.provider === "glm" && c.providerSpecificData?.zcodeJwtToken) ||
+      allConns.find((c) => ["glm", "zcode", "zc"].includes(c.provider) && c.providerSpecificData?.zcodeJwtToken) ||
       allConns.find((c) => c.provider === "glm") ||
       allConns.find((c) => c.provider === "zcode" || c.provider === "zc") ||
       null;
@@ -45,7 +45,7 @@ export async function GET(request, { params }) {
     connection.providerSpecificData?.zaiBusinessToken ||
     "";
 
-  const consoleSnippet = `localStorage.setItem('zcodejwttoken', '${zcodeJwtToken}');\nlocalStorage.setItem('oauth:zai:access_token', '${accessToken}');\nlocalStorage.setItem('oauth:active_provider', 'zai');\nlocation.reload();`;
+  const consoleSnippet = `localStorage.setItem('zcodejwttoken', ${JSON.stringify(zcodeJwtToken)});\nlocalStorage.setItem('oauth:zai:access_token', ${JSON.stringify(accessToken)});\nlocalStorage.setItem('oauth:active_provider', 'zai');\nlocation.reload();`;
 
   const html = `<!DOCTYPE html>
 <html lang="id">
@@ -223,6 +223,22 @@ export async function GET(request, { params }) {
       Halaman Rewards ZCode memerlukan sesi login di browser kamu. Ikuti 2 langkah mudah di bawah untuk membukanya langsung:
     </div>
 
+    <!-- Step 0: Auto Traceless Captcha Solver -->
+    <div class="step-box" style="border: 1px solid #10B981; background: rgba(16, 185, 129, 0.05);">
+      <div class="step-header">
+        <span class="step-num" style="background: #10B981;">⚡</span>
+        <span class="step-title" style="color: #34D399;">1-Click Auto Claim (Bypass Aliyun Traceless Captcha)</span>
+      </div>
+      <p class="step-desc">
+        Verifikasi berlangsung di background browser kamu tanpa puzzle geser manual:
+      </p>
+      <div id="captcha-element"></div>
+      <button type="button" id="btnAutoClaim" class="btn btn-green" onclick="startOneClickClaim()">
+        Klaim Semua Gift Voucher (300M / 500M)
+      </button>
+      <div id="claimStatus" style="font-size: 11px; margin-top: 8px; text-align: center; color: #94A3B8;"></div>
+    </div>
+
     <!-- Step 1 -->
     <div class="step-box">
       <div class="step-header">
@@ -234,20 +250,6 @@ export async function GET(request, { params }) {
       </p>
       <a href="https://zcode.z.ai/en/login" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
         Buka Login ZCode Web
-      </a>
-    </div>
-
-    <!-- Step 2 -->
-    <div class="step-box">
-      <div class="step-header">
-        <span class="step-num">2</span>
-        <span class="step-title">Buka Halaman Rewards & Voucher</span>
-      </div>
-      <p class="step-desc">
-        Setelah login di Langkah 1 selesai, buka halaman Rewards. Popup tiket 500M / reward task akan langsung muncul dan siap diklaim:
-      </p>
-      <a href="https://zcode.z.ai/en/rewards?embedded=app&theme=zai-dark" target="_blank" rel="noopener noreferrer" class="btn btn-green">
-        Buka Halaman Rewards & Voucher 500M
       </a>
     </div>
 
@@ -264,8 +266,75 @@ export async function GET(request, { params }) {
     </div>
   </div>
 
+  <script src="https://o.alicdn.com/captcha-frontend/aliyunCaptcha/AliyunCaptcha.js"></script>
   <script>
     const consoleSnippet = ${JSON.stringify(consoleSnippet)};
+    const connectionId = ${JSON.stringify(connection.id)};
+
+    let aliyunCaptchaInstance = null;
+
+    async function initTraceless() {
+      if (!window.initAliyunCaptcha) return;
+      try {
+        window.initAliyunCaptcha({
+          SceneId: "11xygtvd",
+          prefix: "no8xfe",
+          mode: "popup",
+          element: "#captcha-element",
+          button: "#btnAutoClaim",
+          captchaVerifyCallback: async function(captchaVerifyParam) {
+            const statusEl = document.getElementById("claimStatus");
+            statusEl.textContent = "Captcha lolos! Mengklaim ke server ZCode...";
+            statusEl.style.color = "#34D399";
+            try {
+              const res = await fetch("/api/usage/" + connectionId + "/glm-claim", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "claim_auto",
+                  captchaVerifyParam: captchaVerifyParam,
+                  captchaRegion: "sgp"
+                })
+              });
+              const data = await res.json();
+              if (data.success || data.code === "SUCCESS" || data.ok) {
+                statusEl.textContent = "BERHASIL KLAIM! " + (data.message || "Voucher aktif.");
+                statusEl.style.color = "#10B981";
+              } else {
+                statusEl.textContent = "Klaim selesai: " + (data.message || data.error || JSON.stringify(data));
+                statusEl.style.color = "#F59E0B";
+              }
+            } catch (err) {
+              statusEl.textContent = "Gagal memanggil endpoint klaim: " + err.message;
+              statusEl.style.color = "#EF4444";
+            }
+          },
+          onBizResultCallback: function() {},
+          getInstance: function(instance) {
+            aliyunCaptchaInstance = instance;
+          },
+          region: "sgp",
+          language: "en"
+        });
+      } catch (e) {
+        console.warn("AliyunCaptcha init error:", e);
+      }
+    }
+
+    function startOneClickClaim() {
+      const statusEl = document.getElementById("claimStatus");
+      statusEl.textContent = "Menghubungi engine Aliyun Captcha...";
+      statusEl.style.color = "#60A5FA";
+      if (!aliyunCaptchaInstance) {
+        initTraceless();
+      }
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initTraceless);
+    } else {
+      initTraceless();
+    }
 
     function copyConsoleSnippet() {
       navigator.clipboard.writeText(consoleSnippet).then(() => {

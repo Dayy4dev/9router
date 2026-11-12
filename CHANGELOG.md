@@ -1,15 +1,3 @@
-# v0.5.420 (2026-11-12)
-
-## What's New? (by Dayy4dev)
-
-- **ZCode & GLM Coding Plan Feature Parity (Ported from xrouter)**:
-  - **Start Plan Handshake Activation**: Added 4-step handshake activation (`zcode-v3-start-plan-0817` providing 8M free tier tokens: 3M GLM-5.3 + 5M GLM-5.3-Flash) via `open-sse/services/usage/glm.js` and one-click UI button.
-  - **1-Click Auto Claim & Aliyun Traceless Captcha**: Integrated Aliyun Web SDK Traceless Captcha engine (`SceneId: "11xygtvd"`, `prefix: "no8xfe"`) into the ZCode Web Bridge (`/api/usage/[connectionId]/zcode-bridge`), allowing browser-based 1-click bonus/gift claim without manual slider interaction.
-  - **Event Gift Card & Quota Disambiguation**: Enhanced GLM and ZCode usage balances to accurately display promotional token grants (e.g. 500M Weekend Build / 300M Global Build) alongside daily Start Plan quotas without dictionary key collision or quota suppression.
-  - **GLM Reset Cards**: Added full support for querying and redeeming GLM rate limit reset cards (`FIVE_HOUR` and `WEEK`) with localStorage recovery state (`9router:resetCardPending:`) and modal dialog.
-  - **Unified ZCodeExecutor Wiring**: Routed `glm` and `glm-cn` through `ZCodeExecutor` with automatic fallback to standard OpenAI-compatible transport for plain API key accounts without ZCode session tokens.
-  - **New Endpoints**: Added `/api/usage/[connectionId]/glm-claim` (preview, claim, and multi-connection sync) and `/api/usage/[connectionId]/glm-reset-cards`, while upgrading `/api/providers/glm/bonus` to scan the full ZCode family.
-
 # v0.5.419 (2026-11-11)
 
 ## What Looks Different?

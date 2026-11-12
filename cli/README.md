@@ -1,11 +1,11 @@
-# 9Router - FREE AI Router & Token Saver
+# 9Router-xd - AI Router & Token Saver
 
 **Never stop coding. Save 20-40% tokens with RTK + auto-fallback to FREE & cheap AI models.**
 
 **Connect All AI Code Tools (Claude Code, Cursor, Antigravity, Copilot, Codex, Gemini, OpenCode, Cline, OpenClaw...) to 40+ AI Providers & 100+ Models.**
 
-[![npm](https://img.shields.io/npm/v/9router.svg)](https://www.npmjs.com/package/9router)
-[![Downloads](https://img.shields.io/npm/dm/9router.svg)](https://www.npmjs.com/package/9router)
+[![npm](https://img.shields.io/npm/v/9router-xd.svg)](https://www.npmjs.com/package/9router-xd)
+[![Downloads](https://img.shields.io/npm/dm/9router-xd.svg)](https://www.npmjs.com/package/9router-xd)
 [![Docker Pulls](https://img.shields.io/docker/pulls/decolua/9router.svg?logo=docker&label=Docker%20pulls)](https://hub.docker.com/r/decolua/9router)
 [![GHCR](https://img.shields.io/badge/GHCR-decolua%2F9router-blue?logo=github)](https://github.com/decolua/9router/pkgs/container/9router)
 [![License](https://img.shields.io/npm/l/9router.svg)](https://github.com/decolua/9router/blob/main/LICENSE)
@@ -40,11 +40,11 @@
 **Option 1 - npm (recommended for desktop):**
 
 ```bash
-npm install -g 9router
-9router
+npm install -g 9router-xd
+9router-xd
 
 # Or run directly with npx
-npx 9router
+npx 9router-xd
 ```
 
 **Option 2 - Docker (server/VPS):**
@@ -79,11 +79,11 @@ That's it! Start coding with FREE AI models.
 ## 🚀 CLI Options
 
 ```bash
-9router                    # Start with default settings
-9router --port 8080        # Custom port
-9router --no-browser       # Don't open browser
-9router --skip-update      # Skip auto-update check
-9router --help             # Show all options
+9router-xd                    # Start with default settings
+9router-xd --port 8080        # Custom port
+9router-xd --no-browser       # Don't open browser
+9router-xd --skip-update      # Skip auto-update check
+9router-xd --help             # Show all options
 ```
 
 **Dashboard**: `http://localhost:20128/dashboard`
@@ -95,9 +95,9 @@ That's it! Start coding with FREE AI models.
 Already running 9Router on another machine (e.g. a team server on your LAN)? Point this machine's CLI tools at it - no local server is started:
 
 ```bash
-npx 9router connect http://<server-host>:20128                       # pick tools interactively
-npx 9router connect http://<server-host>:20128 --tools claude,codex  # or choose up front
-npx 9router connect --reset --tools claude,codex                     # undo
+npx 9router-xd connect http://<server-host>:20128                       # pick tools interactively
+npx 9router-xd connect http://<server-host>:20128 --tools claude,codex  # or choose up front
+npx 9router-xd connect --reset --tools claude,codex                     # undo
 ```
 
 It logs in with the dashboard password (hidden prompt), reuses or creates an API key named `cli-<hostname>`, and writes each tool's config (backing up the original once as `*.bak-9router`).
@@ -119,35 +119,35 @@ Models come from the **server's own CLI-tools configuration**, so a client gets 
 
 ```bash
 # One Claude tier; the other tiers still come from the server
-npx 9router connect http://<server-host>:20128 --tools claude --sonnet cc/claude-sonnet-5-5
+npx 9router-xd connect http://<server-host>:20128 --tools claude --sonnet cc/claude-sonnet-5-5
 
 # Every Claude tier
-npx 9router connect http://<server-host>:20128 --tools claude \
+npx 9router-xd connect http://<server-host>:20128 --tools claude \
   --fable cc/claude-fable-5-1 --opus cc/claude-opus-5-5 \
   --sonnet cc/claude-sonnet-5-5 --haiku cc/claude-haiku-4-5-20251001
 
 # All non-Claude tools at once
-npx 9router connect http://<server-host>:20128 --tools codex,opencode,kilo --model ocg/deepseek-flash
+npx 9router-xd connect http://<server-host>:20128 --tools codex,opencode,kilo --model ocg/deepseek-flash
 
 # Claude and other tools in one run
-npx 9router connect http://<server-host>:20128 --tools claude,codex --opus cc/claude-opus-5-5 --model gpt-6
+npx 9router-xd connect http://<server-host>:20128 --tools claude,codex --opus cc/claude-opus-5-5 --model gpt-6
 
 # A different model per tool: --model covers every non-Claude tool in a run, so run once per tool
-npx 9router connect http://<server-host>:20128 --tools codex --model gpt-6
-npx 9router connect http://<server-host>:20128 --tools opencode --model ocg/glm-5.3
+npx 9router-xd connect http://<server-host>:20128 --tools codex --model gpt-6
+npx 9router-xd connect http://<server-host>:20128 --tools opencode --model ocg/glm-5.3
 ```
 
 A model the server doesn't list is still written, with a `not listed by server` warning. To see the ids it serves: `curl http://<server-host>:20128/v1/models -H "Authorization: Bearer <your key>"`.
 
 ### Checking the current config
 
-`9router show` prints what each CLI tool on this machine is currently set to — base URL, masked API key and models. It only reads local files and never contacts a server.
+`9router-xd show` prints what each CLI tool on this machine is currently set to — base URL, masked API key and models. It only reads local files and never contacts a server.
 
 ```bash
-npx 9router show                 # every supported tool
-npx 9router show claude          # one tool
-npx 9router show claude codex    # several
-npx 9router show claude --json   # machine-readable (key still masked)
+npx 9router-xd show                 # every supported tool
+npx 9router-xd show claude          # one tool
+npx 9router-xd show claude codex    # several
+npx 9router-xd show claude --json   # machine-readable (key still masked)
 ```
 
 ```
@@ -206,9 +206,12 @@ Full docs, advanced setup, video tutorials & development guide:
 
 ---
 
-## 🙏 Acknowledgments
+## 🙏 Acknowledgments & Credits
 
-- **[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)** - Original Go implementation
+- **[Decolua/9router](https://github.com/Decolua/9router)** & **[serenhope/9router](https://github.com/serenhope/9router)** — Original router gateway & translation engine.
+- **[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)** — Original Go implementation.
+- **[xrouter](https://github.com/johsua092-ui/xrouter)** — ZCode / GLM promo and rate-limit mechanics.
+- **[Dayy4dev](https://github.com/Dayy4dev)** — Maintenance, custom UI/features, and `9router-xd` CLI distribution.
 
 ## 📄 License
 

@@ -1,14 +1,14 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=venom&height=200&color=0:f97815,100:c2590a&text=9Router&fontSize=60&fontColor=ffffff&fontAlignY=38&animation=fadeIn" width="100%" alt="9Router" />
+<img src="https://capsule-render.vercel.app/api?type=venom&height=200&color=0:06b6d4,100:0f766e&text=9Router-xd&fontSize=60&fontColor=ffffff&fontAlignY=38&animation=fadeIn" width="100%" alt="9Router-xd" />
 
-<img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=20&duration=3500&pause=1200&color=F97815&center=true&vCenter=true&width=640&height=50&lines=One+gateway%2C+any+model;OpenAI%E2%80%91compatible+endpoint;Speaks+Claude+and+Gemini+too;Extra+features%2C+free+for+everyone" alt="One gateway, any model" />
+<img src="https://readme-typing-svg.demolab.com?font=Inter&weight=600&size=20&duration=3500&pause=1200&color=06B6D4&center=true&vCenter=true&width=640&height=50&lines=One+gateway%2C+any+model;OpenAI%E2%80%91compatible+endpoint;Speaks+Claude+and+Gemini+too;Extra+features%2C+free+for+everyone" alt="One gateway, any model" />
 
-A fork of [Decolua/9router](https://github.com/Decolua/9router) with extra features for everyone who wants them.
+A fork of [Decolua/9router](https://github.com/Decolua/9router) (`9router-xd`) with extra features, custom glass/cyan UI, and rough edges fixed for everyone.
 
-One gateway, one API key, any model: an OpenAI-compatible endpoint that routes to Claude, GPT, Gemini, Kimi, Qwen, GLM, DeepSeek, Grok and many more, with OAuth or your own accounts. This is still that router, with the parts I use daily changed and the rough edges fixed, free for anyone to use.
+One gateway, one API key, any model: an OpenAI-compatible endpoint that routes to Claude, GPT, Gemini, Kimi, Qwen, GLM, DeepSeek, Grok and many more, with OAuth or your own accounts.
 
-![License](https://img.shields.io/badge/license-MIT-green) ![Upstream](https://img.shields.io/badge/upstream-Decolua%2F9router-blue) ![Edition](https://img.shields.io/badge/edition-fork--custom-orange)
+[![npm](https://img.shields.io/npm/v/9router-xd.svg?color=06b6d4)](https://www.npmjs.com/package/9router-xd) ![License](https://img.shields.io/badge/license-MIT-green) ![Upstream](https://img.shields.io/badge/upstream-Decolua%2F9router-blue) ![Edition](https://img.shields.io/badge/edition-9router--xd-06b6d4)
 
 </div>
 
@@ -18,7 +18,7 @@ One gateway, one API key, any model: an OpenAI-compatible endpoint that routes t
 
 <div align="center">
 
-<img src="images/9router.png" alt="9Router dashboard" width="100%" />
+<img src="images/9router.png" alt="9Router Proxy xd dashboard" width="100%" />
 
 </div>
 
@@ -43,9 +43,33 @@ Beyond text chat, the router natively exposes specialized endpoints for multimod
 - **Failover & Traffic Routing**: Dynamic routing policies including intelligent fallback chains, load balancing, model aliases, and latency-optimized dispatching.
 - **Enterprise Controls**: Granular token quotas, rate limiting (RPM/TPM), budget caps, IP allowlisting, and automated state backups.
 
-For granular version updates, newly added providers, and ongoing improvements, refer directly to the [CHANGELOG.md](./CHANGELOG.md).
+For granular version updates, newly added providers, and ongoing improvements, refer directly to [CHANGELOG_DAYY4DEV.md](./CHANGELOG_DAYY4DEV.md) and [CHANGELOG.md](./CHANGELOG.md).
 
 ## Getting started
+
+### Quick Start via npm (Recommended)
+
+Install globally from npm and start the gateway + dashboard:
+
+```bash
+npm install -g 9router-xd
+9router-xd
+
+# Or run directly without installing:
+npx 9router-xd
+```
+
+Common CLI options:
+
+```bash
+9router-xd                  # Start with default settings (port 20128)
+9router-xd --port 8080      # Custom port
+9router-xd --no-browser     # Do not auto-open browser
+9router-xd --skip-update    # Skip update check
+9router-xd --help           # Show all options
+```
+
+### From Source (Developer)
 
 ```bash
 git clone https://github.com/Dayy4dev/9router.git
@@ -64,8 +88,8 @@ npm run start
 Docker:
 
 ```bash
-docker build -t 9router-fork .
-docker run -d -p 20128:20128 -v 9router-data:/app/data 9router-fork
+docker build -t 9router-xd .
+docker run -d -p 20128:20128 -v 9router-data:/app/data 9router-xd
 ```
 
 Once it is running:
@@ -93,11 +117,14 @@ Point any CLI tool or agent at the base URL, generate a key under **Endpoint & K
 
 The app reads a few environment variables with sensible defaults; see [.env.example](./.env.example). State lives in `~/.9router` (SQLite database, backups, secrets).
 
-## Credits
+## Credits & Acknowledgments
 
-- Built on **[Decolua/9router](https://github.com/Decolua/9router)** - full credit to upstream for the router, the providers and the translators.
-- Fork releases are tagged in [CHANGELOG.md](./CHANGELOG.md).
-- License: **MIT**, same as upstream. See [LICENSE](./LICENSE).
+- **Upstream Project**: Built on **[Decolua/9router](https://github.com/Decolua/9router)** (and [serenhope/9router](https://github.com/serenhope/9router)) — full credit to upstream creators and contributors for the core router engine, provider adapters, and protocol translators.
+- **CLIProxyAPI**: Full credit to **[CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI)** for the original Go implementation and architectural foundation.
+- **xrouter**: Features, ZCode start plan / promo engine, and rate-limit mechanics ported from [xrouter](https://github.com/johsua092-ui/xrouter).
+- **9router-xd Edition**: Maintained and developed by **[Dayy4dev](https://github.com/Dayy4dev)** with custom glass/cyan UI, PRD Builder, Prompt Injection, Proxy Harvester enhancements, dynamic auto-routing, and standalone `9router-xd` npm CLI distribution.
+- **Releases & Changelog**: Tracked in [CHANGELOG_DAYY4DEV.md](./CHANGELOG_DAYY4DEV.md) and [CHANGELOG.md](./CHANGELOG.md).
+- **License**: **MIT**, same as upstream. See [LICENSE](./LICENSE).
 
 ---
 
@@ -105,8 +132,8 @@ The app reads a few environment variables with sensible defaults; see [.env.exam
 
 If this fork helped you, a star is appreciated.
 
-[![Stars](https://img.shields.io/github/stars/serenhope/9router?style=social)](https://github.com/serenhope/9router/stargazers)
+[![Stars](https://img.shields.io/github/stars/Dayy4dev/9router?style=social)](https://github.com/Dayy4dev/9router/stargazers)
 
 </div>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&section=footer&height=140&color=0:c2590a,50:f97815,100:ffb347&animation=fadeIn" width="100%" alt="" />
+<img src="https://capsule-render.vercel.app/api?type=waving&section=footer&height=140&color=0:0f766e,50:06b6d4,100:22d3ee&animation=fadeIn" width="100%" alt="" />

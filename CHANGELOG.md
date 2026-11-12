@@ -1,3 +1,36 @@
+# v0.5.419 (2026-11-11)
+
+## What Looks Different?
+
+- Harvested proxy pools are now formatted with the `seren-` prefix (e.g. `seren-<ip>_<port>-[<loc>]`) instead of `FreeProxy-`.
+
+# v0.5.418 (2026-11-11)
+
+## What Looks Different?
+
+- Focused the Custom Proxy Feeds modal solely on operator input (removed the internal built-in feeds list section).
+- Expanded built-in feed catalog from 12 to 24 verified active public proxy repositories (adding Litport, Databay, Komutan, TuanMinPay, Moleway, VPSLab, Stormsia, MuRongPIG, and Zevtyardt), pulling from a pool of over 70,000+ proxy candidates.
+
+# v0.5.417 (2026-11-11)
+
+## What Looks Different?
+
+- **Customizable Harvester Scan Limit & Feed Sources**: Removed the hardcoded 500-candidate cap on the Proxy Harvester:
+  - Added **Max Scan** control: operators can specify any scan budget (from 50 up to 50,000 candidate proxies, default 1,000). The harvester continuously scans through the 70,000+ available candidates until the target live proxy count is met or the max scan budget is reached.
+  - Added **Feeds** manager modal: view the 12 active built-in public proxy feeds, and add custom raw HTTP/HTTPS proxy list URLs to expand discovery sources.
+
+# v0.5.416 (2026-11-11)
+
+## What Got Fixed?
+
+- **Proxy Harvester Freeze & Deadlock**: Fixed multiple critical bugs causing the auto-harvester daemon to stall and freeze indefinitely:
+  - Replaced graceful `await dispatcher.close()` with immediate `dispatcher.destroy()` in `probeProxy`, preventing hanging on half-open or unresponsive proxy tunnels.
+  - Used explicit `undiciFetch` with bound connect timeout (`connect: { timeout: timeoutMs }`) instead of Next.js's patched fetch.
+  - Added fallback timer to `tcpPrecheck` so dropped TCP SYN packets by remote firewalls immediately resolve as dead within 800ms.
+  - Replaced chunk-based `Promise.all` with a sliding worker pool (`runWithPool`), eliminating head-of-line blocking by slow straggler proxies.
+  - Reordered proxy feeds to prioritize high-yield active feeds (`monosans`, `sunny9577`, `vakhov`), discovering live proxies in seconds.
+  - Reset `_inCycle` state on manual stop so the worker can always be restarted cleanly.
+
 # v0.5.415 (2026-11-11)
 
 ## What Looks Different?

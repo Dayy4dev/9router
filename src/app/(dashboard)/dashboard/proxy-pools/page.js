@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { Badge, Button, Card, CardSkeleton, Input, Modal, Pagination, Toggle, ConfirmModal, PageShell } from "@/shared/components";
+import { Badge, Button, Card, CardSkeleton, Input, Modal, Pagination, Toggle, ConfirmModal, PageShell, Select } from "@/shared/components";
 import { useNotificationStore } from "@/store/notificationStore";
 import { useTaskStore } from "@/store/taskStore";
 import {
@@ -137,6 +137,9 @@ export default function ProxyPoolsPage() {
   const [autoCheck, setAutoCheck] = useState(null);
   const [autoCheckSaving, setAutoCheckSaving] = useState(false);
   const autoCheckLastRunRef = useRef(null);
+  const autoCheckReadyRef = useRef(false);
+  const autoCheckWasRunningRef = useRef(false);
+  const autoCheckSettleRef = useRef(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
   const relayMenuRef = useRef(null);
@@ -174,10 +177,19 @@ export default function ProxyPoolsPage() {
       const data = await res.json();
       if (res.ok) {
         setAutoCheck(data);
-        if (data?.lastRunAt && autoCheckLastRunRef.current && data.lastRunAt !== autoCheckLastRunRef.current) {
+        if (autoCheckReadyRef.current && data?.lastRunAt && data.lastRunAt !== autoCheckLastRunRef.current) {
           fetchProxyPools();
         }
+        autoCheckReadyRef.current = true;
         autoCheckLastRunRef.current = data?.lastRunAt || null;
+        // A sweep that just finished can publish its status a beat after the
+        // poll that saw running=false; one short follow-up lands the result
+        // without waiting for the next 30s tick.
+        if (autoCheckWasRunningRef.current && data?.running === false && data?.enabled) {
+          clearTimeout(autoCheckSettleRef.current);
+          autoCheckSettleRef.current = setTimeout(fetchAutoCheck, 2500);
+        }
+        autoCheckWasRunningRef.current = data?.running === true;
       }
     } catch {
       // Background poll: fail silently
@@ -196,6 +208,8 @@ export default function ProxyPoolsPage() {
     const timer = setInterval(fetchAutoCheck, intervalMs);
     return () => clearInterval(timer);
   }, [autoCheck?.enabled, autoCheck?.running, fetchAutoCheck]);
+
+  useEffect(() => () => clearTimeout(autoCheckSettleRef.current), []);
 
   const updateAutoCheck = async (patch) => {
     setAutoCheckSaving(true);

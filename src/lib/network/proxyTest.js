@@ -83,7 +83,10 @@ export async function testProxyUrl({ proxyUrl, testUrl, timeoutMs } = {}) {
     }
   } finally {
     try {
-      await dispatcher?.close?.();
+      // destroy() tears half-open tunnels down immediately; close() waits for
+      // in-flight sockets and can hang forever on an unresponsive proxy.
+      if (dispatcher?.destroy) dispatcher.destroy();
+      else await dispatcher?.close?.();
     } catch {
       // ignore
     }

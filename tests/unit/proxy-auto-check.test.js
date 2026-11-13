@@ -171,4 +171,31 @@ describe("proxyPoolAutoCheck service", () => {
     const { stopProxyPoolAutoCheck } = await import("@/shared/services/proxyPoolAutoCheck.js");
     stopProxyPoolAutoCheck();
   });
+
+  it("hard timeout turns a wedged probe into a dead result", async () => {
+    const { __test__ } = await import("@/shared/services/proxyPoolAutoCheck.js");
+    const started = Date.now();
+    const result = await __test__.withHardTimeout(new Promise(() => {}), 50);
+    expect(result.ok).toBe(false);
+    expect(result.error).toBe("Probe timed out");
+    expect(Date.now() - started).toBeLessThan(2000);
+  });
+
+  it("verifies all JSX components used in proxy-pools page are properly imported", () => {
+    const rootPath = path.resolve(__dirname, "../../src/app/(dashboard)/dashboard/proxy-pools/page.js");
+    const content = fs.readFileSync(rootPath, "utf8");
+    const usedTags = new Set([...content.matchAll(/<([A-Z][a-zA-Z0-9]*)/g)].map((m) => m[1]));
+    const imported = new Set(
+      [...content.matchAll(/import\s+\{([^}]+)\}/g)].flatMap((m) =>
+        m[1].split(",").map((s) => s.trim().split(/\s+as\s+/)[0])
+      )
+    );
+
+    const missing = [...usedTags].filter(
+      (tag) => !imported.has(tag) && !content.includes(`function ${tag}`) && !content.includes(`const ${tag}`)
+    );
+    expect(missing).toEqual([]);
+    expect(imported.has("Select")).toBe(true);
+    expect(imported.has("Toggle")).toBe(true);
+  });
 });

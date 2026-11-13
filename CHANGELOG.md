@@ -1,3 +1,18 @@
+# Unreleased (2026-11-13)
+
+## What Looks Different?
+
+- **Proxy Pool Auto Check**: saved proxy pools are now swept on a schedule, not only when an operator clicks a button:
+  - Added an Auto Check bar on `/dashboard/proxy-pools` with a toggle, interval presets (5/10/15/30/60 minutes), an **Active only** switch and a **Run Now** button, plus the last sweep summary (alive / dead / disabled).
+  - The scheduler lives on the server (`proxyPoolAutoCheck`), chains its next tick after a sweep settles, probes with a bounded concurrency and a 6s timeout, and only runs active pools by default — off unless enabled, and the module is loaded on demand.
+  - A pool is disabled only after two consecutive failed sweeps (`failCount`), so a network blip does not take a healthy proxy out of rotation.
+  - New `GET/POST /api/proxy-pools/auto-check` route exposes the status, the configuration, and a manual trigger.
+
+## What Got Fixed?
+
+- **Proxy pools page crashed with `ReferenceError: Select is not defined`**: the Auto Check interval selector was added without importing `Select` from the shared components. A guard test now fails when a JSX component tag used on that page is not imported.
+- **Proxy probes could hang the sweep**: `testProxyUrl` awaited `dispatcher.close()`, which waits for in-flight sockets and can block forever on a half-open tunnel (the same failure the harvester hit in v0.5.416). The dispatcher is now destroyed immediately, and the auto-check wraps each probe in a hard timeout so one wedged socket cannot stall the cycle.
+
 # v0.5.420 (2026-11-11)
 
 ## What Looks Different?

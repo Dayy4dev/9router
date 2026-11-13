@@ -35,7 +35,7 @@ const g = (global.__proxyPoolAutoCheck ??= {
   scheduledFor: null,
 });
 
-export const __test__ = { CONCURRENCY, DISABLE_AFTER_FAILURES, DEFAULT_INTERVAL_MINUTES };
+export const __test__ = { CONCURRENCY, DISABLE_AFTER_FAILURES, DEFAULT_INTERVAL_MINUTES, withHardTimeout };
 
 function normalizeInterval(value) {
   const n = Number(value);
@@ -86,6 +86,19 @@ async function probeRelay(relayUrl, timeoutMs = PROBE_TIMEOUT_MS) {
 async function probePool(pool) {
   if (RELAY_TYPES.has(pool?.type)) return probeRelay(pool.proxyUrl);
   return testProxyUrl({ proxyUrl: pool.proxyUrl, timeoutMs: PROBE_TIMEOUT_MS });
+}
+
+// A probe resolves on its own timeout, but a wedged socket can still sit in
+// the resolver (e.g. a stalled dispatcher teardown). Race it so one bad pool
+// can never block the rest of the sweep.
+function withHardTimeout(promise, ms = PROBE_TIMEOUT_MS + 4000) {
+  let timer;
+  return Promise.race([
+    promise,
+    new Promise((resolve) => {
+      timer = setTimeout(() => resolve({ ok: false, status: 500, error: "Probe timed out" }), ms);
+    }),
+  ]).finally(() => clearTimeout(timer));
 }
 
 async function applyResult(pool, result) {
@@ -147,7 +160,7 @@ export async function runProxyAutoCheckCycle({ force = false } = {}) {
       if (idx >= pools.length) return;
       const pool = pools[idx];
       try {
-        const outcome = await applyResult(pool, await probePool(pool));
+        const outcome = await applyResult(pool, await withHardTimeout(probePool(pool)));
         if (outcome === "alive") alive += 1;
         else if (outcome === "disabled") { dead += 1; disabled += 1; }
         else dead += 1;
@@ -161,8 +174,8 @@ export async function runProxyAutoCheckCycle({ force = false } = {}) {
     await Promise.all(
       Array.from({ length: Math.min(CONCURRENCY, pools.length) }, worker)
     );
-  } finally {
-    g.running = false;
+  } catch {
+    // Worker errors are already counted per pool; a sweep never aborts here.
   }
 
   const result = {
@@ -172,7 +185,11 @@ export async function runProxyAutoCheckCycle({ force = false } = {}) {
     disabled,
     durationMs: Date.now() - startedAt,
   };
+  // Publish the result BEFORE clearing `running`: a status poll that observes
+  // running=false must never see a stale lastRunAt next to it, or the page
+  // re-arms its slow interval and shows the old sweep until the next one.
   await finish(result);
+  g.running = false;
   return result;
 }
 
@@ -224,7 +241,11 @@ export async function configureProxyPoolAutoCheck({ immediate = false } = {}) {
   }
 
   const intervalMs = normalizeInterval(settings.proxyAutoCheckIntervalMinutes) * 60 * 1000;
-  schedule(immediate ? TOGGLE_DELAY_MS : BOOT_DELAY_MS, intervalMs);
+  // A fresh enable gets a quick first sweep (operator feedback); a config tweak
+  // on an already-running timer just re-arms it without an extra sweep.
+  const hadTimer = g.timer !== null;
+  const delay = immediate && !hadTimer ? TOGGLE_DELAY_MS : BOOT_DELAY_MS;
+  schedule(delay, intervalMs);
   return { enabled: true, intervalMinutes: normalizeInterval(settings.proxyAutoCheckIntervalMinutes) };
 }
 

@@ -562,7 +562,12 @@ export default function ProviderLimits() {
       });
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.ok) {
-        throw new Error(json?.message || json?.error || "Gagal mengklaim plan");
+        const base = json?.message || json?.error || "Gagal mengklaim plan";
+        const hint =
+          json?.captchaRequired || json?.verifyRequired
+            ? " Klik \"Buka ZCode Web Claim\", selesaikan verifikasi, lalu coba lagi."
+            : "";
+        throw new Error(base + hint);
       }
       setGlmClaimModal((prev) => ({
         ...prev,

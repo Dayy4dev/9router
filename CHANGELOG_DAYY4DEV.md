@@ -1,4 +1,4 @@
-# v0.5.421 (2026-11-13) · 2 commits
+# v0.5.421 (2026-11-13) · 3 commits
 
 ## Features & Improvements
 
@@ -13,6 +13,11 @@
 - **Proxy pools page crashed with `ReferenceError: Select is not defined`**: the interval selector was added without importing `Select` from the shared components. A guard test now fails when a JSX component tag used on that page is not imported.
 - **Proxy probes could hang a sweep**: `testProxyUrl` awaited `dispatcher.close()`, which waits for in-flight sockets and can block forever on a half-open tunnel (same failure the harvester hit in v0.5.416). The dispatcher is now destroyed immediately, and each auto-check probe is wrapped in a hard timeout so one wedged socket cannot stall the cycle.
 - **Stale auto-check status in the UI**: the scheduler used to clear `running` before publishing `lastRunAt`, so a poll could see `running=false` with an old result and the page waited a full slow interval. The result is now published first, and the page does one short follow-up fetch when a sweep finishes.
+- **ZCode Start Plan claim now actually provisions the plan**:
+  - `checkAndClaimZcodeStartPlan` used to run the 4-step warm-up GETs and then only read `billing/balance`, so it could never activate anything — every attempt ended with `ZCode Start Plan not active for this account after handshake.`
+  - It now performs the real `POST /api/v1/zcode-plan/billing/claim` (preferring the start-plan entry returned by `billing/preview`, falling back to `zcode-v3-start-plan-0817`), re-reads balance to confirm activation, and treats `code: 1003` as already-claimed success.
+  - Aliyun challenge (`code: 3007`) is surfaced as `captchaRequired` / `verifyRequired`, and the claim modal now tells the user to open **Buka ZCode Web Claim**, finish verification, then retry.
+  - Captcha headers (`X-Aliyun-Captcha-Verify-Param`, `X-Aliyun-Captcha-Verify-Region`) are forwarded on the claim POST.
 
 # v0.5.420 (2026-11-12) · 2 commits
 

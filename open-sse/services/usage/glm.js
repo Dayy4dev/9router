@@ -143,7 +143,7 @@ export const ZCODE_START_PLAN_ID = "zcode-v3-start-plan-0817";
  * Perform the sequential 4-step handshake required to activate and provision
  * the ZCode Start Plan free tier quota (8M tokens: 3M GLM-5.3 + 5M GLM-5.3-Flash).
  */
-export async function checkAndClaimZcodeStartPlan(token, deviceMid = "9ac46470-9bda-419a-baf9-924143aa6a04", proxyOptions = null) {
+export async function checkAndClaimZcodeStartPlan(token, deviceMid = "9ac46470-9bda-419a-baf9-924143aa6a04", proxyOptions = null, captcha = null) {
   if (typeof token !== "string" || !token.trim()) return null;
   const cleanToken = token.trim().replace(/^Bearer\s+/i, "");
   const headers = {
@@ -154,38 +154,118 @@ export async function checkAndClaimZcodeStartPlan(token, deviceMid = "9ac46470-9
     Accept: "application/json",
   };
 
-  const steps = [
+  const readBalance = async () => {
+    try {
+      const res = await proxyAwareFetch(
+        `${ZCODE_PLAN_BALANCE_URL}?app_version=${ZCODE_APP_VERSION}`,
+        { method: "GET", headers, signal: AbortSignal.timeout(10000) },
+        proxyOptions,
+      );
+      return res?.ok ? await res.json().catch(() => null) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const readState = (payload) => {
+    const data = payload?.data || {};
+    const plans = Array.isArray(data.plans) ? data.plans : [];
+    const activePlan = plans.find(
+      (p) => p.plan_id === ZCODE_START_PLAN_ID || p.planId === ZCODE_START_PLAN_ID || (p.name && p.name.includes("Start Plan"))
+    );
+    return {
+      plans,
+      balances: data.balances || [],
+      serverTime: data.server_time,
+      plan: activePlan || null,
+      hasStartPlan: Boolean(activePlan && String(activePlan.status || "").toLowerCase() === "active"),
+    };
+  };
+
+  // Warm-up: the plan only becomes visible to the claim endpoint after the
+  // client touches marketing/incentive/preview first.
+  let previewPlans = [];
+  for (const url of [
     `${ZCODE_MARKETING_TOUCH_URL}?seq=1`,
     ZCODE_INCENTIVE_SUMMARY_URL,
     `${ZCODE_PLAN_PREVIEW_URL}?app_version=${ZCODE_APP_VERSION}`,
-    `${ZCODE_PLAN_BALANCE_URL}?app_version=${ZCODE_APP_VERSION}`,
-  ];
-
-  let balancePayload = null;
-  for (const url of steps) {
+  ]) {
     try {
       const res = await proxyAwareFetch(url, { method: "GET", headers, signal: AbortSignal.timeout(10000) }, proxyOptions);
-      if (res && res.ok && url.includes("/billing/balance")) {
-        balancePayload = await res.json().catch(() => null);
+      if (res?.ok && url.includes("/billing/preview")) {
+        const payload = await res.json().catch(() => null);
+        previewPlans = Array.isArray(payload?.data?.plans) ? payload.data.plans : [];
       }
     } catch {}
   }
 
-  const data = balancePayload?.data || {};
-  const plans = Array.isArray(data.plans) ? data.plans : [];
-  const activePlan = plans.find(
-    (p) => p.plan_id === ZCODE_START_PLAN_ID || p.planId === ZCODE_START_PLAN_ID || (p.name && p.name.includes("Start Plan"))
-  );
-  const hasStartPlan = Boolean(activePlan && activePlan.status?.toLowerCase() === "active");
+  const claimedStartId = previewPlans.find((p) => {
+    const identity = `${p?.plan_id || p?.planId || ""} ${p?.name || ""}`;
+    return /start[-_ ]?plan/i.test(identity);
+  });
+  const targetPlanId = claimedStartId?.plan_id || claimedStartId?.planId || ZCODE_START_PLAN_ID;
+
+  let state = readState(await readBalance());
+  if (state.hasStartPlan) {
+    return {
+      ok: true,
+      hasStartPlan: true,
+      planId: targetPlanId,
+      claimAttempted: false,
+      alreadyClaimed: false,
+      captchaRequired: false,
+      ...state,
+    };
+  }
+
+  // Actual provisioning is a POST; the warm-up GETs alone never activate it.
+  const claimHeaders = { ...headers, "Content-Type": "application/json", "X-Platform": ZCODE_PLATFORM };
+  if (captcha?.captchaVerifyParam) claimHeaders["X-Aliyun-Captcha-Verify-Param"] = captcha.captchaVerifyParam;
+  if (captcha?.captchaRegion) claimHeaders["X-Aliyun-Captcha-Verify-Region"] = captcha.captchaRegion;
+
+  let claimPayload = null;
+  let claimStatus = 0;
+  let claimError = null;
+  try {
+    const res = await proxyAwareFetch(
+      ZCODE_PLAN_CLAIM_URL,
+      {
+        method: "POST",
+        headers: claimHeaders,
+        body: JSON.stringify({ plan_id: targetPlanId }),
+        signal: AbortSignal.timeout(20000),
+        redirect: "error",
+      },
+      proxyOptions,
+    );
+    claimStatus = res?.status || 0;
+    claimPayload = await res?.json?.().catch(() => null);
+  } catch (err) {
+    claimError = err?.message || String(err);
+  }
+
+  const claimCode = claimPayload?.code ?? null;
+  const alreadyClaimed = claimCode === 1003;
+  const claimMessage =
+    claimPayload?.data?.message || claimPayload?.msg || claimPayload?.message || claimError || null;
+  const captchaRequired =
+    !alreadyClaimed &&
+    (claimCode === 3007 || claimCode === 3008 || /captcha|verif/i.test(claimMessage || ""));
+
+  state = readState(await readBalance());
+  const activated = state.hasStartPlan || alreadyClaimed;
 
   return {
-    ok: hasStartPlan,
-    hasStartPlan,
-    planId: ZCODE_START_PLAN_ID,
-    plan: activePlan || null,
-    plans,
-    balances: data.balances || [],
-    serverTime: data.server_time,
+    ok: activated,
+    hasStartPlan: activated,
+    planId: targetPlanId,
+    claimAttempted: true,
+    claimCode,
+    claimStatus,
+    alreadyClaimed,
+    captchaRequired,
+    claimMessage,
+    ...state,
   };
 }
 
@@ -619,21 +699,39 @@ export async function claimGlmPlan(token, planId, proxyOptions = null, captcha =
     planId.toLowerCase() === "start-plan" ||
     planId.toLowerCase() === "auto"
   ) {
-    const handshakeResult = await checkAndClaimZcodeStartPlan(token, deviceMid, proxyOptions);
+    const handshakeResult = await checkAndClaimZcodeStartPlan(token, deviceMid, proxyOptions, captcha);
     if (handshakeResult?.hasStartPlan) {
       return {
         ok: true,
         status: 200,
         code: "SUCCESS",
+        alreadyClaimed: Boolean(handshakeResult.alreadyClaimed),
         plan: handshakeResult.plan || { plan_id: ZCODE_START_PLAN_ID, name: "ZCode Start Plan" },
-        message: "ZCode Start Plan free tier quota activated via handshake.",
+        message: handshakeResult.alreadyClaimed
+          ? "ZCode Start Plan is already active on this account."
+          : "ZCode Start Plan free tier quota activated (8M tokens).",
+      };
+    }
+    if (handshakeResult?.captchaRequired) {
+      return {
+        ok: false,
+        status: 400,
+        code: "3007",
+        captchaRequired: true,
+        verifyRequired: true,
+        message:
+          handshakeResult.claimMessage ||
+          "Aliyun verification challenge required. Open the ZCode Web Claim page, solve it, then retry.",
+        data: handshakeResult,
       };
     }
     return {
       ok: false,
       status: 400,
       code: "start_plan_not_active",
-      message: "ZCode Start Plan not active for this account after handshake.",
+      message:
+        handshakeResult?.claimMessage ||
+        "ZCode Start Plan not active for this account after handshake.",
       data: handshakeResult,
     };
   }

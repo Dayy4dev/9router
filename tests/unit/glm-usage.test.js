@@ -322,11 +322,13 @@ describe("GLM native event gift card claim", () => {
     expect(balance.balances[0].show_name).toBe("GLM-5.3-Flash");
   });
 
-  it("activates ZCode Start Plan via 4-step handshake", async () => {
+  it("activates ZCode Start Plan via warm-up GETs plus a real claim POST", async () => {
     proxyAwareFetch
       .mockResolvedValueOnce(jsonResponse({ code: 0 }))
       .mockResolvedValueOnce(jsonResponse({ code: 0 }))
       .mockResolvedValueOnce(jsonResponse({ code: 0, data: { plans: [] } }))
+      .mockResolvedValueOnce(jsonResponse({ code: 0, data: { plans: [], balances: [] } }))
+      .mockResolvedValueOnce(jsonResponse({ code: 0, msg: "success" }))
       .mockResolvedValueOnce(
         jsonResponse({
           code: 0,
@@ -340,7 +342,27 @@ describe("GLM native event gift card claim", () => {
     const res = await claimGlmPlan("mock_jwt_token", ZCODE_START_PLAN_ID);
     expect(res.ok).toBe(true);
     expect(res.code).toBe("SUCCESS");
-    expect(proxyAwareFetch).toHaveBeenCalledTimes(4);
+    expect(proxyAwareFetch).toHaveBeenCalledTimes(6);
+
+    const claimCall = proxyAwareFetch.mock.calls[4];
+    expect(claimCall[0]).toContain("/billing/claim");
+    expect(claimCall[1].method).toBe("POST");
+    expect(JSON.parse(claimCall[1].body)).toEqual({ plan_id: ZCODE_START_PLAN_ID });
+  });
+
+  it("surfaces Aliyun captcha challenge when Start Plan claim returns 3007", async () => {
+    proxyAwareFetch
+      .mockResolvedValueOnce(jsonResponse({ code: 0 }))
+      .mockResolvedValueOnce(jsonResponse({ code: 0 }))
+      .mockResolvedValueOnce(jsonResponse({ code: 0, data: { plans: [] } }))
+      .mockResolvedValueOnce(jsonResponse({ code: 0, data: { plans: [], balances: [] } }))
+      .mockResolvedValueOnce(jsonResponse({ code: 3007, msg: "captcha verify required" }))
+      .mockResolvedValueOnce(jsonResponse({ code: 0, data: { plans: [], balances: [] } }));
+
+    const res = await claimGlmPlan("mock_jwt_token", ZCODE_START_PLAN_ID);
+    expect(res.ok).toBe(false);
+    expect(res.captchaRequired).toBe(true);
+    expect(res.code).toBe("3007");
   });
 
   it("treats code 1003 as already claimed success", async () => {

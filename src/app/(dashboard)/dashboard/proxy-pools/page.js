@@ -28,6 +28,17 @@ const PROXY_IMPORT_TASK = "proxy-pools-import";
 // all talk about the same run.
 const dashboardTaskId = (kind) => `dashboard-job-${kind}`;
 
+const formatLastRun = (iso) => {
+  if (!iso) return "never";
+  const ms = Date.now() - new Date(iso).getTime();
+  if (ms < 60000) return "just now";
+  const mins = Math.floor(ms / 60000);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
+
 /**
  * Adopt a server-side job: put its banner up, follow its progress, and hand
  * the finished record to `onFinal`. The job itself belongs to the server, so
@@ -123,6 +134,9 @@ export default function ProxyPoolsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [healthChecking, setHealthChecking] = useState(false);
   const [healthProgress, setHealthProgress] = useState({ current: 0, total: 0 });
+  const [autoCheck, setAutoCheck] = useState(null);
+  const [autoCheckSaving, setAutoCheckSaving] = useState(false);
+  const autoCheckLastRunRef = useRef(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [confirmState, setConfirmState] = useState(null);
   const relayMenuRef = useRef(null);
@@ -154,9 +168,60 @@ export default function ProxyPoolsPage() {
     }
   }, []);
 
+  const fetchAutoCheck = useCallback(async () => {
+    try {
+      const res = await fetch("/api/proxy-pools/auto-check", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok) {
+        setAutoCheck(data);
+        if (data?.lastRunAt && autoCheckLastRunRef.current && data.lastRunAt !== autoCheckLastRunRef.current) {
+          fetchProxyPools();
+        }
+        autoCheckLastRunRef.current = data?.lastRunAt || null;
+      }
+    } catch {
+      // Background poll: fail silently
+    }
+  }, [fetchProxyPools]);
+
   useEffect(() => {
     fetchProxyPools();
-  }, [fetchProxyPools]);
+    fetchAutoCheck();
+  }, [fetchProxyPools, fetchAutoCheck]);
+
+  // Poll status while auto-check is running, or every 30s when enabled
+  useEffect(() => {
+    if (!autoCheck?.enabled && !autoCheck?.running) return;
+    const intervalMs = autoCheck?.running ? 2000 : 30000;
+    const timer = setInterval(fetchAutoCheck, intervalMs);
+    return () => clearInterval(timer);
+  }, [autoCheck?.enabled, autoCheck?.running, fetchAutoCheck]);
+
+  const updateAutoCheck = async (patch) => {
+    setAutoCheckSaving(true);
+    try {
+      const res = await fetch("/api/proxy-pools/auto-check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAutoCheck(data);
+        if (patch.runNow) {
+          notify.info("Auto-check started in background");
+        } else if (patch.enabled !== undefined) {
+          notify.success(patch.enabled ? "Auto-check enabled" : "Auto-check disabled");
+        }
+      } else {
+        notify.error(data.error || "Failed to update auto-check");
+      }
+    } catch (error) {
+      notify.error(error?.message || "Failed to update auto-check");
+    } finally {
+      setAutoCheckSaving(false);
+    }
+  };
 
   const resetForm = () => {
     setEditingProxyPool(null);
@@ -1007,6 +1072,76 @@ export default function ProxyPoolsPage() {
       </div>
 
       <Card>
+        <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border/50 bg-surface-2/40 px-3 py-2.5">
+          <span className={`material-symbols-outlined text-[20px] ${autoCheck?.running ? "animate-spin text-primary" : autoCheck?.enabled ? "text-emerald-500" : "text-text-muted"}`}>
+            {autoCheck?.running ? "progress_activity" : "autorenew"}
+          </span>
+          <div className="flex items-center gap-2">
+            <span className="whitespace-nowrap text-sm font-medium text-text-main">Auto Check</span>
+            <Toggle
+              size="sm"
+              label="Auto Check"
+              checked={autoCheck?.enabled === true}
+              disabled={autoCheckSaving || !autoCheck}
+              onChange={(value) => updateAutoCheck({ enabled: value })}
+              title="Probe saved proxy pools on a schedule and disable the dead ones"
+            />
+          </div>
+          <Select
+            className="w-[160px]"
+            selectClassName="py-1.5 text-xs"
+            value={String(autoCheck?.intervalMinutes ?? 15)}
+            disabled={autoCheckSaving || !autoCheck?.enabled}
+            onChange={(e) => updateAutoCheck({ intervalMinutes: Number(e.target.value) })}
+            options={[
+              { value: "5", label: "Every 5 minutes" },
+              { value: "10", label: "Every 10 minutes" },
+              { value: "15", label: "Every 15 minutes" },
+              { value: "30", label: "Every 30 minutes" },
+              { value: "60", label: "Every hour" },
+            ]}
+          />
+          <label
+            className="flex cursor-pointer items-center gap-1.5 whitespace-nowrap text-xs text-text-muted"
+            title="Only probe pools currently active. Disabled pools are not re-checked, so each sweep stays cheap."
+          >
+            <input
+              type="checkbox"
+              className="size-3.5 rounded border-black/20 dark:border-white/20"
+              checked={autoCheck?.activeOnly !== false}
+              disabled={autoCheckSaving || !autoCheck?.enabled}
+              onChange={(e) => updateAutoCheck({ activeOnly: e.target.checked })}
+            />
+            Active only
+          </label>
+          {autoCheck?.enabled && (
+            <Button
+              size="sm"
+              variant="ghost"
+              icon={autoCheck?.running ? "progress_activity" : "bolt"}
+              onClick={() => updateAutoCheck({ runNow: true })}
+              disabled={autoCheckSaving || autoCheck?.running}
+            >
+              {autoCheck?.running ? "Checking..." : "Run Now"}
+            </Button>
+          )}
+          <div className="ml-auto whitespace-nowrap text-xs text-text-muted">
+            {autoCheck?.running ? (
+              <span className="text-primary">Checking pools...</span>
+            ) : autoCheck?.enabled ? (
+              <>
+                Last: {formatLastRun(autoCheck?.lastRunAt)}
+                {autoCheck?.lastResult
+                  ? ` · Alive ${autoCheck.lastResult.alive} · Dead ${autoCheck.lastResult.dead}`
+                  : ""}
+                {autoCheck?.lastResult?.disabled > 0 ? ` · Disabled ${autoCheck.lastResult.disabled}` : ""}
+              </>
+            ) : (
+              "Auto-check off"
+            )}
+          </div>
+        </div>
+
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex flex-wrap items-center gap-2">
             {proxyPools.length > 0 && (

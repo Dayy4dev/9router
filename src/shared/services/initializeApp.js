@@ -125,6 +125,14 @@ async function runHeavyStartup() {
   import("@/sse/services/backgroundTokenRefresh.js")
     .then(({ startBackgroundTokenRefresh }) => startBackgroundTokenRefresh())
     .catch((e) => console.log("[BackgroundTokenRefresh] scheduler start failed:", e.message));
+
+  // Proxy pool auto-check: only loaded when the operator opted in, so a plain
+  // install never carries the scheduler (or its undici probe path) in memory.
+  if (settings.proxyAutoCheckEnabled) {
+    import("@/shared/services/proxyPoolAutoCheck")
+      .then(({ configureProxyPoolAutoCheck }) => configureProxyPoolAutoCheck())
+      .catch((e) => console.log("[ProxyAutoCheck] scheduler start failed:", e.message));
+  }
 }
 
 // Cheap local check: keeps the scheduler module (and its provider graph) unloaded

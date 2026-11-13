@@ -95,6 +95,10 @@ const DEFAULT_SETTINGS = {
   },
   // Per-provider user header overrides applied at dispatch: { [providerId]: { headers: {..} } }
   providerOverrides: {},
+  // Proxy pool automatic liveness check
+  proxyAutoCheckEnabled: false,
+  proxyAutoCheckIntervalMinutes: 15,
+  proxyAutoCheckActiveOnly: true,
 };
 
 async function readRaw() {

@@ -154,6 +154,16 @@ export async function PATCH(request) {
         .catch((error) => console.warn("[AutoPing] settings update failed:", error.message));
     }
 
+    if (
+      Object.prototype.hasOwnProperty.call(body, "proxyAutoCheckEnabled") ||
+      Object.prototype.hasOwnProperty.call(body, "proxyAutoCheckIntervalMinutes") ||
+      Object.prototype.hasOwnProperty.call(body, "proxyAutoCheckActiveOnly")
+    ) {
+      import("@/shared/services/proxyPoolAutoCheck")
+        .then(({ configureProxyPoolAutoCheck }) => configureProxyPoolAutoCheck({ immediate: true }))
+        .catch((error) => console.warn("[ProxyAutoCheck] settings update failed:", error.message));
+    }
+
     const { password, oidcClientSecret, ...safeSettings } = settings;
     safeSettings.oidcConfigured = !!(safeSettings.oidcIssuerUrl && safeSettings.oidcClientId && oidcClientSecret);
     return NextResponse.json(safeSettings, { headers: SETTINGS_RESPONSE_HEADERS });
